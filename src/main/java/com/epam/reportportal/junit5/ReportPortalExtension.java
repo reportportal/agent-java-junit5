@@ -30,6 +30,7 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 import org.junit.platform.engine.TestExecutionResult;
+import org.junit.platform.engine.TestTag;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.TestPlan;
@@ -37,9 +38,11 @@ import rp.com.google.common.collect.ImmutableMap;
 
 import java.util.Calendar;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * ReportPortal Listener sends the results of test execution to ReportPortal in RealTime
@@ -79,13 +82,16 @@ public class ReportPortalExtension implements TestExecutionListener {
 		rq.setUniqueId(testIdentifier.getUniqueId());
 		rq.setType(testIdentifier.isContainer() ? "SUITE" : "TEST");
 
+		ofNullable(testIdentifier.getTags()).map(t -> t.stream().map(TestTag::getName).collect(Collectors.toSet())).ifPresent(rq::setTags);
+
 		rq.setRetry(false);
 
 		Maybe<String> itemId = testIdentifier.getParentId()
-				.map(parent -> Optional.ofNullable(idMapping.get(parent)))
+				.map(parent -> ofNullable(idMapping.get(parent)))
 				.map(parentId -> this.launch.startTestItem(parentId.orElse(null), rq))
 				.orElseGet(() -> this.launch.startTestItem(rq));
 
+		System.out.println(testIdentifier.getUniqueId());
 		this.idMapping.put(testIdentifier.getUniqueId(), itemId);
 
 	}
@@ -111,4 +117,13 @@ public class ReportPortalExtension implements TestExecutionListener {
 			.put(TestExecutionResult.Status.FAILED, Statuses.FAILED)
 			.build();
 
+	//	testIdentifier.getSource().ifPresent(source -> {
+	//		if (source instanceof MethodSource) {
+	//			MethodSource methodSource = (MethodSource) source;
+	//			Class<?> testClass = Class.forName(methodSource.getClassName());
+	//			Method testMethod = testClass.getDeclaredMethod(methodSource.getMethodName());
+	//			Optional<RepeatedTest> annotation = AnnotationUtils.findAnnotation(testMethod, RepeatedTest.class);
+	//
+	//		}
+	//	});
 }

@@ -1,9 +1,6 @@
 package com.epam.reportportal.junit5.tests;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 public class JUnit5Tests {
 
@@ -13,6 +10,8 @@ public class JUnit5Tests {
 	}
 
 	@Test
+	@Tag("tag1")
+	@Tag("tag2")
 	void baseClassTest() {
 		System.out.println("test");
 	}
@@ -26,6 +25,7 @@ public class JUnit5Tests {
 		}
 
 		@Test
+		@RepeatedTest(10)
 		void firstNestedTest() {
 			System.out.println("nested - test");
 		}

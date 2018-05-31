@@ -5,9 +5,9 @@
 
 # Package Files #
 *.jar
+!gradle/wrapper/**
 *.war
 *.ear
-!gradle/wrapper/**
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
@@ -17,3 +17,8 @@ hs_err_pid*
 .gradle/
 build/
 .idea/
+.classpath
+.project
+.settings
+*.iml
+/bin/

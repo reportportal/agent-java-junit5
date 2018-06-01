@@ -29,6 +29,8 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
+
+import org.junit.jupiter.api.extension.Extension;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.TestTag;
 import org.junit.platform.launcher.TestExecutionListener;
@@ -49,7 +51,7 @@ import static java.util.Optional.ofNullable;
  *
  * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
  */
-public class ReportPortalExtension implements TestExecutionListener {
+public class ReportPortalExtension implements TestExecutionListener, Extension {
 
 	private final ConcurrentMap<String, Maybe<String>> idMapping;
 	private final Launch launch;

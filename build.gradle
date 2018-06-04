@@ -17,19 +17,17 @@ repositories {
 }
 
 ext {
-    junitJupiterVersion = '5.1.0-M1'
+    junitJupiterVersion = '5.2.0'
+    junitPlatformVersion = '1.2.0'
 }
 
 dependencies {
-    compile 'com.epam.reportportal:client-java:4.0.0-BETA-1'
-    compile 'com.epam.reportportal:commons-model:4.0.0'
+    compile 'com.epam.reportportal:client-java:4.0.8'
+    compile 'com.epam.reportportal:commons-model:4.2.0'
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
-    compile('org.junit.platform:junit-platform-launcher:1.1.0-M1')
-
-    testRuntime("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
-
-
+    compile("org.junit.platform:junit-platform-launcher:${junitPlatformVersion}")
+    compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
 }
 
 task wrapper(type: Wrapper) {

@@ -30,20 +30,17 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 
-import org.junit.jupiter.api.extension.Extension;
-import org.junit.platform.engine.TestExecutionResult;
-import org.junit.platform.engine.TestTag;
-import org.junit.platform.launcher.TestExecutionListener;
-import org.junit.platform.launcher.TestIdentifier;
-import org.junit.platform.launcher.TestPlan;
-import rp.com.google.common.collect.ImmutableMap;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.opentest4j.TestAbortedException;
 
 import java.util.Calendar;
-import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
-
 import static java.util.Optional.ofNullable;
 
 /**
@@ -51,7 +48,8 @@ import static java.util.Optional.ofNullable;
  *
  * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
  */
-public class ReportPortalExtension implements TestExecutionListener, Extension {
+public class ReportPortalExtension
+		implements BeforeAllCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterAllCallback {
 
 	private final ConcurrentMap<String, Maybe<String>> idMapping;
 	private final Launch launch;
@@ -70,54 +68,60 @@ public class ReportPortalExtension implements TestExecutionListener, Extension {
 	}
 
 	@Override
-	public void testPlanExecutionStarted(TestPlan testPlan) {
+	public void beforeAll(ExtensionContext context) {
 		this.launch.start();
 	}
 
 	@Override
-	public void executionStarted(TestIdentifier testIdentifier) {
+	public void beforeTestExecution(ExtensionContext context) throws Exception {
 
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setName(testIdentifier.getDisplayName());
-		rq.setDescription(testIdentifier.getLegacyReportingName());
-		rq.setUniqueId(testIdentifier.getUniqueId());
-		rq.setType(testIdentifier.isContainer() ? "SUITE" : "TEST");
+		rq.setName(context.getDisplayName());
+		rq.setDescription(context.getDisplayName());
+		rq.setUniqueId(context.getUniqueId());
+		rq.setType("TEST");
 
-		ofNullable(testIdentifier.getTags()).map(t -> t.stream().map(TestTag::getName).collect(Collectors.toSet())).ifPresent(rq::setTags);
+		ofNullable(context.getTags()).ifPresent(rq::setTags);
 
 		rq.setRetry(false);
-
-		Maybe<String> itemId = testIdentifier.getParentId()
-				.map(parent -> ofNullable(idMapping.get(parent)))
-				.map(parentId -> this.launch.startTestItem(parentId.orElse(null), rq))
+		
+		Maybe<String> itemId = context.getParent()
+				.map(ExtensionContext::getUniqueId)
+				.map(parentId -> ofNullable(idMapping.get(parentId)))
+				.map(parentTest -> this.launch.startTestItem(parentTest.orElse(null), rq))
 				.orElseGet(() -> this.launch.startTestItem(rq));
 
-		System.out.println(testIdentifier.getUniqueId());
-		this.idMapping.put(testIdentifier.getUniqueId(), itemId);
+		System.out.println(context.getUniqueId());
+		this.idMapping.put(context.getUniqueId(), itemId);
 
 	}
 
 	@Override
-	public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
+	public void afterTestExecution(ExtensionContext context) throws Exception {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setStatus(STATUS_MAPPING.get(testExecutionResult.getStatus()));
+		rq.setStatus(getExecutionStatus(context));
 		rq.setEndTime(Calendar.getInstance().getTime());
-		this.launch.finishTestItem(this.idMapping.get(testIdentifier.getUniqueId()), rq);
+		this.launch.finishTestItem(this.idMapping.get(context.getUniqueId()), rq);
 	}
 
 	@Override
-	public void testPlanExecutionFinished(TestPlan testPlan) {
+	public void afterAll(ExtensionContext context) {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
 		this.launch.finish(rq);
 	}
-
-	private static final Map<TestExecutionResult.Status, String> STATUS_MAPPING = ImmutableMap.<TestExecutionResult.Status, String>builder()
-			.put(TestExecutionResult.Status.SUCCESSFUL, Statuses.PASSED)
-			.put(TestExecutionResult.Status.ABORTED, Statuses.FAILED)
-			.put(TestExecutionResult.Status.FAILED, Statuses.FAILED)
-			.build();
+	
+	private static String getExecutionStatus(ExtensionContext context) {
+		Optional<Throwable> exception = context.getExecutionException();
+		if (!exception.isPresent()) {
+			return Statuses.PASSED;
+		} else if (exception.get() instanceof TestAbortedException) {
+			return Statuses.SKIPPED;
+		} else {
+			return Statuses.FAILED;
+		}
+	}
 
 	//	testIdentifier.getSource().ifPresent(source -> {
 	//		if (source instanceof MethodSource) {

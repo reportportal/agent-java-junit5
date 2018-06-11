@@ -30,14 +30,14 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 
-import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opentest4j.TestAbortedException;
 
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -49,31 +49,55 @@ import static java.util.Optional.ofNullable;
  * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
  */
 public class ReportPortalExtension
-		implements BeforeAllCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterAllCallback {
+		implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
-	private final ConcurrentMap<String, Maybe<String>> idMapping;
-	private final Launch launch;
-
-	public ReportPortalExtension() {
-		this.idMapping = new ConcurrentHashMap<>();
-		ReportPortal rp = ReportPortal.builder().build();
-		ListenerParameters params = rp.getParameters();
-		StartLaunchRQ rq = new StartLaunchRQ();
-		rq.setMode(params.getLaunchRunningMode());
-		rq.setDescription(params.getDescription());
-		rq.setName(params.getLaunchName());
-		rq.setTags(params.getTags());
-		rq.setStartTime(Calendar.getInstance().getTime());
-		this.launch = rp.newLaunch(rq);
+	private static final Map<String, Launch> launchMap = new HashMap<>();
+	private final ConcurrentMap<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
+	
+    /**
+     * Create a {@link Thread} object that encapsulated the specified shutdown listener.
+     * 
+     * @param listener shutdown listener object
+     * @return shutdown listener thread object
+     */
+    private static Thread getShutdownHook(final Launch launch) {
+        return new Thread() {
+            @Override
+            public void run() {
+        		FinishExecutionRQ rq = new FinishExecutionRQ();
+        		rq.setEndTime(Calendar.getInstance().getTime());
+        		launch.finish(rq);
+            }
+        };
+    }
+    
+	private static synchronized Launch startLaunchIfRequiredFor(ExtensionContext context) {
+		String launchId = context.getRoot().getUniqueId();
+		if ( ! launchMap.containsKey(launchId)) {
+			ReportPortal rp = ReportPortal.builder().build();
+			ListenerParameters params = rp.getParameters();
+			StartLaunchRQ rq = new StartLaunchRQ();
+			rq.setMode(params.getLaunchRunningMode());
+			rq.setDescription(params.getDescription());
+			rq.setName(params.getLaunchName());
+			rq.setTags(params.getTags());
+			rq.setStartTime(Calendar.getInstance().getTime());
+			Launch launch = rp.newLaunch(rq);
+			launchMap.put(launchId, launch);
+			Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));		
+			launch.start();
+		}
+		return launchMap.get(launchId);
 	}
-
-	@Override
-	public void beforeAll(ExtensionContext context) {
-		this.launch.start();
+	
+	private static synchronized Launch getLaunchFor(ExtensionContext context) {
+		String launchId = context.getRoot().getUniqueId();
+		return launchMap.get(launchId);
 	}
 
 	@Override
 	public void beforeTestExecution(ExtensionContext context) throws Exception {
+		Launch launch = startLaunchIfRequiredFor(context);
 
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
@@ -89,12 +113,10 @@ public class ReportPortalExtension
 		Maybe<String> itemId = context.getParent()
 				.map(ExtensionContext::getUniqueId)
 				.map(parentId -> ofNullable(idMapping.get(parentId)))
-				.map(parentTest -> this.launch.startTestItem(parentTest.orElse(null), rq))
-				.orElseGet(() -> this.launch.startTestItem(rq));
+				.map(parentTest -> launch.startTestItem(parentTest.orElse(null), rq))
+				.orElseGet(() -> launch.startTestItem(rq));
 
-		System.out.println(context.getUniqueId());
 		this.idMapping.put(context.getUniqueId(), itemId);
-
 	}
 
 	@Override
@@ -102,16 +124,9 @@ public class ReportPortalExtension
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(getExecutionStatus(context));
 		rq.setEndTime(Calendar.getInstance().getTime());
-		this.launch.finishTestItem(this.idMapping.get(context.getUniqueId()), rq);
+		getLaunchFor(context).finishTestItem(this.idMapping.get(context.getUniqueId()), rq);
 	}
 
-	@Override
-	public void afterAll(ExtensionContext context) {
-		FinishExecutionRQ rq = new FinishExecutionRQ();
-		rq.setEndTime(Calendar.getInstance().getTime());
-		this.launch.finish(rq);
-	}
-	
 	private static String getExecutionStatus(ExtensionContext context) {
 		Optional<Throwable> exception = context.getExecutionException();
 		if (!exception.isPresent()) {

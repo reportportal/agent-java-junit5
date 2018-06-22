@@ -30,7 +30,9 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opentest4j.TestAbortedException;
@@ -49,7 +51,7 @@ import static java.util.Optional.ofNullable;
  * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
  */
 public class ReportPortalExtension
-		implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
+		implements BeforeAllCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterAllCallback {
 
 	private static final Map<String, Launch> launchMap = new HashMap<>();
 	private final ConcurrentMap<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
@@ -96,15 +98,24 @@ public class ReportPortalExtension
 	}
 
 	@Override
-	public void beforeTestExecution(ExtensionContext context) throws Exception {
+	public void beforeAll(ExtensionContext context) throws Exception {
 		Launch launch = startLaunchIfRequiredFor(context);
+		before(context, launch, "SUITE");
+	}
 
+	@Override
+	public void beforeTestExecution(ExtensionContext context) throws Exception {
+		Launch launch = getLaunchFor(context);
+		before(context, launch, "TEST");
+	}
+	
+	private void before(ExtensionContext context, Launch launch, String type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setName(context.getDisplayName());
 		rq.setDescription(context.getDisplayName());
 		rq.setUniqueId(context.getUniqueId());
-		rq.setType("TEST");
+		rq.setType(type);
 
 		ofNullable(context.getTags()).ifPresent(rq::setTags);
 
@@ -121,6 +132,15 @@ public class ReportPortalExtension
 
 	@Override
 	public void afterTestExecution(ExtensionContext context) throws Exception {
+		after(context);
+	}
+
+	@Override
+	public void afterAll(ExtensionContext context) throws Exception {
+		after(context);
+	}
+	
+	private void after(ExtensionContext context) throws Exception {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(getExecutionStatus(context));
 		rq.setEndTime(Calendar.getInstance().getTime());

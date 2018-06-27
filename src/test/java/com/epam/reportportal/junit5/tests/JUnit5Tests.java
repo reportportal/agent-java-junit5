@@ -6,14 +6,14 @@ public class JUnit5Tests {
 
 	@BeforeEach
 	void initializeBaseClass() {
-		System.out.println("Before each");
+		System.out.println("base-class-before-each");
 	}
 
 	@Test
 	@Tag("tag1")
 	@Tag("tag2")
 	void baseClassTest() {
-		System.out.println("test");
+		System.out.println("base-class-test");
 	}
 
 	@Nested
@@ -21,18 +21,23 @@ public class JUnit5Tests {
 
 		@BeforeEach
 		void initializeFirstNesting() {
-			System.out.println("nested - before each");
+			System.out.println("nested-before-each");
 		}
 
 		@Test
 		@RepeatedTest(10)
 		void firstNestedTest() {
-			System.out.println("nested - test");
+			System.out.println("first-nested-test");
+		}
+		
+		@Test
+		void secondNestedTest() {
+            System.out.println("second-nested-test");
 		}
 
 		@AfterEach
 		void afterFirstContext() {
-			System.out.println("nested - after each");
+			System.out.println("nested-after-each");
 		}
 
 	}

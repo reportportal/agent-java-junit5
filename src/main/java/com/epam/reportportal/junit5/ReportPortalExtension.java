@@ -171,8 +171,6 @@ public class ReportPortalExtension
     private Maybe<String> startTestItem(ExtensionContext context, Launch launch, String type) {
         // instantiate "start test item" request
         StartTestItemRQ rq = new StartTestItemRQ();
-        // set test item start time
-        rq.setStartTime(Calendar.getInstance().getTime());
         // set test item name
         rq.setName(context.getDisplayName());
         // set test item description
@@ -192,10 +190,14 @@ public class ReportPortalExtension
         if (isTemplateTestInvocation(context)) {
             // if not yet done, start containing suite
             Maybe<String> suiteId = startSuiteIfRequiredFor(context);
+            // set test item start time
+            rq.setStartTime(Calendar.getInstance().getTime());
             // start test item for this invocation
             itemId = launch.startTestItem(suiteId, rq);
         // otherwise (not template test invocatoin)
         } else {
+            // set test item start time
+            rq.setStartTime(Calendar.getInstance().getTime());
             // get context parent
             itemId = context.getParent()
                     // get unique ID of context parent
@@ -253,7 +255,7 @@ public class ReportPortalExtension
         rq.setStatus(getExecutionStatus(context));
         // set test item end time
         rq.setEndTime(Calendar.getInstance().getTime());
-        // finish test item for extension context, remove mapping {context => test item}
+        // finish test item for extension context, remove mapping [context => test item]
         getLaunchFor(context).finishTestItem(idMapping.remove(context.getUniqueId()), rq);
     }
     

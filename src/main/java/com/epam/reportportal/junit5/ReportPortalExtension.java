@@ -282,7 +282,7 @@ public class ReportPortalExtension
      * @param context extension context for template test invocation
      * @return test item ID for containing suite (may be {@code empty})
      */
-    private synchronized Maybe<String> startSuiteIfRequiredFor(ExtensionContext context) {
+    private Maybe<String> startSuiteIfRequiredFor(ExtensionContext context) {
         TemplateTestSuite testSuite;
         Maybe<String> suiteId = Maybe.empty();
         // if template test invocation
@@ -312,7 +312,7 @@ public class ReportPortalExtension
      * @param context extension context for template test invocation
      * @return containing template test suite object (may be {@code null})
      */
-    private synchronized TemplateTestSuite getTestSuiteFor(ExtensionContext context) {
+    private TemplateTestSuite getTestSuiteFor(ExtensionContext context) {
         // if template test invocation
         if (isTemplateTestInvocation(context)) {
             // return containing template test suite object
@@ -327,7 +327,7 @@ public class ReportPortalExtension
      * @param context extension context for template test invocation
      * @return containing template test suite object (may be {@code null})
      */
-    private synchronized TemplateTestSuite finishTestSuiteFor(ExtensionContext context) {
+    private TemplateTestSuite finishTestSuiteFor(ExtensionContext context) {
         // if template test invocation
         if (isTemplateTestInvocation(context)) {
             // get context parent

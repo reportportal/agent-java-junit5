@@ -39,6 +39,30 @@ public class JUnit5Tests {
 		void afterFirstContext() {
 			System.out.println("nested-after-each");
 		}
+		
+		@Nested
+		class SecondContext {
+	        @BeforeEach
+	        void initializeSecondNesting() {
+	            System.out.println("nested-before-each");
+	        }
+
+	        @Test
+	        @RepeatedTest(10)
+	        void firstNestedTest() {
+	            System.out.println("first-nested-test");
+	        }
+	        
+	        @Test
+	        void secondNestedTest() {
+	            System.out.println("second-nested-test");
+	        }
+
+	        @AfterEach
+	        void afterFirstContext() {
+	            System.out.println("nested-after-each");
+	        }
+		}
 
 	}
 }

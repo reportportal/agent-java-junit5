@@ -24,7 +24,6 @@ public class JUnit5Tests {
 			System.out.println("nested-before-each");
 		}
 
-		@Test
 		@RepeatedTest(10)
 		void firstNestedTest() {
 			System.out.println("first-nested-test");
@@ -47,7 +46,6 @@ public class JUnit5Tests {
 	            System.out.println("nested-before-each");
 	        }
 
-	        @Test
 	        @RepeatedTest(10)
 	        void firstNestedTest() {
 	            System.out.println("first-nested-test");

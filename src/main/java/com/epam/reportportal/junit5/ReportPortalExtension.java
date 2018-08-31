@@ -156,7 +156,7 @@ public class ReportPortalExtension
         // if not a test template initialization hook
         if ( ! isTestTemplateInitializationHook(context)) {
             // start test item for this context
-            startTestItem(context, getLaunchFor(context), "TEST");
+            startTestItem(context, getLaunchFor(context), "STEP");
         }
     }
     

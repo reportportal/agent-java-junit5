@@ -20,6 +20,24 @@
  */
 package com.epam.reportportal.junit5;
 
+import static java.util.Optional.ofNullable;
+import static rp.com.google.common.base.Throwables.getStackTraceAsString;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
@@ -30,6 +48,8 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 
+import io.reactivex.Maybe;
+
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
@@ -38,21 +58,11 @@ import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.engine.descriptor.MethodExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opentest4j.TestAbortedException;
-
-import java.lang.reflect.Method;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import io.reactivex.Maybe;
-import rp.com.google.common.base.Function;
-
-import static java.util.Optional.ofNullable;
-import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
  * ReportPortal Listener sends the results of test execution to ReportPortal in RealTime
@@ -78,14 +88,11 @@ public class ReportPortalExtension
      * @return thread object that will finish the specified launch object
      */
     private static Thread getShutdownHook(final Launch launch) {
-        return new Thread() {
-            @Override
-            public void run() {
-                FinishExecutionRQ rq = new FinishExecutionRQ();
-                rq.setEndTime(Calendar.getInstance().getTime());
-                launch.finish(rq);
-            }
-        };
+        return new Thread(() -> {
+            FinishExecutionRQ rq = new FinishExecutionRQ();
+            rq.setEndTime(Calendar.getInstance().getTime());
+            launch.finish(rq);
+        });
     }
     
     /**
@@ -198,7 +205,7 @@ public class ReportPortalExtension
             rq.setStartTime(Calendar.getInstance().getTime());
             // start test item for this invocation
             itemId = launch.startTestItem(suiteId, rq);
-        // otherwise (not template test invocatoin)
+            // otherwise (not template test invocation)
         } else {
             // set test item start time
             rq.setStartTime(Calendar.getInstance().getTime());
@@ -283,22 +290,19 @@ public class ReportPortalExtension
 
     public static void sendStackTraceToRP(final Throwable cause) {
 
-        ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
-            @Override
-            public SaveLogRQ apply(String itemId) {
-                SaveLogRQ rq = new SaveLogRQ();
-                rq.setTestItemId(itemId);
-                rq.setLevel("ERROR");
-                rq.setLogTime(Calendar.getInstance().getTime());
-                if (cause != null) {
-                    rq.setMessage(getStackTraceAsString(cause));
-                } else {
-                    rq.setMessage("Test has failed without exception");
-                }
-                rq.setLogTime(Calendar.getInstance().getTime());
-
-                return rq;
+        ReportPortal.emitLog(itemId -> {
+            SaveLogRQ rq = new SaveLogRQ();
+            rq.setTestItemId(itemId);
+            rq.setLevel("ERROR");
+            rq.setLogTime(Calendar.getInstance().getTime());
+            if (cause != null) {
+                rq.setMessage(getStackTraceAsString(cause));
+            } else {
+                rq.setMessage("Test has failed without exception");
             }
+            rq.setLogTime(Calendar.getInstance().getTime());
+
+            return rq;
         });
     }
 
@@ -427,10 +431,67 @@ public class ReportPortalExtension
         TemplateTestSuite(ExtensionContext context, Maybe<String> suiteId) {
             this.suiteId = suiteId;
             Method testMethod = context.getRequiredTestMethod();
-            RepeatedTest annotation = testMethod.getAnnotation(RepeatedTest.class);
-            totalRepetitions = annotation.value();
+            totalRepetitions = 1;
+            List<Class> annotations = Arrays.stream(testMethod.getAnnotations()).map(Annotation::annotationType).collect(Collectors.toList());
+            if (annotations.contains(RepeatedTest.class)) {
+                totalRepetitions = testMethod.getAnnotation(RepeatedTest.class).value();
+            } else if (annotations.contains(MethodSource.class)) {
+                try {
+                    Object result = findMethodWithTestData(context).invoke(null);
+                    if (result instanceof Stream) {
+                        totalRepetitions = (int) ((Stream) result).count();
+                    } else if (result instanceof List) {
+                        totalRepetitions = ((List) result).size();
+                    }
+                }
+                catch (IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
+                }
+            } else if (annotations.contains(EnumSource.class)) {
+                totalRepetitions = testMethod.getAnnotation(EnumSource.class).names().length;
+            } else if (annotations.contains(ValueSource.class)) {
+                ValueSource valueSource = testMethod.getAnnotation(ValueSource.class);
+                List<Integer> countsOfValues = Arrays.asList(valueSource.floats().length,
+                                                             valueSource.ints().length,
+                                                             valueSource.shorts().length,
+                                                             valueSource.bytes().length,
+                                                             valueSource.chars().length,
+                                                             valueSource.doubles().length,
+                                                             valueSource.longs().length,
+                                                             valueSource.strings().length);
+                totalRepetitions = Collections.max(countsOfValues);
+            } else if (annotations.contains(CsvSource.class)) {
+                totalRepetitions = testMethod.getAnnotation(CsvSource.class).value().length;
+            }
         }
-        
+
+        /**
+         * Find method with test data in tested class or its parent.
+         *
+         * @param context template test context
+         * @return Method object
+         */
+        private static Method findMethodWithTestData(ExtensionContext context) {
+            Method testMethod = context.getRequiredTestMethod();
+            String testDataMethodName = testMethod.getAnnotation(MethodSource.class).value()[0];
+            Method testDataMethod = null;
+            try {
+                testDataMethod = context.getRequiredTestClass().getDeclaredMethod(testDataMethodName);
+            }
+            catch (NoSuchMethodException e) {
+                try {
+                    testDataMethod = context.getRequiredTestClass().getSuperclass().getDeclaredMethod(testDataMethodName);
+                }
+                catch (NoSuchMethodException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            if (testDataMethod != null) {
+                testDataMethod.setAccessible(true);
+            }
+            return testDataMethod;
+        }
+
         /**
          * Start containing suite for the specified template test context for the specified Report Portal extension.
          * 

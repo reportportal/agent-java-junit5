@@ -28,7 +28,7 @@ import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
-import io.reactivex.Maybe;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -40,15 +40,19 @@ import org.junit.jupiter.engine.descriptor.MethodExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.opentest4j.TestAbortedException;
 
+import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import static java.util.Optional.ofNullable;
 
-import java.lang.reflect.Method;
+import io.reactivex.Maybe;
+import rp.com.google.common.base.Function;
+
+import static java.util.Optional.ofNullable;
+import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
  * ReportPortal Listener sends the results of test execution to ReportPortal in RealTime
@@ -272,10 +276,32 @@ public class ReportPortalExtension
         } else if (exception.get() instanceof TestAbortedException) {
             return Statuses.SKIPPED;
         } else {
+            sendStackTraceToRP(exception.get());
             return Statuses.FAILED;
         }
     }
-    
+
+    public static void sendStackTraceToRP(final Throwable cause) {
+
+        ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
+            @Override
+            public SaveLogRQ apply(String itemId) {
+                SaveLogRQ rq = new SaveLogRQ();
+                rq.setTestItemId(itemId);
+                rq.setLevel("ERROR");
+                rq.setLogTime(Calendar.getInstance().getTime());
+                if (cause != null) {
+                    rq.setMessage(getStackTraceAsString(cause));
+                } else {
+                    rq.setMessage("Test has failed without exception");
+                }
+                rq.setLogTime(Calendar.getInstance().getTime());
+
+                return rq;
+            }
+        });
+    }
+
     /**
      * If not already done, start a containing suite for the specified template test invocation.
      * 

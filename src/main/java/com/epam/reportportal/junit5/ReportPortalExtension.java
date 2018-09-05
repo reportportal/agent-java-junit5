@@ -24,19 +24,15 @@ import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -58,10 +54,9 @@ import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.engine.descriptor.MethodExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.opentest4j.TestAbortedException;
 
 /**
@@ -417,7 +412,8 @@ public class ReportPortalExtension
      * Instances of this class encapsulate the suite ID and repetition info for a collection of repeated tests.
      */
     private static class TemplateTestSuite {
-        
+
+        private static final String DECORATOR = "Decorator";
         private Maybe<String> suiteId;
         private int totalRepetitions;
         private int totalCompletions = 0;
@@ -430,66 +426,40 @@ public class ReportPortalExtension
          */
         TemplateTestSuite(ExtensionContext context, Maybe<String> suiteId) {
             this.suiteId = suiteId;
-            Method testMethod = context.getRequiredTestMethod();
-            totalRepetitions = 1;
-            List<Class> annotations = Arrays.stream(testMethod.getAnnotations()).map(Annotation::annotationType).collect(Collectors.toList());
-            if (annotations.contains(RepeatedTest.class)) {
-                totalRepetitions = testMethod.getAnnotation(RepeatedTest.class).value();
-            } else if (annotations.contains(MethodSource.class)) {
-                try {
-                    Object result = findMethodWithTestData(context).invoke(null);
-                    if (result instanceof Stream) {
-                        totalRepetitions = (int) ((Stream) result).count();
-                    } else if (result instanceof List) {
-                        totalRepetitions = ((List) result).size();
-                    }
-                }
-                catch (IllegalAccessException | InvocationTargetException e) {
-                    e.printStackTrace();
-                }
-            } else if (annotations.contains(EnumSource.class)) {
-                totalRepetitions = testMethod.getAnnotation(EnumSource.class).names().length;
-            } else if (annotations.contains(ValueSource.class)) {
-                ValueSource valueSource = testMethod.getAnnotation(ValueSource.class);
-                List<Integer> countsOfValues = Arrays.asList(valueSource.floats().length,
-                                                             valueSource.ints().length,
-                                                             valueSource.shorts().length,
-                                                             valueSource.bytes().length,
-                                                             valueSource.chars().length,
-                                                             valueSource.doubles().length,
-                                                             valueSource.longs().length,
-                                                             valueSource.strings().length);
-                totalRepetitions = Collections.max(countsOfValues);
-            } else if (annotations.contains(CsvSource.class)) {
-                totalRepetitions = testMethod.getAnnotation(CsvSource.class).value().length;
-            }
+            totalRepetitions = getRepetitionsCount(context);
         }
 
         /**
-         * Find method with test data in tested class or its parent.
-         *
+         * Returns repetitions count for different types of {@code ArgumentsSource}
+         * 
          * @param context template test context
-         * @return Method object
+         * @return int repetitions count
          */
-        private static Method findMethodWithTestData(ExtensionContext context) {
+        private int getRepetitionsCount(ExtensionContext context) {
             Method testMethod = context.getRequiredTestMethod();
-            String testDataMethodName = testMethod.getAnnotation(MethodSource.class).value()[0];
-            Method testDataMethod = null;
+            if (testMethod.isAnnotationPresent(RepeatedTest.class)) {
+                return testMethod.getAnnotation(RepeatedTest.class).value();
+            }
+            if (testMethod.isAnnotationPresent(CsvSource.class)) {
+                return testMethod.getAnnotation(CsvSource.class).value().length;
+            }
+            Annotation sourceAnnotation =
+                Arrays.stream(testMethod.getAnnotations())
+                      .filter(annotation -> annotation.annotationType().isAnnotationPresent(ArgumentsSource.class))
+                      .findFirst().orElse(null);
+            if (sourceAnnotation == null) {
+                return 1;
+            }
+            String providerClassName = sourceAnnotation.annotationType()
+                                                       .getAnnotation(ArgumentsSource.class)
+                                                       .value().getName();
             try {
-                testDataMethod = context.getRequiredTestClass().getDeclaredMethod(testDataMethodName);
+                Object provider = Class.forName(providerClassName + DECORATOR).newInstance();
+                ((Consumer) provider).accept(sourceAnnotation);
+                return (int) ((ArgumentsProvider) provider).provideArguments(context).count();
+            } catch (Exception e) {
+                return 1;
             }
-            catch (NoSuchMethodException e) {
-                try {
-                    testDataMethod = context.getRequiredTestClass().getSuperclass().getDeclaredMethod(testDataMethodName);
-                }
-                catch (NoSuchMethodException e1) {
-                    e1.printStackTrace();
-                }
-            }
-            if (testDataMethod != null) {
-                testDataMethod.setAccessible(true);
-            }
-            return testDataMethod;
         }
 
         /**

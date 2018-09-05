@@ -284,7 +284,7 @@ public class ReportPortalExtension
         }
     }
 
-    public static void sendStackTraceToRP(final Throwable cause) {
+    private static void sendStackTraceToRP(final Throwable cause) {
 
         ReportPortal.emitLog(itemId -> {
             SaveLogRQ rq = new SaveLogRQ();

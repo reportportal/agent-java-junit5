@@ -24,6 +24,7 @@ import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -283,7 +284,7 @@ public class ReportPortalExtension
         }
     }
 
-    public static void sendStackTraceToRP(final Throwable cause) {
+    private static void sendStackTraceToRP(final Throwable cause) {
 
         ReportPortal.emitLog(itemId -> {
             SaveLogRQ rq = new SaveLogRQ();
@@ -413,7 +414,6 @@ public class ReportPortalExtension
      */
     private static class TemplateTestSuite {
 
-        private static final String DECORATOR = "Decorator";
         private Maybe<String> suiteId;
         private int totalRepetitions;
         private int totalCompletions = 0;
@@ -431,7 +431,7 @@ public class ReportPortalExtension
 
         /**
          * Returns repetitions count for different types of {@code ArgumentsSource}
-         * 
+         *
          * @param context template test context
          * @return int repetitions count
          */
@@ -454,7 +454,9 @@ public class ReportPortalExtension
                                                        .getAnnotation(ArgumentsSource.class)
                                                        .value().getName();
             try {
-                Object provider = Class.forName(providerClassName + DECORATOR).newInstance();
+                Constructor providerConstructor = Class.forName(providerClassName).getDeclaredConstructor();
+                providerConstructor.setAccessible(true);
+                Object provider = providerConstructor.newInstance();
                 ((Consumer) provider).accept(sourceAnnotation);
                 return (int) ((ArgumentsProvider) provider).provideArguments(context).count();
             } catch (Exception e) {

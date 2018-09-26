@@ -22,3 +22,4 @@ build/
 .settings
 *.iml
 /bin/
+out/

@@ -25,20 +25,16 @@ dependencies {
     compile 'com.epam.reportportal:client-java:4.0.8'
     compile 'com.epam.reportportal:commons-model:4.2.0'
 
-    compile 'log4j:log4j:1.2.17'
-    compile 'org.slf4j:slf4j-simple:1.7.21'
-    compile 'org.apache.commons:commons-lang3:3.0'
-
-    compileOnly "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
-    compile "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
-    compile "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
-    compile "org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}"
-
-    testCompile 'org.mockito:mockito-junit-jupiter:2.22.0'
+    compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
+    compile("org.junit.platform:junit-platform-launcher:${junitPlatformVersion}")
+    compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
+    compile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
 }
 
 test {
     useJUnitPlatform()
+
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
 }
 
 task wrapper(type: Wrapper) {

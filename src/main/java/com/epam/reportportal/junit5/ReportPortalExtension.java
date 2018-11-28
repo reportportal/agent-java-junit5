@@ -130,10 +130,10 @@ public class ReportPortalExtension
         // return launch for context
         return launchMap.get(launchId);
     }
-
+    
     /**
      * Get launch object for the specified extension context.
-     *
+     * 
      * @param context extension context
      * @return launch object for the specified extension context
      */
@@ -143,7 +143,7 @@ public class ReportPortalExtension
         // return launch object for context
         return launchMap.get(launchId);
     }
-
+    
     /**
      * {@inheritDoc}
      */

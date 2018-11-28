@@ -154,7 +154,7 @@ public class ReportPortalExtension
         // start suite item for this context
         startTestItem(context, launch, "SUITE");
     }
-
+    
     /**
      * {@inheritDoc}
      */
@@ -166,10 +166,10 @@ public class ReportPortalExtension
             startTestItem(context, getLaunchFor(context), "STEP");
         }
     }
-
+    
     /**
      * Start a test item of the specified type.
-     *
+     * 
      * @param context test item context
      * @param launch launch for test item
      * @param type test item type (either {@code TEST} or {@code SUITE})
@@ -195,7 +195,7 @@ public class ReportPortalExtension
         rq.setType(type);
         // test item is not a retry
         rq.setRetry(false);
-
+        
         // if present, set test item tags
         ofNullable(context.getTags()).ifPresent(rq::setTags);
 
@@ -227,7 +227,7 @@ public class ReportPortalExtension
         idMapping.put(context.getUniqueId(), itemId);
         return itemId;
     }
-
+    
     /**
      * {@inheritDoc}
      */
@@ -247,7 +247,7 @@ public class ReportPortalExtension
             }
         }
     }
-
+    
     /**
      * {@inheritDoc}
      */
@@ -256,10 +256,10 @@ public class ReportPortalExtension
         // finish context suite
         finishTestItem(context);
     }
-
+    
     /**
      * Finish test item for the specified extension context
-     *
+     * 
      * @param context extension context
      */
     private void finishTestItem(ExtensionContext context) {
@@ -272,10 +272,10 @@ public class ReportPortalExtension
         // finish test item for extension context, remove mapping [context => test item]
         getLaunchFor(context).finishTestItem(idMapping.remove(context.getUniqueId()), rq);
     }
-
+    
     /**
      * Get execution status for the specified extension context.
-     *
+     * 
      * @param context extension context
      * @return {@link Statuses status constant}
      */
@@ -311,7 +311,7 @@ public class ReportPortalExtension
 
     /**
      * If not already done, start a containing suite for the specified template test invocation.
-     *
+     * 
      * @param context extension context for template test invocation
      * @return test item ID for containing suite (may be {@code empty})
      */
@@ -338,10 +338,10 @@ public class ReportPortalExtension
         }
         return suiteId;
     }
-
+    
     /**
      * Get containing suite for the specified template test invocation.
-     *
+     * 
      * @param context extension context for template test invocation
      * @return containing template test suite object (may be {@code null})
      */
@@ -353,10 +353,10 @@ public class ReportPortalExtension
         }
         return null;
     }
-
+    
     /**
      * Finish containing suite for the specified template test invocation.
-     *
+     * 
      * @param context extension context for template test invocation
      * @return containing template test suite object (may be {@code null})
      */
@@ -372,10 +372,10 @@ public class ReportPortalExtension
         }
         return null;
     }
-
+    
     /**
      * Determine if the specified extension context is a test template initialization hook.
-     *
+     * 
      * @param context extension context
      * @return {@code true} if specified context is a test template initialization hook; otherwise {@code false}
      */
@@ -398,10 +398,10 @@ public class ReportPortalExtension
         }
         return false;
     }
-
+    
     /**
      * Determine if the specified extension context is a test template invocation.
-     *
+     * 
      * @param context extension context
      * @return {@code true} if specified context is a template test invocation; otherwise {@code false}
      */
@@ -415,7 +415,7 @@ public class ReportPortalExtension
         }
         return false;
     }
-
+    
     /**
      * Instances of this class encapsulate the suite ID and repetition info for a collection of repeated tests.
      */
@@ -424,12 +424,12 @@ public class ReportPortalExtension
         private Maybe<String> suiteId;
         private int totalRepetitions;
         private int totalCompletions = 0;
-
+        
         /**
          * Constructor: Instantiate suite info object for the specified test template and suite ID.
-         *
+         * 
          * @param context test template context
-         * @param suiteId ID of containing template test suite
+         * @param suiteId ID of containing template test suite 
          */
         TemplateTestSuite(ExtensionContext context, Maybe<String> suiteId) {
             this.suiteId = suiteId;
@@ -473,7 +473,7 @@ public class ReportPortalExtension
 
         /**
          * Start containing suite for the specified template test context for the specified Report Portal extension.
-         *
+         * 
          * @param context template test context
          * @param extension Report Portal extension
          * @return TemplateTestSuite object
@@ -484,19 +484,19 @@ public class ReportPortalExtension
             Maybe<String> suiteId = extension.startTestItem(parent, getLaunchFor(parent), "SUITE");
             return new TemplateTestSuite(context, suiteId);
         }
-
+        
         /**
          * Get ID of this template test suite object.
-         *
+         * 
          * @return ID of this template test suite object
          */
         public Maybe<String> getSuiteId() {
             return suiteId;
         }
-
+        
         /**
          * Register the completion of a template test invocation.
-         *
+         * 
          * @return {@code true} if all repetitions have completed; otherwise {@code false}
          */
         public synchronized boolean registerRepetition() {

@@ -178,15 +178,9 @@ public class ReportPortalExtension
     private Maybe<String> startTestItem(ExtensionContext context, Launch launch, String type) {
         // instantiate "start test item" request
         StartTestItemRQ rq = new StartTestItemRQ();
-        //if display name contains more than 256 characters
-        if (context.getDisplayName().length() > 256) {
-            // set test item name, display name is shortened to 200 characters
-            rq.setName(context.getDisplayName().substring(0, 200) + "...");
-            // otherwise (display name contains less than 257 characters)
-        } else {
-            // set test item name
-            rq.setName(context.getDisplayName());
-        }
+        String name = context.getDisplayName();
+        // The maximum length of TestItem name is 256 characters
+        rq.setName(name.length() > 256 ? name.substring(0, 200) + "..." : name);
         // set test item description
         rq.setDescription(context.getDisplayName());
         // set test item unique ID

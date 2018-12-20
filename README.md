@@ -22,8 +22,37 @@ The repository contains [JUnit5 Extension](https://junit.org/junit5/docs/current
 </dependency>
 ```
 
+#### Automatic Extension Registration (optional)
+
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.22.0</version>
+            <configuration>
+                <properties>
+                    <configurationParameters>
+                        junit.jupiter.extensions.autodetection.enabled = true
+                    </configurationParameters>
+                </properties>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+
 ### Gradle
 
 ```yml
 testCompile 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
+```
+
+#### Automatic Extension Registration (optional)
+
+```yml
+test {
+    useJUnitPlatform()
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
+}
 ```

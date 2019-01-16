@@ -74,3 +74,7 @@ test {
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
 }
 ```
+
+# Copyright Notice
+
+Licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) license (see the LICENSE.md file).

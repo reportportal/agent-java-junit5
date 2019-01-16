@@ -15,6 +15,17 @@ The repository contains [JUnit5 Extension](https://junit.org/junit5/docs/current
 ### Maven
 
 ```xml
+<repositories>
+    <repository>
+        <id>bintray</id>
+        <url>http://dl.bintray.com/epam/reportportal</url>
+    </repository>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
 <dependency>
    <groupId>com.epam.reportportal</groupId>
    <artifactId>agent-java-junit5</artifactId>
@@ -45,6 +56,13 @@ The repository contains [JUnit5 Extension](https://junit.org/junit5/docs/current
 ### Gradle
 
 ```yml
+repositories {
+    jcenter()
+    mavenLocal()
+    maven { url "http://dl.bintray.com/epam/reportportal" }
+    maven { url "https://jitpack.io" }
+}
+
 testCompile 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
 ```
 

@@ -11,6 +11,7 @@ description = 'JUnit5 Agent'
 
 repositories {
     jcenter()
+    mavenCentral()
     mavenLocal()
     maven { url "http://dl.bintray.com/epam/reportportal" }
     maven { url "https://jitpack.io" }

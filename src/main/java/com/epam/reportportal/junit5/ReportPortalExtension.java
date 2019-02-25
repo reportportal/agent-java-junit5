@@ -24,11 +24,13 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -51,7 +53,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.opentest4j.TestAbortedException;
 
 /**
@@ -60,7 +62,7 @@ import org.opentest4j.TestAbortedException;
  * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
  */
 public class ReportPortalExtension
-        implements BeforeAllCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterAllCallback {
+    implements BeforeAllCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterAllCallback {
 
     /** map to associate root execution contexts with launches */
     private static final Map<String, Launch> launchMap = new HashMap<>();
@@ -70,10 +72,10 @@ public class ReportPortalExtension
     private final ConcurrentMap<String, TemplateTestSuite> templateTestSuites = new ConcurrentHashMap<>();
     /** fully-qualified class name for test template extension context */
     private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
-    
+
     /**
      * Create a {@link Thread} object that encapsulates the implementation to finish the specified launch object.
-     * 
+     *
      * @param launch launch object
      * @return thread object that will finish the specified launch object
      */
@@ -84,10 +86,10 @@ public class ReportPortalExtension
             launch.finish(rq);
         });
     }
-    
+
     /**
      * If not already done, start launch for the root context of the specified extension context.
-     * 
+     *
      * @param context extension context
      * @return launch ID associated with the corresponding root context
      */
@@ -95,7 +97,7 @@ public class ReportPortalExtension
         // get unique ID for root context
         String launchId = context.getRoot().getUniqueId();
         // if no launch exists for this unique ID
-        if ( ! launchMap.containsKey(launchId)) {
+        if (!launchMap.containsKey(launchId)) {
             // instantiate a new ReportPortal object
             ReportPortal rp = ReportPortal.builder().build();
             // get ReportPortal configuration parameters
@@ -124,10 +126,10 @@ public class ReportPortalExtension
         // return launch for context
         return launchMap.get(launchId);
     }
-    
+
     /**
      * Get launch object for the specified extension context.
-     * 
+     *
      * @param context extension context
      * @return launch object for the specified extension context
      */
@@ -137,7 +139,7 @@ public class ReportPortalExtension
         // return launch object for context
         return launchMap.get(launchId);
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -148,25 +150,25 @@ public class ReportPortalExtension
         // start suite item for this context
         startTestItem(context, launch, "SUITE");
     }
-    
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void beforeTestExecution(ExtensionContext context) throws Exception {
         // if not a test template initialization hook
-        if ( ! isTestTemplateInitializationHook(context)) {
+        if (!isTestTemplateInitializationHook(context)) {
             // start test item for this context
             startTestItem(context, getLaunchFor(context), "STEP");
         }
     }
-    
+
     /**
      * Start a test item of the specified type.
-     * 
+     *
      * @param context test item context
-     * @param launch launch for test item
-     * @param type test item type (either {@code TEST} or {@code SUITE})
+     * @param launch  launch for test item
+     * @param type    test item type (either {@code TEST} or {@code SUITE})
      * @return test item ID
      */
     private Maybe<String> startTestItem(ExtensionContext context, Launch launch, String type) {
@@ -183,7 +185,7 @@ public class ReportPortalExtension
         rq.setType(type);
         // test item is not a retry
         rq.setRetry(false);
-        
+
         // if present, set test item tags
         ofNullable(context.getTags()).ifPresent(rq::setTags);
 
@@ -202,20 +204,20 @@ public class ReportPortalExtension
             rq.setStartTime(Calendar.getInstance().getTime());
             // get context parent
             itemId = context.getParent()
-                    // get unique ID of context parent
-                    .map(ExtensionContext::getUniqueId)
-                    // get test item ID for parent ID (may be empty)
-                    .map(parentId -> ofNullable(idMapping.get(parentId)))
-                    // if non-empty, start child test item
-                    .map(parentItemId -> launch.startTestItem(parentItemId.orElse(null), rq))
-                    // otherwise, start root test item
-                    .orElseGet(() -> launch.startTestItem(rq));
+                            // get unique ID of context parent
+                            .map(ExtensionContext::getUniqueId)
+                            // get test item ID for parent ID (may be empty)
+                            .map(parentId -> ofNullable(idMapping.get(parentId)))
+                            // if non-empty, start child test item
+                            .map(parentItemId -> launch.startTestItem(parentItemId.orElse(null), rq))
+                            // otherwise, start root test item
+                            .orElseGet(() -> launch.startTestItem(rq));
         }
         // store association: context => test item ID
         idMapping.put(context.getUniqueId(), itemId);
         return itemId;
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -235,7 +237,7 @@ public class ReportPortalExtension
             }
         }
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -244,10 +246,10 @@ public class ReportPortalExtension
         // finish context suite
         finishTestItem(context);
     }
-    
+
     /**
      * Finish test item for the specified extension context
-     * 
+     *
      * @param context extension context
      */
     private void finishTestItem(ExtensionContext context) {
@@ -260,10 +262,10 @@ public class ReportPortalExtension
         // finish test item for extension context, remove mapping [context => test item]
         getLaunchFor(context).finishTestItem(idMapping.remove(context.getUniqueId()), rq);
     }
-    
+
     /**
      * Get execution status for the specified extension context.
-     * 
+     *
      * @param context extension context
      * @return {@link Statuses status constant}
      */
@@ -299,7 +301,7 @@ public class ReportPortalExtension
 
     /**
      * If not already done, start a containing suite for the specified template test invocation.
-     * 
+     *
      * @param context extension context for template test invocation
      * @return test item ID for containing suite (may be {@code empty})
      */
@@ -314,7 +316,7 @@ public class ReportPortalExtension
             if (templateTestSuites.containsKey(parentId)) {
                 // get containing template test suite object
                 testSuite = templateTestSuites.get(parentId);
-            // otherwise (suite not yet started)
+                // otherwise (suite not yet started)
             } else {
                 // start containing template test suite
                 testSuite = TemplateTestSuite.startTestSuiteFor(context, this);
@@ -326,10 +328,10 @@ public class ReportPortalExtension
         }
         return suiteId;
     }
-    
+
     /**
      * Get containing suite for the specified template test invocation.
-     * 
+     *
      * @param context extension context for template test invocation
      * @return containing template test suite object (may be {@code null})
      */
@@ -341,10 +343,10 @@ public class ReportPortalExtension
         }
         return null;
     }
-    
+
     /**
      * Finish containing suite for the specified template test invocation.
-     * 
+     *
      * @param context extension context for template test invocation
      * @return containing template test suite object (may be {@code null})
      */
@@ -360,10 +362,10 @@ public class ReportPortalExtension
         }
         return null;
     }
-    
+
     /**
      * Determine if the specified extension context is a test template initialization hook.
-     * 
+     *
      * @param context extension context
      * @return {@code true} if specified context is a test template initialization hook; otherwise {@code false}
      */
@@ -386,10 +388,10 @@ public class ReportPortalExtension
         }
         return false;
     }
-    
+
     /**
      * Determine if the specified extension context is a test template invocation.
-     * 
+     *
      * @param context extension context
      * @return {@code true} if specified context is a template test invocation; otherwise {@code false}
      */
@@ -403,7 +405,7 @@ public class ReportPortalExtension
         }
         return false;
     }
-    
+
     /**
      * Instances of this class encapsulate the suite ID and repetition info for a collection of repeated tests.
      */
@@ -412,12 +414,12 @@ public class ReportPortalExtension
         private Maybe<String> suiteId;
         private int totalRepetitions;
         private int totalCompletions = 0;
-        
+
         /**
          * Constructor: Instantiate suite info object for the specified test template and suite ID.
-         * 
+         *
          * @param context test template context
-         * @param suiteId ID of containing template test suite 
+         * @param suiteId ID of containing template test suite
          */
         TemplateTestSuite(ExtensionContext context, Maybe<String> suiteId) {
             this.suiteId = suiteId;
@@ -431,38 +433,46 @@ public class ReportPortalExtension
          * @return int repetitions count
          */
         private int getRepetitionsCount(ExtensionContext context) {
+            int repetitionsCount = 0;
             Method testMethod = context.getRequiredTestMethod();
-            if (testMethod.isAnnotationPresent(RepeatedTest.class)) {
-                return testMethod.getAnnotation(RepeatedTest.class).value();
-            }
-            if (testMethod.isAnnotationPresent(CsvSource.class)) {
-                return testMethod.getAnnotation(CsvSource.class).value().length;
-            }
-            Annotation sourceAnnotation =
+
+            List<Annotation> sourceAnnotations =
                 Arrays.stream(testMethod.getAnnotations())
                       .filter(annotation -> annotation.annotationType().isAnnotationPresent(ArgumentsSource.class))
-                      .findFirst().orElse(null);
-            if (sourceAnnotation == null) {
-                return 1;
+                      .collect(Collectors.toList());
+
+            if (sourceAnnotations.isEmpty()) {
+                repetitionsCount = 1;
             }
-            String providerClassName = sourceAnnotation.annotationType()
-                                                       .getAnnotation(ArgumentsSource.class)
-                                                       .value().getName();
-            try {
-                Constructor providerConstructor = Class.forName(providerClassName).getDeclaredConstructor();
-                providerConstructor.setAccessible(true);
-                Object provider = providerConstructor.newInstance();
-                ((Consumer) provider).accept(sourceAnnotation);
-                return (int) ((ArgumentsProvider) provider).provideArguments(context).count();
-            } catch (Exception e) {
-                return 1;
+            if (testMethod.isAnnotationPresent(NullAndEmptySource.class)) {
+                repetitionsCount = 2;
             }
+
+            for (Annotation annotation : sourceAnnotations) {
+                String providerClassName = annotation.annotationType()
+                                                     .getAnnotation(ArgumentsSource.class)
+                                                     .value().getName();
+                try {
+                    Constructor providerConstructor = Class.forName(providerClassName).getDeclaredConstructor();
+                    providerConstructor.setAccessible(true);
+                    Object provider = providerConstructor.newInstance();
+                    ((Consumer) provider).accept(annotation);
+                    repetitionsCount += (int) ((ArgumentsProvider) provider).provideArguments(context).count();
+                } catch (Exception e) {
+                    repetitionsCount += 1;
+                }
+            }
+
+            if (testMethod.isAnnotationPresent(RepeatedTest.class)) {
+                repetitionsCount *= testMethod.getAnnotation(RepeatedTest.class).value();
+            }
+            return repetitionsCount;
         }
 
         /**
          * Start containing suite for the specified template test context for the specified Report Portal extension.
-         * 
-         * @param context template test context
+         *
+         * @param context   template test context
          * @param extension Report Portal extension
          * @return TemplateTestSuite object
          */
@@ -472,19 +482,19 @@ public class ReportPortalExtension
             Maybe<String> suiteId = extension.startTestItem(parent, getLaunchFor(parent), "SUITE");
             return new TemplateTestSuite(context, suiteId);
         }
-        
+
         /**
          * Get ID of this template test suite object.
-         * 
+         *
          * @return ID of this template test suite object
          */
         public Maybe<String> getSuiteId() {
             return suiteId;
         }
-        
+
         /**
          * Register the completion of a template test invocation.
-         * 
+         *
          * @return {@code true} if all repetitions have completed; otherwise {@code false}
          */
         public synchronized boolean registerRepetition() {

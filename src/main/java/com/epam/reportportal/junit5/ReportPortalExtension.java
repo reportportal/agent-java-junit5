@@ -182,6 +182,7 @@ public class ReportPortalExtension
      * @return test item ID
      */
     private Maybe<String> startTestItem(ExtensionContext context, Launch launch, String type) {
+        // initialize CustomView instance with default parameters
         CustomView customView = getCustomView(context, launch);
         // instantiate "start test item" request
         StartTestItemRQ rq = new StartTestItemRQ();

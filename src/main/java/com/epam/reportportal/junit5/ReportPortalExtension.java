@@ -15,23 +15,6 @@
  */
 package com.epam.reportportal.junit5;
 
-import static java.util.Optional.ofNullable;
-import static rp.com.google.common.base.Throwables.getStackTraceAsString;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
@@ -41,8 +24,6 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-
-import io.reactivex.Maybe;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -56,6 +37,26 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.opentest4j.TestAbortedException;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import io.reactivex.Maybe;
+
+import static java.util.Optional.ofNullable;
+import static rp.com.google.common.base.Throwables.getStackTraceAsString;
+
 /**
  * ReportPortal Listener sends the results of test execution to ReportPortal in RealTime
  *
@@ -64,14 +65,23 @@ import org.opentest4j.TestAbortedException;
 public class ReportPortalExtension
     implements BeforeAllCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterAllCallback {
 
-    /** map to associate root execution contexts with launches */
+    /**
+     * map to associate root execution contexts with launches
+     */
     private static final Map<String, Launch> launchMap = new HashMap<>();
-    /** map to associate context IDs with test item IDs */
+    /**
+     * map to associate context IDs with test item IDs
+     */
     private final ConcurrentMap<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
-    /** map to associate template test parent IDs to template test suite objects */
+    /**
+     * map to associate template test parent IDs to template test suite objects
+     */
     private final ConcurrentMap<String, TemplateTestSuite> templateTestSuites = new ConcurrentHashMap<>();
-    /** fully-qualified class name for test template extension context */
-    private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
+    /**
+     * fully-qualified class name for test template extension context
+     */
+    private static final String TEST_TEMPLATE_EXTENSION_CONTEXT =
+        "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
 
     /**
      * Create a {@link Thread} object that encapsulates the implementation to finish the specified launch object.
@@ -172,22 +182,22 @@ public class ReportPortalExtension
      * @return test item ID
      */
     private Maybe<String> startTestItem(ExtensionContext context, Launch launch, String type) {
+        CustomView customView = getCustomView(context, launch);
         // instantiate "start test item" request
         StartTestItemRQ rq = new StartTestItemRQ();
-        String name = context.getDisplayName();
+        String name = customView.name;
         // The maximum length of TestItem name is 256 characters
         rq.setName(name.length() > 256 ? name.substring(0, 200) + "..." : name);
         // set test item description
-        rq.setDescription(context.getDisplayName());
+        rq.setDescription(customView.description);
         // set test item unique ID
         rq.setUniqueId(context.getUniqueId());
         // set test item type
         rq.setType(type);
         // test item is not a retry
         rq.setRetry(false);
-
         // if present, set test item tags
-        ofNullable(context.getTags()).ifPresent(rq::setTags);
+        ofNullable(customView.tags).ifPresent(rq::setTags);
 
         Maybe<String> itemId;
         // if template test invocation
@@ -216,6 +226,23 @@ public class ReportPortalExtension
         // store association: context => test item ID
         idMapping.put(context.getUniqueId(), itemId);
         return itemId;
+    }
+
+    protected CustomView getCustomView(ExtensionContext context, Launch launch) {
+        return new CustomView(context.getDisplayName(), context.getDisplayName(), context.getTags());
+    }
+
+    protected class CustomView {
+
+        private String name;
+        private String description;
+        private Set<String> tags;
+
+        public CustomView(String name, String description, Set<String> tags) {
+            this.name = name;
+            this.description = description;
+            this.tags = tags;
+        }
     }
 
     /**

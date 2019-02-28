@@ -182,7 +182,7 @@ public class ReportPortalExtension
      * @return test item ID
      */
     private Maybe<String> startTestItem(ExtensionContext context, Launch launch, String type) {
-        // initialize CustomView instance with default parameters
+        // instantiate CustomView with default parameters
         CustomView customView = getCustomView(context, launch);
         // instantiate "start test item" request
         StartTestItemRQ rq = new StartTestItemRQ();
@@ -227,23 +227,6 @@ public class ReportPortalExtension
         // store association: context => test item ID
         idMapping.put(context.getUniqueId(), itemId);
         return itemId;
-    }
-
-    protected CustomView getCustomView(ExtensionContext context, Launch launch) {
-        return new CustomView(context.getDisplayName(), context.getDisplayName(), context.getTags());
-    }
-
-    protected class CustomView {
-
-        private String name;
-        private String description;
-        private Set<String> tags;
-
-        public CustomView(String name, String description, Set<String> tags) {
-            this.name = name;
-            this.description = description;
-            this.tags = tags;
-        }
     }
 
     /**
@@ -432,6 +415,33 @@ public class ReportPortalExtension
             return (parent.isPresent() && TEST_TEMPLATE_EXTENSION_CONTEXT.equals(parent.get().getClass().getName()));
         }
         return false;
+    }
+
+    /**
+     * This class encapsulates TestItem fields allowed to configure
+     */
+    protected class CustomView {
+
+        private String name;
+        private String description;
+        private Set<String> tags;
+
+        public CustomView(String name, String description, Set<String> tags) {
+            this.name = name;
+            this.description = description;
+            this.tags = tags;
+        }
+    }
+
+    /**
+     * Overriding this method allows to configure TestItem name, description, tags
+     *
+     * @param context test template context
+     * @param launch launch object
+     * @return instance of CustomView
+     */
+    protected CustomView getCustomView(ExtensionContext context, Launch launch) {
+        return new CustomView(context.getDisplayName(), context.getDisplayName(), context.getTags());
     }
 
     /**

@@ -17,8 +17,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class JUnit5Tests {
@@ -57,6 +60,53 @@ class JUnit5Tests {
     @EnumSource(value = DayOfWeek.class, names = {"MONDAY", "WEDNESDAY", "FRIDAY"})
     void parameterizedTestWithEnumSource(DayOfWeek day) {
         System.out.println("parameterized-test-with-enum-source, parameter: " + day);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    void parameterizedTestWithNullSource(String value) {
+        System.out.println("parameterized-test-with-null-source, parameter: " + value);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"a", "b", "c"})
+    void parameterizedTestWithNullSourceAndValueSource(String value) {
+        System.out.println("parameterized-test-with-null-source-and-value-source, parameter: " + value);
+    }
+
+    @ParameterizedTest
+    @EmptySource
+    void parameterizedTestWithEmptySource(String value) {
+        System.out.println("parameterized-test-with-empty-source, parameter: " + value);
+    }
+
+    @ParameterizedTest
+    @EmptySource
+    @ValueSource(strings = {"a", "b", "c"})
+    void parameterizedTestWithEmptySourceAndValueSource(String value) {
+        System.out.println("parameterized-test-with-empty-source-and-value-source, parameter: " + value);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @EmptySource
+    @ValueSource(strings = {"a", "b", "c"})
+    void parameterizedTestWithNullSourceAndEmptySourceAndValueSource(String value) {
+        System.out.println("parameterized-test-with-null-source-empty-source-and-value-source, parameter: " + value);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void parameterizedTestWithNullAndEmptySource(String value) {
+        System.out.println("parameterized-test-with-null-and-empty-source, parameter: " + value);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"a", "b", "c"})
+    void parameterizedTestWithNullAndEmptySourceAndValueSource(String value) {
+        System.out.println("parameterized-test-with-null-and-empty-source-and-value-source, parameter: " + value);
     }
 
     @ParameterizedTest
@@ -129,7 +179,7 @@ class JUnit5Tests {
 		void firstNestedTest() {
 			System.out.println("first-nested-test");
 		}
-		
+
 		@Test
 		void secondNestedTest() {
             System.out.println("second-nested-test");
@@ -139,7 +189,7 @@ class JUnit5Tests {
 		void afterFirstContext() {
 			System.out.println("nested-after-each");
 		}
-		
+
 		@Nested
 		class SecondContext {
 	        @BeforeEach
@@ -151,7 +201,7 @@ class JUnit5Tests {
 	        void firstNestedTest() {
 	            System.out.println("first-nested-test");
 	        }
-	        
+
 	        @Test
 	        void secondNestedTest() {
 	            System.out.println("second-nested-test");

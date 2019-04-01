@@ -13,24 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.reportportal.junit5;
-
-import static java.util.Optional.ofNullable;
-import static rp.com.google.common.base.Throwables.getStackTraceAsString;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -42,43 +26,245 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 
-import io.reactivex.Maybe;
-
-import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsProvider;
-import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.opentest4j.TestAbortedException;
 
-/**
+/*
  * ReportPortal Listener sends the results of test execution to ReportPortal in RealTime
  *
  * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
  */
+import org.junit.jupiter.api.extension.TestWatcher;
+import org.junit.platform.commons.util.ReflectionUtils;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import io.reactivex.Maybe;
+
+import static java.util.Optional.ofNullable;
+import static org.junit.platform.commons.util.AnnotationUtils.findAnnotatedMethods;
+import static rp.com.google.common.base.Throwables.getStackTraceAsString;
+
 public class ReportPortalExtension
-    implements BeforeAllCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterAllCallback {
+    implements Extension, BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback,
+               AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback, TestWatcher {
 
-    /** map to associate root execution contexts with launches */
-    private static final Map<String, Launch> launchMap = new HashMap<>();
-    /** map to associate context IDs with test item IDs */
+    private static final String TEST_TEMPLATE_EXTENSION_CONTEXT =
+        "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
+    private static final ConcurrentMap<String, Launch> launchMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
-    /** map to associate template test parent IDs to template test suite objects */
-    private final ConcurrentMap<String, TemplateTestSuite> templateTestSuites = new ConcurrentHashMap<>();
-    /** fully-qualified class name for test template extension context */
-    private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
+    private final ConcurrentMap<String, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
+    private ThreadLocal<Boolean> isDisabledTest = new ThreadLocal<>();
 
-    /**
-     * Create a {@link Thread} object that encapsulates the implementation to finish the specified launch object.
-     *
-     * @param launch launch object
-     * @return thread object that will finish the specified launch object
-     */
+    private static synchronized Launch getLaunch(ExtensionContext context) {
+        String launchId = context.getRoot().getUniqueId();
+        if (!launchMap.containsKey(launchId)) {
+            ReportPortal rp = ReportPortal.builder().build();
+            ListenerParameters params = rp.getParameters();
+            StartLaunchRQ rq = new StartLaunchRQ();
+            rq.setMode(params.getLaunchRunningMode());
+            rq.setDescription(params.getDescription());
+            rq.setName(params.getLaunchName());
+            rq.setTags(params.getTags());
+            rq.setStartTime(Calendar.getInstance().getTime());
+            Launch launch = rp.newLaunch(rq);
+            launchMap.put(launchId, launch);
+            Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
+            launch.start();
+        }
+        return launchMap.get(launchId);
+    }
+
+    @Override
+    public void beforeAll(ExtensionContext context) {
+        startTestItem(context, "SUITE");
+        reportBeforeAfter(context, BeforeAll.class, "BEFORE_CLASS");
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) {
+        isDisabledTest.set(false);
+        startTemplate(context);
+        reportBeforeAfter(context, BeforeEach.class, "BEFORE_METHOD");
+    }
+
+    @Override
+    public void beforeTestExecution(ExtensionContext context) {
+        startTestItem(context, "STEP");
+    }
+
+    @Override
+    public void afterTestExecution(ExtensionContext context) {
+        finishTestItem(context);
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) {
+        reportBeforeAfter(context, AfterEach.class, "AFTER_METHOD");
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) {
+        finishTestTemplates(context);
+        finishTestItem(context);
+        reportBeforeAfter(context, AfterAll.class, "AFTER_CLASS");
+    }
+
+    @Override
+    public void testDisabled(ExtensionContext context, Optional<String> reason) {
+        isDisabledTest.set(true);
+        String description = reason.orElse(context.getDisplayName());
+        startTestItem(context, "STEP", description);
+        finishTestItem(context);
+    }
+
+    @Override
+    public void testSuccessful(ExtensionContext context) {
+    }
+
+    @Override
+    public void testAborted(ExtensionContext context, Throwable throwable) {
+    }
+
+    @Override
+    public void testFailed(ExtensionContext context, Throwable throwable) {
+    }
+
+    private synchronized void startTemplate(ExtensionContext context) {
+        Optional<ExtensionContext> parent = context.getParent();
+        if ((parent.isPresent() && TEST_TEMPLATE_EXTENSION_CONTEXT.equals(parent.get().getClass().getName()))) {
+            if (!idMapping.containsKey(parent.get().getUniqueId())) {
+                startTestItem(context.getParent().get(), "TEMPLATE");
+                System.out.println(">>>>>Start repeated method");
+            }
+        }
+    }
+
+    private synchronized void startTestItem(ExtensionContext context, String type) {
+        startTestItem(context, type, null);
+    }
+
+    private synchronized void startTestItem(ExtensionContext context, String type, String reason) {
+        boolean isTemplate = false;
+        if ("TEMPLATE".equals(type)) {
+            type = "SUITE";
+            isTemplate = true;
+        }
+        Launch launch = getLaunch(context);
+        StartTestItemRQ rq = new StartTestItemRQ();
+        rq.setStartTime(Calendar.getInstance().getTime());
+        rq.setName(context.getDisplayName());
+        rq.setDescription(null != reason ? reason : context.getDisplayName());
+        rq.setUniqueId(context.getUniqueId());
+        rq.setType(type);
+        rq.setRetry(false);
+        ofNullable(context.getTags()).ifPresent(rq::setTags);
+
+        Maybe<String> itemId = context.getParent()
+                                      .map(ExtensionContext::getUniqueId)
+                                      .map(parentId -> ofNullable(idMapping.get(parentId)))
+                                      .map(parentTest -> launch.startTestItem(parentTest.orElse(null), rq))
+                                      .orElseGet(() -> launch.startTestItem(rq));
+        if (isTemplate) {
+            testTemplates.put(context.getUniqueId(), itemId);
+        }
+        idMapping.put(context.getUniqueId(), itemId);
+    }
+
+    private synchronized void finishTestTemplates(ExtensionContext context) {
+        getTestTemplateIds().forEach(id -> {
+            Launch launch = getLaunch(context);
+            FinishTestItemRQ rq = new FinishTestItemRQ();
+            rq.setStatus(isDisabledTest.get() ? "SKIPPED" : getExecutionStatus(context));
+            rq.setEndTime(Calendar.getInstance().getTime());
+            launch.finishTestItem(idMapping.get(id), rq);
+            testTemplates.entrySet().removeIf(e -> e.getKey().equals(id));
+        });
+    }
+
+    private synchronized List<String> getTestTemplateIds() {
+        List<String> keys = new ArrayList<>();
+        for (Map.Entry<String, Maybe<String>> e : testTemplates.entrySet()) {
+            if (e.getKey().contains("/[test-template:") && !e.getKey().contains("-invocation")) {
+                keys.add(e.getKey());
+            }
+        }
+        return keys;
+    }
+
+    private synchronized void reportBeforeAfter(
+        ExtensionContext context, Class<? extends Annotation> annotationType, String itemType) {
+        Launch launch = getLaunch(context);
+
+        List<Method> methods = findAnnotatedMethods(context.getTestClass().get(),
+            annotationType, ReflectionUtils.HierarchyTraversalMode.TOP_DOWN);
+        for (Method method : methods) {
+            StartTestItemRQ rq = new StartTestItemRQ();
+            rq.setStartTime(Calendar.getInstance().getTime());
+            rq.setName(method.getName());
+            rq.setDescription(method.getName());
+
+            String uniqueId;
+            String parentId;
+            if (itemType.equals("AFTER_METHOD") | itemType.equals("BEFORE_METHOD")) {
+                parentId = context.getParent().get().getUniqueId();
+                uniqueId = parentId + "/[method:" + method.getName() + "()]";
+            } else {
+                parentId = context.getUniqueId();
+                uniqueId = parentId + "/[method:" + method.getName() + "()]";
+            }
+
+            rq.setUniqueId(uniqueId);
+            ofNullable(context.getTags()).ifPresent(rq::setTags);
+            rq.setType(itemType);
+            rq.setRetry(false);
+
+            Maybe<String> itemId = launch.startTestItem(idMapping.get(parentId), rq);
+            idMapping.put(uniqueId, itemId);
+
+            FinishTestItemRQ rq1 = new FinishTestItemRQ();
+            rq1.setStatus(getExecutionStatus(context));
+            rq1.setEndTime(Calendar.getInstance().getTime());
+            launch.finishTestItem(idMapping.get(uniqueId), rq1);
+        }
+    }
+
+    private synchronized void finishTestItem(ExtensionContext context) {
+        Launch launch = getLaunch(context);
+        FinishTestItemRQ rq = new FinishTestItemRQ();
+        rq.setStatus(isDisabledTest.get() ? "SKIPPED" : getExecutionStatus(context));
+        rq.setEndTime(Calendar.getInstance().getTime());
+        launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
+    }
+
+    private static synchronized String getExecutionStatus(ExtensionContext context) {
+        Optional<Throwable> exception = context.getExecutionException();
+        if (!exception.isPresent()) {
+            return Statuses.PASSED;
+        } else {
+            sendStackTraceToRP(exception.get());
+            return Statuses.FAILED;
+        }
+    }
+
     private static Thread getShutdownHook(final Launch launch) {
         return new Thread(() -> {
             FinishExecutionRQ rq = new FinishExecutionRQ();
@@ -87,202 +273,7 @@ public class ReportPortalExtension
         });
     }
 
-    /**
-     * If not already done, start launch for the root context of the specified extension context.
-     *
-     * @param context extension context
-     * @return launch ID associated with the corresponding root context
-     */
-    private static synchronized Launch startLaunchIfRequiredFor(ExtensionContext context) {
-        // get unique ID for root context
-        String launchId = context.getRoot().getUniqueId();
-        // if no launch exists for this unique ID
-        if (!launchMap.containsKey(launchId)) {
-            // instantiate a new ReportPortal object
-            ReportPortal rp = ReportPortal.builder().build();
-            // get ReportPortal configuration parameters
-            ListenerParameters params = rp.getParameters();
-            // instantiate "start launch" request
-            StartLaunchRQ rq = new StartLaunchRQ();
-            // set launch running mode
-            rq.setMode(params.getLaunchRunningMode());
-            // set launch description
-            rq.setDescription(params.getDescription());
-            // set launch name
-            rq.setName(params.getLaunchName());
-            // set launch tags
-            rq.setTags(params.getTags());
-            // set launch start time
-            rq.setStartTime(Calendar.getInstance().getTime());
-            // instantiate specified launch
-            Launch launch = rp.newLaunch(rq);
-            // store context launch mapping
-            launchMap.put(launchId, launch);
-            // add shutdown hook to finish launch when tests complete
-            Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
-            // start launch
-            launch.start();
-        }
-        // return launch for context
-        return launchMap.get(launchId);
-    }
-
-    /**
-     * Get launch object for the specified extension context.
-     *
-     * @param context extension context
-     * @return launch object for the specified extension context
-     */
-    private static synchronized Launch getLaunchFor(ExtensionContext context) {
-        // get unique ID for root context
-        String launchId = context.getRoot().getUniqueId();
-        // return launch object for context
-        return launchMap.get(launchId);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void beforeAll(ExtensionContext context) throws Exception {
-        // if not already done, start launch for context
-        Launch launch = startLaunchIfRequiredFor(context);
-        // start suite item for this context
-        startTestItem(context, launch, "SUITE");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void beforeTestExecution(ExtensionContext context) throws Exception {
-        // if not a test template initialization hook
-        if (!isTestTemplateInitializationHook(context)) {
-            // start test item for this context
-            startTestItem(context, getLaunchFor(context), "STEP");
-        }
-    }
-
-    /**
-     * Start a test item of the specified type.
-     *
-     * @param context test item context
-     * @param launch  launch for test item
-     * @param type    test item type (either {@code TEST} or {@code SUITE})
-     * @return test item ID
-     */
-    private Maybe<String> startTestItem(ExtensionContext context, Launch launch, String type) {
-        // instantiate "start test item" request
-        StartTestItemRQ rq = new StartTestItemRQ();
-        String name = context.getDisplayName();
-        // The maximum length of TestItem name is 256 characters
-        rq.setName(name.length() > 256 ? name.substring(0, 200) + "..." : name);
-        // set test item description
-        rq.setDescription(context.getDisplayName());
-        // set test item unique ID
-        rq.setUniqueId(context.getUniqueId());
-        // set test item type
-        rq.setType(type);
-        // test item is not a retry
-        rq.setRetry(false);
-
-        // if present, set test item tags
-        ofNullable(context.getTags()).ifPresent(rq::setTags);
-
-        Maybe<String> itemId;
-        // if template test invocation
-        if (isTemplateTestInvocation(context)) {
-            // if not yet done, start containing suite
-            Maybe<String> suiteId = startSuiteIfRequiredFor(context);
-            // set test item start time
-            rq.setStartTime(Calendar.getInstance().getTime());
-            // start test item for this invocation
-            itemId = launch.startTestItem(suiteId, rq);
-            // otherwise (not template test invocation)
-        } else {
-            // set test item start time
-            rq.setStartTime(Calendar.getInstance().getTime());
-            // get context parent
-            itemId = context.getParent()
-                            // get unique ID of context parent
-                            .map(ExtensionContext::getUniqueId)
-                            // get test item ID for parent ID (may be empty)
-                            .map(parentId -> ofNullable(idMapping.get(parentId)))
-                            // if non-empty, start child test item
-                            .map(parentItemId -> launch.startTestItem(parentItemId.orElse(null), rq))
-                            // otherwise, start root test item
-                            .orElseGet(() -> launch.startTestItem(rq));
-        }
-        // store association: context => test item ID
-        idMapping.put(context.getUniqueId(), itemId);
-        return itemId;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void afterTestExecution(ExtensionContext context) throws Exception {
-        // if not test template
-        if (!isTestTemplateInitializationHook(context)) {
-            // finish test item
-            finishTestItem(context);
-            // if template test invocation
-            if (isTemplateTestInvocation(context)) {
-                // if this is the final repetition
-                if (getTestSuiteFor(context).registerRepetition()) {
-                    // finish containing suite
-                    finishTestSuiteFor(context);
-                }
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void afterAll(ExtensionContext context) throws Exception {
-        // finish context suite
-        finishTestItem(context);
-    }
-
-    /**
-     * Finish test item for the specified extension context
-     *
-     * @param context extension context
-     */
-    private void finishTestItem(ExtensionContext context) {
-        // instantiate "finish test item" request
-        FinishTestItemRQ rq = new FinishTestItemRQ();
-        // set test item status
-        rq.setStatus(getExecutionStatus(context));
-        // set test item end time
-        rq.setEndTime(Calendar.getInstance().getTime());
-        // finish test item for extension context, remove mapping [context => test item]
-        getLaunchFor(context).finishTestItem(idMapping.remove(context.getUniqueId()), rq);
-    }
-
-    /**
-     * Get execution status for the specified extension context.
-     *
-     * @param context extension context
-     * @return {@link Statuses status constant}
-     */
-    private static String getExecutionStatus(ExtensionContext context) {
-        Optional<Throwable> exception = context.getExecutionException();
-        if (!exception.isPresent()) {
-            return Statuses.PASSED;
-        } else if (exception.get() instanceof TestAbortedException) {
-            return Statuses.SKIPPED;
-        } else {
-            sendStackTraceToRP(exception.get());
-            return Statuses.FAILED;
-        }
-    }
-
-    private static void sendStackTraceToRP(final Throwable cause) {
-
+    private static synchronized void sendStackTraceToRP(final Throwable cause) {
         ReportPortal.emitLog(itemId -> {
             SaveLogRQ rq = new SaveLogRQ();
             rq.setTestItemId(itemId);
@@ -294,214 +285,7 @@ public class ReportPortalExtension
                 rq.setMessage("Test has failed without exception");
             }
             rq.setLogTime(Calendar.getInstance().getTime());
-
             return rq;
         });
-    }
-
-    /**
-     * If not already done, start a containing suite for the specified template test invocation.
-     *
-     * @param context extension context for template test invocation
-     * @return test item ID for containing suite (may be {@code empty})
-     */
-    private synchronized Maybe<String> startSuiteIfRequiredFor(ExtensionContext context) {
-        TemplateTestSuite testSuite;
-        Maybe<String> suiteId = Maybe.empty();
-        // if template test invocation
-        if (isTemplateTestInvocation(context)) {
-            // get unique ID of context parent
-            String parentId = context.getParent().get().getUniqueId();
-            // if containing suite already started
-            if (templateTestSuites.containsKey(parentId)) {
-                // get containing template test suite object
-                testSuite = templateTestSuites.get(parentId);
-                // otherwise (suite not yet started)
-            } else {
-                // start containing template test suite
-                testSuite = TemplateTestSuite.startTestSuiteFor(context, this);
-                // store association: parent context => suite
-                templateTestSuites.put(parentId, testSuite);
-            }
-            // get test item ID for suite
-            suiteId = testSuite.getSuiteId();
-        }
-        return suiteId;
-    }
-
-    /**
-     * Get containing suite for the specified template test invocation.
-     *
-     * @param context extension context for template test invocation
-     * @return containing template test suite object (may be {@code null})
-     */
-    private TemplateTestSuite getTestSuiteFor(ExtensionContext context) {
-        // if template test invocation
-        if (isTemplateTestInvocation(context)) {
-            // return containing template test suite object
-            return templateTestSuites.get(context.getParent().get().getUniqueId());
-        }
-        return null;
-    }
-
-    /**
-     * Finish containing suite for the specified template test invocation.
-     *
-     * @param context extension context for template test invocation
-     * @return containing template test suite object (may be {@code null})
-     */
-    private synchronized TemplateTestSuite finishTestSuiteFor(ExtensionContext context) {
-        // if template test invocation
-        if (isTemplateTestInvocation(context)) {
-            // get context parent
-            ExtensionContext parent = context.getParent().get();
-            // finish containing template test suite
-            finishTestItem(parent);
-            // remove/return containing template test suite object
-            return templateTestSuites.remove(parent.getUniqueId());
-        }
-        return null;
-    }
-
-    /**
-     * Determine if the specified extension context is a test template initialization hook.
-     *
-     * @param context extension context
-     * @return {@code true} if specified context is a test template initialization hook; otherwise {@code false}
-     */
-    private static boolean isTestTemplateInitializationHook(ExtensionContext context) {
-        // if specified context is method extension
-        if (context.getTestMethod().isPresent()) {
-            // get context parent
-            Optional<ExtensionContext> parent = context.getParent();
-            // if this is a test template initialization hook
-            if (parent.isPresent() && !isTemplateTestInvocation(context)) {
-                // get method object for test template method
-                Method testMethod = context.getRequiredTestMethod();
-                // get RepeatedTest annotation, if present
-                RepeatedTest repeated = testMethod.getDeclaredAnnotation(RepeatedTest.class);
-                // get ParameterizedTest annotation, if present
-                ParameterizedTest parameterized = testMethod.getDeclaredAnnotation(ParameterizedTest.class);
-                // indicate if test is repeated or parameterized
-                return ((repeated != null) || (parameterized != null));
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Determine if the specified extension context is a test template invocation.
-     *
-     * @param context extension context
-     * @return {@code true} if specified context is a template test invocation; otherwise {@code false}
-     */
-    private static boolean isTemplateTestInvocation(ExtensionContext context) {
-        // if specified context is method extension
-        if (context.getTestMethod().isPresent()) {
-            // get context parent
-            Optional<ExtensionContext> parent = context.getParent();
-            // indicate if this is a test template invocation
-            return (parent.isPresent() && TEST_TEMPLATE_EXTENSION_CONTEXT.equals(parent.get().getClass().getName()));
-        }
-        return false;
-    }
-
-    /**
-     * Instances of this class encapsulate the suite ID and repetition info for a collection of repeated tests.
-     */
-    private static class TemplateTestSuite {
-
-        private Maybe<String> suiteId;
-        private int totalRepetitions;
-        private int totalCompletions = 0;
-
-        /**
-         * Constructor: Instantiate suite info object for the specified test template and suite ID.
-         *
-         * @param context test template context
-         * @param suiteId ID of containing template test suite
-         */
-        TemplateTestSuite(ExtensionContext context, Maybe<String> suiteId) {
-            this.suiteId = suiteId;
-            totalRepetitions = getRepetitionsCount(context);
-        }
-
-        /**
-         * Returns repetitions count for different types of {@code ArgumentsSource}
-         *
-         * @param context template test context
-         * @return int repetitions count
-         */
-        private int getRepetitionsCount(ExtensionContext context) {
-            int repetitionsCount = 0;
-            Method testMethod = context.getRequiredTestMethod();
-
-            List<Annotation> sourceAnnotations =
-                Arrays.stream(testMethod.getAnnotations())
-                      .filter(annotation -> annotation.annotationType().isAnnotationPresent(ArgumentsSource.class))
-                      .collect(Collectors.toList());
-
-            if (sourceAnnotations.isEmpty()) {
-                repetitionsCount = 1;
-            }
-            if (testMethod.isAnnotationPresent(NullAndEmptySource.class)) {
-                repetitionsCount = 2;
-            }
-
-            for (Annotation annotation : sourceAnnotations) {
-                String providerClassName = annotation.annotationType()
-                                                     .getAnnotation(ArgumentsSource.class)
-                                                     .value().getName();
-                try {
-                    Constructor providerConstructor = Class.forName(providerClassName).getDeclaredConstructor();
-                    providerConstructor.setAccessible(true);
-                    Object provider = providerConstructor.newInstance();
-                    ((Consumer) provider).accept(annotation);
-                    repetitionsCount += (int) ((ArgumentsProvider) provider).provideArguments(context).count();
-                } catch (Exception e) {
-                    repetitionsCount += 1;
-                }
-            }
-
-            if (testMethod.isAnnotationPresent(RepeatedTest.class)) {
-                repetitionsCount *= testMethod.getAnnotation(RepeatedTest.class).value();
-            }
-            return repetitionsCount;
-        }
-
-        /**
-         * Start containing suite for the specified template test context for the specified Report Portal extension.
-         *
-         * @param context   template test context
-         * @param extension Report Portal extension
-         * @return TemplateTestSuite object
-         */
-        public static TemplateTestSuite startTestSuiteFor(ExtensionContext context, ReportPortalExtension extension) {
-            // get context parent
-            ExtensionContext parent = context.getParent().get();
-            Maybe<String> suiteId = extension.startTestItem(parent, getLaunchFor(parent), "SUITE");
-            return new TemplateTestSuite(context, suiteId);
-        }
-
-        /**
-         * Get ID of this template test suite object.
-         *
-         * @return ID of this template test suite object
-         */
-        public Maybe<String> getSuiteId() {
-            return suiteId;
-        }
-
-        /**
-         * Register the completion of a template test invocation.
-         *
-         * @return {@code true} if all repetitions have completed; otherwise {@code false}
-         */
-        public synchronized boolean registerRepetition() {
-            if (totalCompletions < totalRepetitions) {
-                totalCompletions++;
-            }
-            return totalCompletions >= totalRepetitions;
-        }
     }
 }

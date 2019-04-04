@@ -43,6 +43,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -231,15 +232,16 @@ public class ReportPortalExtension
             type = "SUITE";
             isTemplate = true;
         }
+        TestItem testItem = getTestItem(context);
         Launch launch = getLaunch(context);
         StartTestItemRQ rq = new StartTestItemRQ();
         rq.setStartTime(Calendar.getInstance().getTime());
-        rq.setName(context.getDisplayName());
-        rq.setDescription(null != reason ? reason : context.getDisplayName());
+        rq.setName(testItem.getName());
+        rq.setDescription(null != reason ? reason : testItem.getDescription());
         rq.setUniqueId(context.getUniqueId());
         rq.setType(type);
         rq.setRetry(false);
-        ofNullable(context.getTags()).ifPresent(rq::setTags);
+        ofNullable(testItem.getTags()).ifPresent(rq::setTags);
 
         Maybe<String> itemId = context.getParent()
                                       .map(ExtensionContext::getUniqueId)
@@ -313,5 +315,38 @@ public class ReportPortalExtension
             rq.setLogTime(Calendar.getInstance().getTime());
             return rq;
         });
+    }
+
+    protected class TestItem {
+
+        private String name;
+        private String description;
+        private Set<String> tags;
+
+        protected String getName() {
+            return name;
+        }
+
+        protected String getDescription() {
+            return description;
+        }
+
+        protected Set<String> getTags() {
+            return tags;
+        }
+
+        public TestItem(String name, String description, Set<String> tags) {
+            this.name = name;
+            this.description = description;
+            this.tags = tags;
+        }
+    }
+
+    protected TestItem getTestItem(ExtensionContext context) {
+        String name = context.getDisplayName();
+        name = name.length() > 256 ? name.substring(0, 200) + "..." : name;
+        String description = context.getDisplayName();
+        Set<String> tags = context.getTags();
+        return new TestItem(name, description, tags);
     }
 }

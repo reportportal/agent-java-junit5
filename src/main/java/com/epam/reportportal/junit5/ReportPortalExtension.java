@@ -34,12 +34,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
-
-/*
- * ReportPortal Listener sends the results of test execution to ReportPortal in RealTime
- *
- * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
- */
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.TestWatcher;
 
@@ -56,6 +50,12 @@ import io.reactivex.Maybe;
 
 import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
+
+/*
+ * ReportPortal Listener sends the results of test execution to ReportPortal in RealTime
+ *
+ * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
+ */
 
 public class ReportPortalExtension
     implements Extension, BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback,
@@ -92,8 +92,7 @@ public class ReportPortalExtension
         Invocation<Void> invocation, MethodContext methodContext, ExtensionContext extensionContext) throws Throwable {
         String parentId = extensionContext.getUniqueId();
         String uniqueId = startBeforeAfter(methodContext, extensionContext, parentId, "BEFORE_CLASS");
-        invocation.proceed();
-        finishBeforeAfter(extensionContext, uniqueId);
+        finishBeforeAfter(invocation, extensionContext, uniqueId);
     }
 
     @Override
@@ -101,8 +100,7 @@ public class ReportPortalExtension
         Invocation<Void> invocation, MethodContext methodContext, ExtensionContext extensionContext) throws Throwable {
         String parentId = extensionContext.getParent().get().getUniqueId();
         String uniqueId = startBeforeAfter(methodContext, extensionContext, parentId, "BEFORE_METHOD");
-        invocation.proceed();
-        finishBeforeAfter(extensionContext, uniqueId);
+        finishBeforeAfter(invocation, extensionContext, uniqueId);
     }
 
     @Override
@@ -110,8 +108,7 @@ public class ReportPortalExtension
         Invocation<Void> invocation, MethodContext methodContext, ExtensionContext extensionContext) throws Throwable {
         String parentId = extensionContext.getParent().get().getUniqueId();
         String uniqueId = startBeforeAfter(methodContext, extensionContext, parentId, "AFTER_METHOD");
-        invocation.proceed();
-        finishBeforeAfter(extensionContext, uniqueId);
+        finishBeforeAfter(invocation, extensionContext, uniqueId);
     }
 
     @Override
@@ -119,18 +116,12 @@ public class ReportPortalExtension
         Invocation<Void> invocation, MethodContext methodContext, ExtensionContext extensionContext) throws Throwable {
         String parentId = extensionContext.getUniqueId();
         String uniqueId = startBeforeAfter(methodContext, extensionContext, parentId, "AFTER_CLASS");
-        invocation.proceed();
-        finishBeforeAfter(extensionContext, uniqueId);
-    }
-
-    @Override
-    public void interceptTestTemplateMethod(
-        Invocation<Void> invocation, MethodContext methodContext, ExtensionContext extensionContext) throws Throwable {
-        invocation.proceed();
+        finishBeforeAfter(invocation, extensionContext, uniqueId);
     }
 
     @Override
     public void beforeAll(ExtensionContext context) {
+        isDisabledTest.set(false);
         startTestItem(context, "SUITE");
     }
 
@@ -162,10 +153,12 @@ public class ReportPortalExtension
 
     @Override
     public void testDisabled(ExtensionContext context, Optional<String> reason) {
-        isDisabledTest.set(true);
-        String description = reason.orElse(context.getDisplayName());
-        startTestItem(context, "STEP", description);
-        finishTestItem(context);
+        if (Boolean.valueOf(System.getProperty("reportDisabledTests"))) {
+            isDisabledTest.set(true);
+            String description = reason.orElse(context.getDisplayName());
+            startTestItem(context, "STEP", description);
+            finishTestItem(context);
+        }
     }
 
     @Override
@@ -198,10 +191,23 @@ public class ReportPortalExtension
         return uniqueId;
     }
 
-    private synchronized void finishBeforeAfter(ExtensionContext extensionContext, String uniqueId) {
+    private synchronized void finishBeforeAfter(
+        Invocation<Void> invocation, ExtensionContext extensionContext, String uniqueId)
+        throws Throwable {
+        try {
+            invocation.proceed();
+            finishBeforeAfter(extensionContext, uniqueId, "PASSED");
+        } catch (Throwable throwable) {
+            sendStackTraceToRP(throwable);
+            finishBeforeAfter(extensionContext, uniqueId, "FAILED");
+            throw throwable;
+        }
+    }
+
+    private synchronized void finishBeforeAfter(ExtensionContext extensionContext, String uniqueId, String status) {
         Launch launch = getLaunch(extensionContext);
         FinishTestItemRQ rq = new FinishTestItemRQ();
-        rq.setStatus(getExecutionStatus(extensionContext));
+        rq.setStatus(status);
         rq.setEndTime(Calendar.getInstance().getTime());
         launch.finishTestItem(idMapping.get(uniqueId), rq);
     }

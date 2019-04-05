@@ -175,8 +175,8 @@ public class ReportPortalExtension
     }
 
     private synchronized String startBeforeAfter(
-        MethodContext methodContext, ExtensionContext extensionContext, String parentId, String itemType) {
-        Launch launch = getLaunch(extensionContext);
+        MethodContext methodContext, ExtensionContext context, String parentId, String itemType) {
+        Launch launch = getLaunch(context);
         Method method = methodContext.getMethod();
         StartTestItemRQ rq = new StartTestItemRQ();
         rq.setStartTime(Calendar.getInstance().getTime());
@@ -184,7 +184,7 @@ public class ReportPortalExtension
         rq.setDescription(method.getName());
         String uniqueId = parentId + "/[method:" + method.getName() + "()]";
         rq.setUniqueId(uniqueId);
-        ofNullable(extensionContext.getTags()).ifPresent(rq::setTags);
+        ofNullable(context.getTags()).ifPresent(rq::setTags);
         rq.setType(itemType);
         rq.setRetry(false);
         Maybe<String> itemId = launch.startTestItem(idMapping.get(parentId), rq);
@@ -193,24 +193,16 @@ public class ReportPortalExtension
     }
 
     private synchronized void finishBeforeAfter(
-        Invocation<Void> invocation, ExtensionContext extensionContext, String uniqueId)
+        Invocation<Void> invocation, ExtensionContext context, String uniqueId)
         throws Throwable {
         try {
             invocation.proceed();
-            finishBeforeAfter(extensionContext, uniqueId, "PASSED");
+            finishTestItem(context, uniqueId, "PASSED");
         } catch (Throwable throwable) {
             sendStackTraceToRP(throwable);
-            finishBeforeAfter(extensionContext, uniqueId, "FAILED");
+            finishTestItem(context, uniqueId, "FAILED");
             throw throwable;
         }
-    }
-
-    private synchronized void finishBeforeAfter(ExtensionContext extensionContext, String uniqueId, String status) {
-        Launch launch = getLaunch(extensionContext);
-        FinishTestItemRQ rq = new FinishTestItemRQ();
-        rq.setStatus(status);
-        rq.setEndTime(Calendar.getInstance().getTime());
-        launch.finishTestItem(idMapping.get(uniqueId), rq);
     }
 
     private synchronized void startTemplate(ExtensionContext context) {
@@ -254,6 +246,18 @@ public class ReportPortalExtension
         idMapping.put(context.getUniqueId(), itemId);
     }
 
+    private synchronized void finishTestItem(ExtensionContext context) {
+        finishTestItem(context, null, null);
+    }
+
+    private void finishTestItem(ExtensionContext context, String uniqueId, String status) {
+        Launch launch = getLaunch(context);
+        FinishTestItemRQ rq = new FinishTestItemRQ();
+        rq.setStatus(isDisabledTest.get() ? "SKIPPED" : uniqueId == null ? getExecutionStatus(context) : status);
+        rq.setEndTime(Calendar.getInstance().getTime());
+        launch.finishTestItem(idMapping.get(uniqueId == null ? context.getUniqueId() : uniqueId), rq);
+    }
+
     private synchronized void finishTestTemplates(ExtensionContext context) {
         getTestTemplateIds().forEach(id -> {
             Launch launch = getLaunch(context);
@@ -273,14 +277,6 @@ public class ReportPortalExtension
             }
         }
         return keys;
-    }
-
-    private synchronized void finishTestItem(ExtensionContext context) {
-        Launch launch = getLaunch(context);
-        FinishTestItemRQ rq = new FinishTestItemRQ();
-        rq.setStatus(isDisabledTest.get() ? "SKIPPED" : getExecutionStatus(context));
-        rq.setEndTime(Calendar.getInstance().getTime());
-        launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
     }
 
     private static synchronized String getExecutionStatus(ExtensionContext context) {

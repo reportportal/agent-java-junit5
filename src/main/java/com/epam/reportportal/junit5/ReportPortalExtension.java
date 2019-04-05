@@ -314,7 +314,6 @@ public class ReportPortalExtension
     }
 
     protected class TestItem {
-
         private String name;
         private String description;
         private Set<String> tags;

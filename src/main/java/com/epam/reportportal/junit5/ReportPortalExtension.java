@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,9 +53,7 @@ import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /*
- * ReportPortal Listener sends the results of test execution to ReportPortal in RealTime
- *
- * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
+ * ReportPortal Extension sends the results of test execution to ReportPortal in RealTime
  */
 
 public class ReportPortalExtension
@@ -197,12 +195,20 @@ public class ReportPortalExtension
         throws Throwable {
         try {
             invocation.proceed();
-            finishTestItem(context, uniqueId, "PASSED");
+            finishBeforeAfter(context, uniqueId, "PASSED");
         } catch (Throwable throwable) {
             sendStackTraceToRP(throwable);
-            finishTestItem(context, uniqueId, "FAILED");
+            finishBeforeAfter(context, uniqueId, "FAILED");
             throw throwable;
         }
+    }
+
+    private synchronized void finishBeforeAfter(ExtensionContext context, String uniqueId, String status) {
+        Launch launch = getLaunch(context);
+        FinishTestItemRQ rq = new FinishTestItemRQ();
+        rq.setStatus(status);
+        rq.setEndTime(Calendar.getInstance().getTime());
+        launch.finishTestItem(idMapping.get(uniqueId), rq);
     }
 
     private synchronized void startTemplate(ExtensionContext context) {
@@ -246,18 +252,6 @@ public class ReportPortalExtension
         idMapping.put(context.getUniqueId(), itemId);
     }
 
-    private synchronized void finishTestItem(ExtensionContext context) {
-        finishTestItem(context, null, null);
-    }
-
-    private void finishTestItem(ExtensionContext context, String uniqueId, String status) {
-        Launch launch = getLaunch(context);
-        FinishTestItemRQ rq = new FinishTestItemRQ();
-        rq.setStatus(isDisabledTest.get() ? "SKIPPED" : uniqueId == null ? getExecutionStatus(context) : status);
-        rq.setEndTime(Calendar.getInstance().getTime());
-        launch.finishTestItem(idMapping.get(uniqueId == null ? context.getUniqueId() : uniqueId), rq);
-    }
-
     private synchronized void finishTestTemplates(ExtensionContext context) {
         getTestTemplateIds().forEach(id -> {
             Launch launch = getLaunch(context);
@@ -277,6 +271,14 @@ public class ReportPortalExtension
             }
         }
         return keys;
+    }
+
+    private synchronized void finishTestItem(ExtensionContext context) {
+        Launch launch = getLaunch(context);
+        FinishTestItemRQ rq = new FinishTestItemRQ();
+        rq.setStatus(isDisabledTest.get() ? "SKIPPED" : getExecutionStatus(context));
+        rq.setEndTime(Calendar.getInstance().getTime());
+        launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
     }
 
     private static synchronized String getExecutionStatus(ExtensionContext context) {
@@ -314,6 +316,7 @@ public class ReportPortalExtension
     }
 
     protected class TestItem {
+
         private String name;
         private String description;
         private Set<String> tags;

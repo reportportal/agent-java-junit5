@@ -89,6 +89,11 @@ test {
 }
 ```
 
+## Disabled tests reporting
+By default reporting of @Disabled tests is switched off. To switch it on - add next parameter to an execution goal:
+- Maven: -DreportDisabledTests=true
+- Gradle: -PreportDisabledTests=true 
+
 # Copyright Notice
 
 Licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) license (see the LICENSE.md file).

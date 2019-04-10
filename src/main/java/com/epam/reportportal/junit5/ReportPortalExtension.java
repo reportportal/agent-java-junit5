@@ -170,6 +170,8 @@ public class ReportPortalExtension
 
     @Override
     public void testFailed(ExtensionContext context, Throwable throwable) {
+        startTestItem(context, "STEP");
+        finishTestItem(context);
     }
 
     private synchronized String startBeforeAfter(
@@ -321,15 +323,15 @@ public class ReportPortalExtension
         private String description;
         private Set<String> tags;
 
-        protected String getName() {
+        public String getName() {
             return name;
         }
 
-        protected String getDescription() {
+        public String getDescription() {
             return description;
         }
 
-        protected Set<String> getTags() {
+        public Set<String> getTags() {
             return tags;
         }
 

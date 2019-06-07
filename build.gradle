@@ -23,8 +23,8 @@ ext {
 }
 
 dependencies {
-    compile 'com.github.reportportal:client-java:540f524'
-    compile 'com.github.reportportal:commons-model:1a28423'
+    compile 'com.github.reportportal:client-java:ecd9415'
+    compile 'com.github.reportportal:commons-model:5aef134'
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
     compile("org.junit.platform:junit-platform-launcher:${junitPlatformVersion}")

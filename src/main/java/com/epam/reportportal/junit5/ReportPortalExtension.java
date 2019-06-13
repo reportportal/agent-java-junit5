@@ -182,8 +182,8 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 		// instantiate "start test item" request
 		StartTestItemRQ rq = new StartTestItemRQ();
 		String name = context.getDisplayName();
-		// The maximum length of TestItem name is 256 characters
-		rq.setName(name.length() > 256 ? name.substring(0, 200) + "..." : name);
+		// The maximum length of TestItem name is 1024 characters
+		rq.setName(name.length() > 1024 ? name.substring(0, 1024) + "..." : name);
 		// set test item description
 		rq.setDescription(context.getDisplayName());
 		// set test item unique ID
@@ -192,6 +192,10 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 		rq.setType(type);
 		// test item is not a retry
 		rq.setRetry(false);
+
+		if ("SUITE".equalsIgnoreCase(type)) {
+			context.getTestClass().map(Class::getCanonicalName).ifPresent(rq::setLocation);
+		}
 
 		// if present, set test item tags
 		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream()

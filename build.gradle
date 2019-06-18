@@ -23,7 +23,7 @@ ext {
 }
 
 dependencies {
-    compile 'com.epam.reportportal:client-java:4.0.8'
+    compile 'com.epam.reportportal:client-java:4.0.12'
     compile 'com.epam.reportportal:commons-model:4.2.0'
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")

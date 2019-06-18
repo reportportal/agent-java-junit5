@@ -37,7 +37,3 @@ test {
 
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
 }
-
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.8'
-}

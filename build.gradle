@@ -1,5 +1,5 @@
 plugins {
-    id 'net.researchgate.release' version '2.6.0'
+    id 'net.researchgate.release' version '2.4.1'
     id "com.jfrog.bintray" version "1.7"
 }
 apply plugin: 'java'
@@ -18,22 +18,27 @@ repositories {
 }
 
 ext {
-    junitJupiterVersion = '5.4.0'
-    junitPlatformVersion = '1.4.0'
+    junitJupiterVersion = '5.5.0'
+    junitPlatformVersion = '1.5.0'
 }
 
 dependencies {
-    compile 'com.epam.reportportal:client-java:4.0.12'
+    compile 'com.epam.reportportal:client-java:4.0.8'
     compile 'com.epam.reportportal:commons-model:4.2.0'
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
-    compile("org.junit.platform:junit-platform-launcher:${junitPlatformVersion}")
     compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
 }
 
 test {
     useJUnitPlatform()
-
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
+    if (project.hasProperty('reportDisabledTests')) {
+        systemProperty('reportDisabledTests', reportDisabledTests)
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.8'
 }

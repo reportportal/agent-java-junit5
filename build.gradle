@@ -18,26 +18,22 @@ repositories {
 }
 
 ext {
-//    junitJupiterVersion = '5.4.0'
-    junitJupiterVersion = 'dfeef96'
-    junitPlatformVersion = '1.4.0'
+    junitJupiterVersion = '5.5.0'
+    junitPlatformVersion = '1.5.0'
 }
 
 dependencies {
     compile 'com.epam.reportportal:client-java:4.0.8'
     compile 'com.epam.reportportal:commons-model:4.2.0'
 
-//    compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
-    compileOnly("com.github.junit-team.junit5:junit-jupiter-api:${junitJupiterVersion}")
-    compile("org.junit.platform:junit-platform-launcher:${junitPlatformVersion}")
-//    compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
-    compile("com.github.junit-team.junit5:junit-jupiter-engine:${junitJupiterVersion}")
-//    compile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
-    compile("com.github.junit-team.junit5:junit-jupiter-params:${junitJupiterVersion}")
+    compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
+    compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
+    compile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
 }
 
 test {
     useJUnitPlatform()
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
     if (project.hasProperty('reportDisabledTests')) {
         systemProperty('reportDisabledTests', reportDisabledTests)
     }

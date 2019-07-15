@@ -21,8 +21,8 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
@@ -63,7 +63,7 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 	/**
 	 * map to associate context IDs with test item IDs
 	 */
-	private final ConcurrentMap<String, Maybe<Long>> idMapping = new ConcurrentHashMap<>();
+	private final ConcurrentMap<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	/**
 	 * map to associate template test parent IDs to template test suite objects
 	 */
@@ -115,7 +115,7 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 			// set launch start time
 			rq.setStartTime(Calendar.getInstance().getTime());
 
-			final ItemAttributeResource skippedIssueAttr = new ItemAttributeResource();
+			ItemAttributesRQ skippedIssueAttr = new ItemAttributesRQ();
 			skippedIssueAttr.setKey(SKIPPED_ISSUE_KEY);
 			skippedIssueAttr.setValue(ofNullable(params.getSkippedAnIssue()).map(Object::toString).orElse("true"));
 			skippedIssueAttr.setSystem(true);
@@ -178,7 +178,7 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 	 * @param type    test item type (either {@code TEST} or {@code SUITE})
 	 * @return test item ID
 	 */
-	private Maybe<Long> startTestItem(ExtensionContext context, Launch launch, String type) {
+	private Maybe<String> startTestItem(ExtensionContext context, Launch launch, String type) {
 		// instantiate "start test item" request
 		StartTestItemRQ rq = new StartTestItemRQ();
 		String name = context.getDisplayName();
@@ -194,15 +194,14 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 		rq.setRetry(false);
 
 		// if present, set test item tags
-		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream()
-				.map(tag -> new ItemAttributeResource(null, tag))
+		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream().map(tag -> new ItemAttributesRQ(null, tag))
 				.collect(Collectors.toSet())));
 
-		Maybe<Long> itemId;
+		Maybe<String> itemId;
 		// if template test invocation
 		if (isTemplateTestInvocation(context)) {
 			// if not yet done, start containing suite
-			Maybe<Long> suiteId = startSuiteIfRequiredFor(context);
+			Maybe<String> suiteId = startSuiteIfRequiredFor(context);
 			// set test item start time
 			rq.setStartTime(Calendar.getInstance().getTime());
 			// start test item for this invocation
@@ -294,7 +293,7 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 
 		ReportPortal.emitLog(itemId -> {
 			SaveLogRQ rq = new SaveLogRQ();
-			rq.setTestItemId(itemId);
+			rq.setItemId(itemId);
 			rq.setLevel("ERROR");
 			rq.setLogTime(Calendar.getInstance().getTime());
 			if (cause != null) {
@@ -314,9 +313,9 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 	 * @param context extension context for template test invocation
 	 * @return test item ID for containing suite (may be {@code empty})
 	 */
-	private synchronized Maybe<Long> startSuiteIfRequiredFor(ExtensionContext context) {
+	private synchronized Maybe<String> startSuiteIfRequiredFor(ExtensionContext context) {
 		TemplateTestSuite testSuite;
-		Maybe<Long> suiteId = Maybe.empty();
+		Maybe<String> suiteId = Maybe.empty();
 		// if template test invocation
 		if (isTemplateTestInvocation(context)) {
 			// get unique ID of context parent
@@ -420,7 +419,7 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 	 */
 	private static class TemplateTestSuite {
 
-		private Maybe<Long> suiteId;
+		private Maybe<String> suiteId;
 		private int totalRepetitions;
 		private int totalCompletions = 0;
 
@@ -430,7 +429,7 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 		 * @param context test template context
 		 * @param suiteId ID of containing template test suite
 		 */
-		TemplateTestSuite(ExtensionContext context, Maybe<Long> suiteId) {
+		TemplateTestSuite(ExtensionContext context, Maybe<String> suiteId) {
 			this.suiteId = suiteId;
 			totalRepetitions = getRepetitionsCount(context);
 		}
@@ -478,7 +477,7 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 		public static TemplateTestSuite startTestSuiteFor(ExtensionContext context, ReportPortalExtension extension) {
 			// get context parent
 			ExtensionContext parent = context.getParent().get();
-			Maybe<Long> suiteId = extension.startTestItem(parent, getLaunchFor(parent), "SUITE");
+			Maybe<String> suiteId = extension.startTestItem(parent, getLaunchFor(parent), "SUITE");
 			return new TemplateTestSuite(context, suiteId);
 		}
 
@@ -487,7 +486,7 @@ public class ReportPortalExtension implements BeforeAllCallback, BeforeTestExecu
 		 *
 		 * @return ID of this template test suite object
 		 */
-		public Maybe<Long> getSuiteId() {
+		public Maybe<String> getSuiteId() {
 			return suiteId;
 		}
 

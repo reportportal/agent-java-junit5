@@ -1,11 +1,18 @@
 plugins {
-    id 'net.researchgate.release' version '2.4.1'
-    id "com.jfrog.bintray" version "1.7"
+    id 'net.researchgate.release' version '2.8.0'
+    id "com.jfrog.bintray" version "1.8.4"
 }
 apply plugin: 'java'
 apply from: 'release.gradle'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+
+project.ext {
+    releaseMode = project.hasProperty('releaseMode')
+}
+ext {
+    junitJupiterVersion = '5.5.0'
+}
 
 description = 'JUnit5 Agent'
 
@@ -17,14 +24,15 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-ext {
-    junitJupiterVersion = '5.5.0'
-    junitPlatformVersion = '1.5.0'
-}
 
 dependencies {
-    compile 'com.epam.reportportal:client-java:4.0.8'
-    compile 'com.epam.reportportal:commons-model:4.2.0'
+    if (releaseMode) {
+        compile 'com.epam.reportportal:client-java:4.0.16'
+        compile 'com.epam.reportportal:commons-model:5.0.0-BETA-6'
+    } else {
+        compile 'com.github.reportportal:client-java:d27d103'
+        compile 'com.github.reportportal:commons-model:25f966e'
+    }
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
@@ -39,6 +47,6 @@ test {
     }
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.8'
+wrapper {
+    gradleVersion = '5.4.1'
 }

@@ -1,11 +1,17 @@
 package com.epam.reportportal.junit5.tests;
 
+import com.epam.reportportal.service.ReportPortal;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
+import rp.com.google.common.io.Files;
+import rp.com.google.common.io.Resources;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.DayOfWeek;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -26,7 +32,12 @@ class JUnit5Tests {
 	@Test
 	@Tag("tag1")
 	@Tag("tag2")
-	void baseClassTest() {
+	void baseClassTest() throws IOException {
+		// Report launch log
+		File file = File.createTempFile("rp-test", ".css");
+		Resources.asByteSource(Resources.getResource("files/css.css")).copyTo(Files.asByteSink(file));
+		ReportPortal.emitLaunchLog("LAUNCH LOG MESAGE WITH ATTACHMENT", "error", new Date(), file);
+
 		System.out.println("base-class-test");
 	}
 

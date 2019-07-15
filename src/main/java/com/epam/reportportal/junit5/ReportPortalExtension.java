@@ -23,6 +23,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
@@ -32,6 +33,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
@@ -43,6 +45,8 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public class ReportPortalExtension
 		implements Extension, BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback,
 				   AfterEachCallback, AfterAllCallback, TestWatcher, InvocationInterceptor {
+
+	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 
 	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
 	private static final ConcurrentMap<String, Launch> launchMap = new ConcurrentHashMap<>();
@@ -59,8 +63,16 @@ public class ReportPortalExtension
 			rq.setMode(params.getLaunchRunningMode());
 			rq.setDescription(params.getDescription());
 			rq.setName(params.getLaunchName());
-			rq.setTags(params.getTags());
+			rq.setAttributes(params.getAttributes());
 			rq.setStartTime(Calendar.getInstance().getTime());
+
+			Boolean skippedAnIssue = params.getSkippedAnIssue();
+			ItemAttributesRQ skippedIssueAttr = new ItemAttributesRQ();
+			skippedIssueAttr.setKey(SKIPPED_ISSUE_KEY);
+			skippedIssueAttr.setValue(skippedAnIssue == null ? "true" : skippedAnIssue.toString());
+			skippedIssueAttr.setSystem(true);
+			rq.getAttributes().add(skippedIssueAttr);
+
 			Launch launch = rp.newLaunch(rq);
 			launchMap.put(launchId, launch);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
@@ -165,7 +177,9 @@ public class ReportPortalExtension
 		rq.setDescription(method.getName());
 		String uniqueId = parentId + "/[method:" + method.getName() + "()]";
 		rq.setUniqueId(uniqueId);
-		ofNullable(context.getTags()).ifPresent(rq::setTags);
+		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream()
+				.map(tag -> new ItemAttributesRQ(null, tag))
+				.collect(Collectors.toSet())));
 		rq.setType(itemType);
 		rq.setRetry(false);
 		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentId), rq);
@@ -220,7 +234,7 @@ public class ReportPortalExtension
 		rq.setUniqueId(context.getUniqueId());
 		rq.setType(type);
 		rq.setRetry(false);
-		ofNullable(testItem.getTags()).ifPresent(rq::setTags);
+		ofNullable(testItem.getAttributes()).ifPresent(rq::setAttributes);
 
 		Maybe<String> itemId = context.getParent()
 				.map(ExtensionContext::getUniqueId)
@@ -283,7 +297,7 @@ public class ReportPortalExtension
 	private static synchronized void sendStackTraceToRP(final Throwable cause) {
 		ReportPortal.emitLog(itemId -> {
 			SaveLogRQ rq = new SaveLogRQ();
-			rq.setTestItemId(itemId);
+			rq.setItemId(itemId);
 			rq.setLevel("ERROR");
 			rq.setLogTime(Calendar.getInstance().getTime());
 			if (cause != null) {
@@ -296,28 +310,28 @@ public class ReportPortalExtension
 		});
 	}
 
-	protected class TestItem {
+	protected static class TestItem {
 
 		private String name;
 		private String description;
-		private Set<String> tags;
+		private Set<ItemAttributesRQ> attributes;
 
-		public String getName() {
+		String getName() {
 			return name;
 		}
 
-		public String getDescription() {
+		String getDescription() {
 			return description;
 		}
 
-		public Set<String> getTags() {
-			return tags;
+		Set<ItemAttributesRQ> getAttributes() {
+			return attributes;
 		}
 
 		public TestItem(String name, String description, Set<String> tags) {
 			this.name = name;
 			this.description = description;
-			this.tags = tags;
+			this.attributes = tags.stream().map(it -> new ItemAttributesRQ(null, it)).collect(Collectors.toSet());
 		}
 	}
 

@@ -12,6 +12,20 @@ The repository contains [JUnit5 Extension](https://junit.org/junit5/docs/current
 
 ## Getting Started
 
+1. Create folders **_/META-INF/services_** in **_resources_**
+2. Put there a file named **_org.junit.jupiter.api.extension.Extension_**
+3. Supply a single row **_com.epam.reportportal.junit5.ReportPortalExtension_** for default realization
+
+__/META-INF/services/org.junit.jupiter.api.extension.Extension__
+```xml
+com.epam.reportportal.junit5.ReportPortalExtension
+```
+
+If you desire to configure test *name*, *description* and *tags*:
+
+Extend *ReportPortalExtension*, override *getTestItem()* and replace *com.epam.reportportal.junit5.ReportPortalExtension*
+with fully qualified custom Extension class name in this file.
+
 ### Maven
 
 ```xml
@@ -33,7 +47,7 @@ The repository contains [JUnit5 Extension](https://junit.org/junit5/docs/current
 </dependency>
 ```
 
-#### Automatic Extension Registration (optional)
+#### Automatic Extension Registration 
 
 ```xml
 <build>
@@ -66,7 +80,7 @@ repositories {
 testCompile 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
 ```
 
-#### Automatic Extension Registration (optional)
+#### Automatic Extension Registration 
 
 ```yml
 test {
@@ -74,6 +88,11 @@ test {
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
 }
 ```
+
+## Disabled tests reporting
+By default reporting of @Disabled tests is switched off. To switch it on - add next parameter to an execution goal:
+- Maven: -DreportDisabledTests=true
+- Gradle: -PreportDisabledTests=true 
 
 # Copyright Notice
 

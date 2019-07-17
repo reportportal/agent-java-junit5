@@ -46,8 +46,8 @@ dependencies {
         compile 'com.epam.reportportal:client-java:4.0.16'
         compile 'com.epam.reportportal:commons-model:5.0.0-BETA-6'
     } else {
-        compile 'com.github.reportportal:client-java:d27d103'
-        compile 'com.github.reportportal:commons-model:25f966e'
+        compile 'com.github.reportportal:client-java:6e655f9'
+        compile 'com.github.reportportal:commons-model:c034aa9'
     }
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")

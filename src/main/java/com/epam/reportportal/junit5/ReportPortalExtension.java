@@ -234,6 +234,11 @@ public class ReportPortalExtension
 		rq.setUniqueId(context.getUniqueId());
 		rq.setType(type);
 		rq.setRetry(false);
+		if ("SUITE".equalsIgnoreCase(type)) {
+			context.getTestClass().map(Class::getCanonicalName).ifPresent(rq::setCodeRef);
+		} else {
+			context.getTestMethod().map(m -> m.getDeclaringClass().getCanonicalName() + "." + m.getName()).ifPresent(rq::setCodeRef);
+		}
 		ofNullable(testItem.getAttributes()).ifPresent(rq::setAttributes);
 
 		Maybe<String> itemId = context.getParent()
@@ -337,7 +342,7 @@ public class ReportPortalExtension
 
 	protected TestItem getTestItem(ExtensionContext context) {
 		String name = context.getDisplayName();
-		name = name.length() > 256 ? name.substring(0, 200) + "..." : name;
+		name = name.length() > 1024 ? name.substring(0, 1024) + "..." : name;
 		String description = context.getDisplayName();
 		Set<String> tags = context.getTags();
 		return new TestItem(name, description, tags);

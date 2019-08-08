@@ -46,9 +46,9 @@ import io.reactivex.Maybe;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.AfterAllCallback;
-import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
@@ -62,7 +62,7 @@ import org.opentest4j.TestAbortedException;
  * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
  */
 public class ReportPortalExtension
-    implements BeforeAllCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterAllCallback {
+    implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
 
     /** map to associate root execution contexts with launches */
     private static final Map<String, Launch> launchMap = new HashMap<>();
@@ -155,7 +155,7 @@ public class ReportPortalExtension
      * {@inheritDoc}
      */
     @Override
-    public void beforeTestExecution(ExtensionContext context) throws Exception {
+    public void beforeEach(ExtensionContext context) throws Exception {
         // if not a test template initialization hook
         if (!isTestTemplateInitializationHook(context)) {
             // start test item for this context
@@ -222,7 +222,7 @@ public class ReportPortalExtension
      * {@inheritDoc}
      */
     @Override
-    public void afterTestExecution(ExtensionContext context) throws Exception {
+    public void afterEach(ExtensionContext context) throws Exception {
         // if not test template
         if (!isTestTemplateInitializationHook(context)) {
             // finish test item

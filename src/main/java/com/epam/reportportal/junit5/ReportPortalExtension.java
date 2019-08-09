@@ -300,9 +300,9 @@ public class ReportPortalExtension
 	}
 
 	private static synchronized void sendStackTraceToRP(final Throwable cause) {
-		ReportPortal.emitLog(itemId -> {
+		ReportPortal.emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
-			rq.setItemId(itemId);
+			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
 			rq.setLogTime(Calendar.getInstance().getTime());
 			if (cause != null) {

@@ -47,8 +47,10 @@ import io.reactivex.Maybe;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
@@ -62,7 +64,8 @@ import org.opentest4j.TestAbortedException;
  * @author <a href="mailto:andrei_varabyeu@epam.com">Andrei Varabyeu</a>
  */
 public class ReportPortalExtension
-    implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
+    implements BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback,
+               AfterEachCallback, AfterAllCallback, AfterTestExecutionCallback {
 
     /** map to associate root execution contexts with launches */
     private static final Map<String, Launch> launchMap = new HashMap<>();
@@ -72,6 +75,8 @@ public class ReportPortalExtension
     private final ConcurrentMap<String, TemplateTestSuite> templateTestSuites = new ConcurrentHashMap<>();
     /** fully-qualified class name for test template extension context */
     private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
+    /** system property name (True/False) for delaying test result collection for some BDD frameworks compatibility */
+    public static final String DELAY_TEST_PROCESSING_PROP = "com.epam.reportportal.junit5.DelayTestProcessing";
 
     /**
      * Create a {@link Thread} object that encapsulates the implementation to finish the specified launch object.
@@ -156,6 +161,30 @@ public class ReportPortalExtension
      */
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
+        if (Boolean.getBoolean(DELAY_TEST_PROCESSING_PROP)) {
+            beforeTestImpl(context);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void beforeTestExecution(ExtensionContext context) throws Exception {
+        if (!Boolean.getBoolean(DELAY_TEST_PROCESSING_PROP)) {
+            beforeTestImpl(context);
+        }
+    }
+
+    /**
+     * Internal (shared) implementation for beforeTestExecution and beforeEach
+     * same code (when it is run is determined by System property
+     * DELAY_TEST_PROCESSING_PROP (default beforeTestExecution)
+     *
+     * @param context pass through
+     * @throws Exception pass through
+     */
+    private void beforeTestImpl(ExtensionContext context) throws Exception {
         // if not a test template initialization hook
         if (!isTestTemplateInitializationHook(context)) {
             // start test item for this context
@@ -223,6 +252,30 @@ public class ReportPortalExtension
      */
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
+        if (Boolean.getBoolean(DELAY_TEST_PROCESSING_PROP)) {
+            afterTestImpl(context);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void afterTestExecution(ExtensionContext context) throws Exception {
+        if (!Boolean.getBoolean(DELAY_TEST_PROCESSING_PROP)) {
+            afterTestImpl(context);
+        }
+    }
+
+    /**
+     * Internal (shared) implementation for afterTestExecution and afterEach
+     * same code (when it is run is determined by System property
+     * DELAY_TEST_PROCESSING_PROP (default afterTestExecution)
+     *
+     * @param context pass through
+     * @throws Exception pass through
+     */
+    private void afterTestImpl(ExtensionContext context) throws Exception {
         // if not test template
         if (!isTestTemplateInitializationHook(context)) {
             // finish test item

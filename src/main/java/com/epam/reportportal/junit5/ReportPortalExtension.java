@@ -20,8 +20,10 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -46,6 +48,9 @@ public class ReportPortalExtension
 		implements Extension, BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback,
 				   AfterEachCallback, AfterAllCallback, TestWatcher, InvocationInterceptor {
 
+	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
+	public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+
 	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 
 	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
@@ -57,8 +62,7 @@ public class ReportPortalExtension
 	private static synchronized Launch getLaunch(ExtensionContext context) {
 		String launchId = context.getRoot().getUniqueId();
 		if (!launchMap.containsKey(launchId)) {
-			ReportPortal rp = ReportPortal.builder().build();
-			ListenerParameters params = rp.getParameters();
+			ListenerParameters params = REPORT_PORTAL.getParameters();
 			StartLaunchRQ rq = new StartLaunchRQ();
 			rq.setMode(params.getLaunchRunningMode());
 			rq.setDescription(params.getDescription());
@@ -73,10 +77,13 @@ public class ReportPortalExtension
 			skippedIssueAttr.setSystem(true);
 			rq.getAttributes().add(skippedIssueAttr);
 
-			Launch launch = rp.newLaunch(rq);
+			Launch launch = REPORT_PORTAL.newLaunch(rq);
 			launchMap.put(launchId, launch);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
-			launch.start();
+			Maybe<String> launchIdResponse = launch.start();
+			if (params.isCallbackReportingEnabled()) {
+				TEST_ITEM_TREE.setLaunchId(launchIdResponse);
+			}
 		}
 		return launchMap.get(launchId);
 	}
@@ -243,9 +250,21 @@ public class ReportPortalExtension
 
 		Maybe<String> itemId = context.getParent()
 				.map(ExtensionContext::getUniqueId)
-				.map(parentId -> ofNullable(idMapping.get(parentId)))
-				.map(parentTest -> launch.startTestItem(parentTest.orElse(null), rq))
-				.orElseGet(() -> launch.startTestItem(rq));
+				.flatMap(parentId -> Optional.ofNullable(idMapping.get(parentId)))
+				.map(parentTest -> {
+					Maybe<String> item = launch.startTestItem(parentTest, rq);
+					if (REPORT_PORTAL.getParameters().isCallbackReportingEnabled()) {
+						TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest, item, 0));
+					}
+					return item;
+				})
+				.orElseGet(() -> {
+					Maybe<String> item = launch.startTestItem(rq);
+					if (REPORT_PORTAL.getParameters().isCallbackReportingEnabled()) {
+						TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(item, 0));
+					}
+					return item;
+				});
 		if (isTemplate) {
 			testTemplates.put(context.getUniqueId(), itemId);
 		}
@@ -278,7 +297,12 @@ public class ReportPortalExtension
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(isDisabledTest.get() ? "SKIPPED" : getExecutionStatus(context));
 		rq.setEndTime(Calendar.getInstance().getTime());
-		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
+		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
+		if (REPORT_PORTAL.getParameters().isCallbackReportingEnabled()) {
+			String itemName = getTestItem(context).getName();
+			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(itemName))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
+					finishResponse));
+		}
 	}
 
 	private static synchronized String getExecutionStatus(ExtensionContext context) {
@@ -346,5 +370,23 @@ public class ReportPortalExtension
 		String description = context.getDisplayName();
 		Set<String> tags = context.getTags();
 		return new TestItem(name, description, tags);
+	}
+
+	protected TestItemTree.ItemTreeKey createItemTreeKey(String name) {
+		return TestItemTree.ItemTreeKey.of(name);
+	}
+
+	protected TestItemTree.ItemTreeKey createItemTreeKey(String name, int hash) {
+		return TestItemTree.ItemTreeKey.of(name, hash);
+	}
+
+	protected TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
+		return new TestItemTree.TestItemLeaf(itemId, expectedChildrenCount);
+	}
+
+	protected TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
+		TestItemTree.TestItemLeaf testItemLeaf = new TestItemTree.TestItemLeaf(itemId, expectedChildrenCount);
+		testItemLeaf.setParentId(parentId);
+		return testItemLeaf;
 	}
 }

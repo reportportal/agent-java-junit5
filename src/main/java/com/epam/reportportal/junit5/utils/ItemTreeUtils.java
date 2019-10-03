@@ -43,6 +43,11 @@ public class ItemTreeUtils {
 		return testItemTree.getTestItems().get(createItemTreeKey(name));
 	}
 
+	@Nullable
+	public static TestItemTree.TestItemLeaf retrieveLeaf(TestInfo testInfo, TestItemTree testItemTree) {
+		return retrieveLeaf(testInfo.getDisplayName(), testItemTree);
+	}
+
 	private static String getTestItemName(ExtensionContext context) {
 		String name = context.getDisplayName();
 		return name.length() > 1024 ? name.substring(0, 1024) + "..." : name;

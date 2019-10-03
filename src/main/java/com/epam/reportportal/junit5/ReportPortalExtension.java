@@ -37,6 +37,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
+import static com.epam.reportportal.junit5.utils.ItemTreeUtils.createItemTreeKey;
+import static com.epam.reportportal.service.tree.TestItemTree.createTestItemLeaf;
 import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -299,8 +301,7 @@ public class ReportPortalExtension
 		rq.setEndTime(Calendar.getInstance().getTime());
 		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
 		if (REPORT_PORTAL.getParameters().isCallbackReportingEnabled()) {
-			String itemName = getTestItem(context).getName();
-			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(itemName))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
+			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
 					finishResponse));
 		}
 	}
@@ -370,23 +371,5 @@ public class ReportPortalExtension
 		String description = context.getDisplayName();
 		Set<String> tags = context.getTags();
 		return new TestItem(name, description, tags);
-	}
-
-	protected TestItemTree.ItemTreeKey createItemTreeKey(String name) {
-		return TestItemTree.ItemTreeKey.of(name);
-	}
-
-	protected TestItemTree.ItemTreeKey createItemTreeKey(String name, int hash) {
-		return TestItemTree.ItemTreeKey.of(name, hash);
-	}
-
-	protected TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
-		return new TestItemTree.TestItemLeaf(itemId, expectedChildrenCount);
-	}
-
-	protected TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
-		TestItemTree.TestItemLeaf testItemLeaf = new TestItemTree.TestItemLeaf(itemId, expectedChildrenCount);
-		testItemLeaf.setParentId(parentId);
-		return testItemLeaf;
 	}
 }

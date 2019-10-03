@@ -1,8 +1,8 @@
 package com.epam.reportportal.junit5.utils;
 
 import com.epam.reportportal.service.tree.TestItemTree;
-import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
@@ -20,6 +20,14 @@ public class ItemTreeUtils {
 
 	public static TestItemTree.ItemTreeKey createItemTreeKey(String name, int hash) {
 		return TestItemTree.ItemTreeKey.of(name, hash);
+	}
+
+	public static TestItemTree.ItemTreeKey createItemTreeKey(TestInfo testInfo) {
+		return TestItemTree.ItemTreeKey.of(testInfo.getDisplayName());
+	}
+
+	public static TestItemTree.ItemTreeKey createItemTreeKey(TestInfo testInfo, int hash) {
+		return TestItemTree.ItemTreeKey.of(testInfo.getDisplayName(), hash);
 	}
 
 	public static TestItemTree.ItemTreeKey createItemTreeKey(ExtensionContext extensionContext) {

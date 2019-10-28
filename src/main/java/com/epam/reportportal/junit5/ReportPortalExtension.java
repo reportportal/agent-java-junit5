@@ -29,7 +29,9 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import io.reactivex.annotations.Nullable;
 import org.junit.jupiter.api.extension.*;
+import org.junit.jupiter.engine.descriptor.DynamicExtensionContext;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -276,16 +278,19 @@ public class ReportPortalExtension
 				rq.setTestCaseId(Objects.hashCode(codeRef));
 			});
 		} else {
-			context.getTestMethod().ifPresent(m -> {
-				String codeRef = m.getDeclaringClass().getCanonicalName() + "." + m.getName();
-				rq.setCodeRef(codeRef);
-				rq.setTestCaseId(ofNullable(m.getAnnotation(TestCaseId.class)).map(testCaseId -> {
-					if (testCaseId.isParameterized()) {
-						return TestCaseIdUtils.getParameterizedTestCaseId(m, arguments);
-					}
-					return testCaseId.value();
-				}).orElseGet(() -> Arrays.deepHashCode(new Object[] { codeRef, arguments })));
-			});
+			if (DynamicExtensionContext.class.isAssignableFrom(context.getClass())) {
+				context.getParent().flatMap(ExtensionContext::getTestMethod).ifPresent(m -> {
+					String codeRef = getCodeRef(m) + "$" + context.getDisplayName();
+					rq.setCodeRef(codeRef);
+					rq.setTestCaseId(getTestCaseId(m, codeRef, arguments));
+				});
+			} else {
+				context.getTestMethod().ifPresent(m -> {
+					String codeRef = getCodeRef(m);
+					rq.setCodeRef(codeRef);
+					rq.setTestCaseId(getTestCaseId(m, codeRef, arguments));
+				});
+			}
 		}
 		ofNullable(testItem.getAttributes()).ifPresent(rq::setAttributes);
 
@@ -298,6 +303,20 @@ public class ReportPortalExtension
 			testTemplates.put(context.getUniqueId(), itemId);
 		}
 		idMapping.put(context.getUniqueId(), itemId);
+	}
+
+	private String getCodeRef(Method method) {
+		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
+	}
+
+	@Nullable
+	private Integer getTestCaseId(Method method, String codeRef, List<Object> arguments) {
+		return ofNullable(method.getAnnotation(TestCaseId.class)).map(testCaseId -> {
+			if (testCaseId.isParameterized()) {
+				return TestCaseIdUtils.getParameterizedTestCaseId(method, arguments);
+			}
+			return testCaseId.value();
+		}).orElseGet(() -> Arrays.deepHashCode(new Object[] { codeRef, arguments }));
 	}
 
 	private synchronized void finishTestTemplates(ExtensionContext context) {

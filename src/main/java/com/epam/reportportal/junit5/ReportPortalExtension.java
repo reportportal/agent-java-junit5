@@ -159,7 +159,7 @@ public class ReportPortalExtension
 	@Override
 	public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext extensionContext) throws Throwable {
-		startTestItem(extensionContext, "STEP");
+		startTestItem(extensionContext, invocationContext.getArguments(), "STEP");
 		invocation.proceed();
 	}
 

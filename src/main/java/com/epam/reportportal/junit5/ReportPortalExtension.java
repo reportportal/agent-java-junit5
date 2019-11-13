@@ -16,10 +16,12 @@
 
 package com.epam.reportportal.junit5;
 
+import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -27,7 +29,9 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import io.reactivex.annotations.Nullable;
 import org.junit.jupiter.api.extension.*;
+import org.junit.jupiter.engine.descriptor.DynamicExtensionContext;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -43,8 +47,8 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  */
 
 public class ReportPortalExtension
-		implements Extension, BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback,
-				   AfterEachCallback, AfterAllCallback, TestWatcher, InvocationInterceptor {
+		implements Extension, BeforeAllCallback, BeforeEachCallback, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
+				   TestWatcher, InvocationInterceptor {
 
 	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 
@@ -126,8 +130,37 @@ public class ReportPortalExtension
 	}
 
 	@Override
-	public void beforeTestExecution(ExtensionContext context) {
-		startTestItem(context, "STEP");
+	public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+			ExtensionContext extensionContext) throws Throwable {
+		startTestItem(extensionContext, invocationContext.getArguments(), "STEP");
+		invocation.proceed();
+	}
+
+	@Override
+	public <T> T interceptTestFactoryMethod(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext,
+			ExtensionContext extensionContext) throws Throwable {
+		startTestItem(extensionContext, invocationContext.getArguments(), "STEP");
+		return invocation.proceed();
+	}
+
+	@Override
+	public void interceptDynamicTest(Invocation<Void> invocation, ExtensionContext extensionContext) throws Throwable {
+		startTestItem(extensionContext, "STEP");
+		try {
+			invocation.proceed();
+			finishTestItem(extensionContext);
+		} catch (Throwable throwable) {
+			sendStackTraceToRP(throwable);
+			finishTestItem(extensionContext, "FAILED");
+			throw throwable;
+		}
+	}
+
+	@Override
+	public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+			ExtensionContext extensionContext) throws Throwable {
+		startTestItem(extensionContext, invocationContext.getArguments(), "STEP");
+		invocation.proceed();
 	}
 
 	@Override
@@ -150,7 +183,7 @@ public class ReportPortalExtension
 		if (Boolean.valueOf(System.getProperty("reportDisabledTests"))) {
 			isDisabledTest.set(true);
 			String description = reason.orElse(context.getDisplayName());
-			startTestItem(context, "STEP", description);
+			startTestItem(context, Collections.emptyList(), "STEP", description);
 			finishTestItem(context);
 		}
 	}
@@ -165,8 +198,6 @@ public class ReportPortalExtension
 
 	@Override
 	public void testFailed(ExtensionContext context, Throwable throwable) {
-		startTestItem(context, "STEP");
-		finishTestItem(context);
 	}
 
 	private synchronized String startBeforeAfter(Method method, ExtensionContext context, String parentId, String itemType) {
@@ -182,6 +213,9 @@ public class ReportPortalExtension
 				.collect(Collectors.toSet())));
 		rq.setType(itemType);
 		rq.setRetry(false);
+		String codeRef = method.getDeclaringClass().getCanonicalName() + "." + method.getName();
+		rq.setCodeRef(codeRef);
+		rq.setTestCaseId(ofNullable(method.getAnnotation(TestCaseId.class)).map(TestCaseId::value).orElseGet(() -> Objects.hash(codeRef)));
 		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentId), rq);
 		idMapping.put(uniqueId, itemId);
 		return uniqueId;
@@ -215,11 +249,15 @@ public class ReportPortalExtension
 		}
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, String type) {
-		startTestItem(context, type, null);
+	private synchronized void startTestItem(ExtensionContext context, List<Object> arguments, String type) {
+		startTestItem(context, arguments, type, null);
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, String type, String reason) {
+	private synchronized void startTestItem(ExtensionContext context, String type) {
+		startTestItem(context, Collections.emptyList(), type, null);
+	}
+
+	private synchronized void startTestItem(ExtensionContext context, List<Object> arguments, String type, String reason) {
 		boolean isTemplate = false;
 		if ("TEMPLATE".equals(type)) {
 			type = "SUITE";
@@ -235,9 +273,24 @@ public class ReportPortalExtension
 		rq.setType(type);
 		rq.setRetry(false);
 		if ("SUITE".equalsIgnoreCase(type)) {
-			context.getTestClass().map(Class::getCanonicalName).ifPresent(rq::setCodeRef);
+			context.getTestClass().map(Class::getCanonicalName).ifPresent(codeRef -> {
+				rq.setCodeRef(codeRef);
+				rq.setTestCaseId(Objects.hashCode(codeRef));
+			});
 		} else {
-			context.getTestMethod().map(m -> m.getDeclaringClass().getCanonicalName() + "." + m.getName()).ifPresent(rq::setCodeRef);
+			if (DynamicExtensionContext.class.isAssignableFrom(context.getClass())) {
+				context.getParent().flatMap(ExtensionContext::getTestMethod).ifPresent(m -> {
+					String codeRef = getCodeRef(m) + "$" + context.getDisplayName();
+					rq.setCodeRef(codeRef);
+					rq.setTestCaseId(getTestCaseId(m, codeRef, arguments));
+				});
+			} else {
+				context.getTestMethod().ifPresent(m -> {
+					String codeRef = getCodeRef(m);
+					rq.setCodeRef(codeRef);
+					rq.setTestCaseId(getTestCaseId(m, codeRef, arguments));
+				});
+			}
 		}
 		ofNullable(testItem.getAttributes()).ifPresent(rq::setAttributes);
 
@@ -250,6 +303,20 @@ public class ReportPortalExtension
 			testTemplates.put(context.getUniqueId(), itemId);
 		}
 		idMapping.put(context.getUniqueId(), itemId);
+	}
+
+	private String getCodeRef(Method method) {
+		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
+	}
+
+	@Nullable
+	private Integer getTestCaseId(Method method, String codeRef, List<Object> arguments) {
+		return ofNullable(method.getAnnotation(TestCaseId.class)).map(testCaseId -> {
+			if (testCaseId.isParameterized()) {
+				return TestCaseIdUtils.getParameterizedTestCaseId(method, arguments);
+			}
+			return testCaseId.value();
+		}).orElseGet(() -> Arrays.deepHashCode(new Object[] { codeRef, arguments }));
 	}
 
 	private synchronized void finishTestTemplates(ExtensionContext context) {
@@ -277,6 +344,14 @@ public class ReportPortalExtension
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(isDisabledTest.get() ? "SKIPPED" : getExecutionStatus(context));
+		rq.setEndTime(Calendar.getInstance().getTime());
+		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
+	}
+
+	private synchronized void finishTestItem(ExtensionContext context, String status) {
+		Launch launch = getLaunch(context);
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setStatus(status);
 		rq.setEndTime(Calendar.getInstance().getTime());
 		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
 	}

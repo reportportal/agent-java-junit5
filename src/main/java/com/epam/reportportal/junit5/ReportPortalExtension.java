@@ -17,10 +17,12 @@
 package com.epam.reportportal.junit5;
 
 import com.epam.reportportal.annotations.TestCaseId;
+import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -280,12 +282,14 @@ public class ReportPortalExtension
 		} else {
 			if (DynamicExtensionContext.class.isAssignableFrom(context.getClass())) {
 				context.getParent().flatMap(ExtensionContext::getTestMethod).ifPresent(m -> {
+					rq.setAttributes(getAttributes(m));
 					String codeRef = getCodeRef(m) + "$" + context.getDisplayName();
 					rq.setCodeRef(codeRef);
 					rq.setTestCaseId(getTestCaseId(m, codeRef, arguments));
 				});
 			} else {
 				context.getTestMethod().ifPresent(m -> {
+					rq.setAttributes(getAttributes(m));
 					String codeRef = getCodeRef(m);
 					rq.setCodeRef(codeRef);
 					rq.setTestCaseId(getTestCaseId(m, codeRef, arguments));
@@ -309,10 +313,15 @@ public class ReportPortalExtension
 		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
 	}
 
+	private Set<ItemAttributesRQ> getAttributes(Method method) {
+		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElseGet(Collections::emptySet);
+
+	}
+
 	@Nullable
 	private Integer getTestCaseId(Method method, String codeRef, List<Object> arguments) {
 		return ofNullable(method.getAnnotation(TestCaseId.class)).map(testCaseId -> {
-			if (testCaseId.isParameterized()) {
+			if (testCaseId.parametrized()) {
 				return TestCaseIdUtils.getParameterizedTestCaseId(method, arguments);
 			}
 			return testCaseId.value();

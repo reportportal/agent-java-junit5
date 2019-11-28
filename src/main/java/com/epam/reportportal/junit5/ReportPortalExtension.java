@@ -34,6 +34,7 @@ import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
 import org.junit.jupiter.api.extension.*;
 import org.junit.jupiter.engine.descriptor.DynamicExtensionContext;
+import rp.com.google.common.collect.Sets;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -296,7 +297,10 @@ public class ReportPortalExtension
 				});
 			}
 		}
-		ofNullable(testItem.getAttributes()).ifPresent(rq::setAttributes);
+		ofNullable(testItem.getAttributes()).ifPresent(attributes -> ofNullable(rq.getAttributes()).orElseGet(() -> {
+			rq.setAttributes(Sets.newHashSet());
+			return rq.getAttributes();
+		}).addAll(attributes));
 
 		Maybe<String> itemId = context.getParent()
 				.map(ExtensionContext::getUniqueId)

@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'net.researchgate.release' version '2.8.0'
-    id "com.jfrog.bintray" version "1.8.4"
-}
 apply plugin: 'java'
 apply from: 'https://raw.githubusercontent.com/reportportal/gradle-scripts/master/release-commons.gradle'
 
@@ -46,8 +42,8 @@ dependencies {
         compile 'com.epam.reportportal:client-java:5.0.0-BETA-4'
         compile 'com.epam.reportportal:commons-model:5.0.0-BETA-11'
     } else {
-        compile 'com.github.reportportal:client-java:6eff635'
-        compile 'com.github.reportportal:commons-model:cde9879'
+        compile 'com.github.reportportal:client-java:d6c581c4'
+        compile 'com.github.reportportal:commons-model:c7b3bf88'
     }
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")

@@ -318,7 +318,7 @@ public class ReportPortalExtension
 	}
 
 	private Set<ItemAttributesRQ> getAttributes(Method method) {
-		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElseGet(Collections::emptySet);
+		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElseGet(Sets::newHashSet);
 
 	}
 

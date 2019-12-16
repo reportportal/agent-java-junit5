@@ -294,18 +294,20 @@ public class ReportPortalExtension
 					rq.setAttributes(getAttributes(m));
 					String codeRef = getCodeRef(m) + "$" + context.getDisplayName();
 					rq.setCodeRef(codeRef);
-					TestCaseIdEntry testCaseIdEntry = getTestCaseId(m, codeRef, arguments);
-					rq.setTestCaseId(testCaseIdEntry.getId());
-					rq.setTestCaseHash(testCaseIdEntry.getHash());
+					ofNullable(getTestCaseId(m, codeRef, arguments)).ifPresent(testCaseIdEntry -> {
+						rq.setTestCaseId(testCaseIdEntry.getId());
+						rq.setTestCaseHash(testCaseIdEntry.getHash());
+					});
 				});
 			} else {
 				context.getTestMethod().ifPresent(m -> {
 					rq.setAttributes(getAttributes(m));
 					String codeRef = getCodeRef(m);
 					rq.setCodeRef(codeRef);
-					TestCaseIdEntry testCaseIdEntry = getTestCaseId(m, codeRef, arguments);
-					rq.setTestCaseId(testCaseIdEntry.getId());
-					rq.setTestCaseHash(testCaseIdEntry.getHash());
+					ofNullable(getTestCaseId(m, codeRef, arguments)).ifPresent(testCaseIdEntry -> {
+						rq.setTestCaseId(testCaseIdEntry.getId());
+						rq.setTestCaseHash(testCaseIdEntry.getHash());
+					});
 				});
 			}
 		}

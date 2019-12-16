@@ -22,6 +22,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
@@ -32,6 +33,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.extension.*;
 import org.junit.jupiter.engine.descriptor.DynamicExtensionContext;
 import rp.com.google.common.collect.Sets;
@@ -218,7 +220,11 @@ public class ReportPortalExtension
 		rq.setRetry(false);
 		String codeRef = method.getDeclaringClass().getCanonicalName() + "." + method.getName();
 		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(ofNullable(method.getAnnotation(TestCaseId.class)).map(TestCaseId::value).orElseGet(() -> Objects.hash(codeRef)));
+		TestCaseIdEntry testCaseIdEntry = ofNullable(method.getAnnotation(TestCaseId.class)).map(TestCaseId::value)
+				.map(value -> new TestCaseIdEntry(value, value.hashCode()))
+				.orElseGet(() -> getTestCaseId(codeRef));
+		rq.setTestCaseId(testCaseIdEntry.getId());
+		rq.setTestCaseHash(testCaseIdEntry.getHash());
 		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentId), rq);
 		idMapping.put(uniqueId, itemId);
 		return uniqueId;
@@ -278,7 +284,9 @@ public class ReportPortalExtension
 		if ("SUITE".equalsIgnoreCase(type)) {
 			context.getTestClass().map(Class::getCanonicalName).ifPresent(codeRef -> {
 				rq.setCodeRef(codeRef);
-				rq.setTestCaseId(Objects.hashCode(codeRef));
+				TestCaseIdEntry testCaseIdEntry = getTestCaseId(codeRef);
+				rq.setTestCaseId(testCaseIdEntry.getId());
+				rq.setTestCaseHash(testCaseIdEntry.getHash());
 			});
 		} else {
 			if (DynamicExtensionContext.class.isAssignableFrom(context.getClass())) {
@@ -286,14 +294,18 @@ public class ReportPortalExtension
 					rq.setAttributes(getAttributes(m));
 					String codeRef = getCodeRef(m) + "$" + context.getDisplayName();
 					rq.setCodeRef(codeRef);
-					rq.setTestCaseId(getTestCaseId(m, codeRef, arguments));
+					TestCaseIdEntry testCaseIdEntry = getTestCaseId(m, codeRef, arguments);
+					rq.setTestCaseId(testCaseIdEntry.getId());
+					rq.setTestCaseHash(testCaseIdEntry.getHash());
 				});
 			} else {
 				context.getTestMethod().ifPresent(m -> {
 					rq.setAttributes(getAttributes(m));
 					String codeRef = getCodeRef(m);
 					rq.setCodeRef(codeRef);
-					rq.setTestCaseId(getTestCaseId(m, codeRef, arguments));
+					TestCaseIdEntry testCaseIdEntry = getTestCaseId(m, codeRef, arguments);
+					rq.setTestCaseId(testCaseIdEntry.getId());
+					rq.setTestCaseHash(testCaseIdEntry.getHash());
 				});
 			}
 		}
@@ -322,14 +334,21 @@ public class ReportPortalExtension
 
 	}
 
+	private TestCaseIdEntry getTestCaseId(String codeRef) {
+		return new TestCaseIdEntry(codeRef, codeRef.hashCode());
+	}
+
 	@Nullable
-	private Integer getTestCaseId(Method method, String codeRef, List<Object> arguments) {
+	private TestCaseIdEntry getTestCaseId(Method method, String codeRef, List<Object> arguments) {
 		return ofNullable(method.getAnnotation(TestCaseId.class)).map(testCaseId -> {
 			if (testCaseId.parametrized()) {
 				return TestCaseIdUtils.getParameterizedTestCaseId(method, arguments);
 			}
-			return testCaseId.value();
-		}).orElseGet(() -> Arrays.deepHashCode(new Object[] { codeRef, arguments }));
+			return new TestCaseIdEntry(testCaseId.value(), testCaseId.value().hashCode());
+		})
+				.orElseGet(() -> new TestCaseIdEntry(StringUtils.join(codeRef, arguments),
+						Arrays.deepHashCode(new Object[] { codeRef, arguments })
+				));
 	}
 
 	private synchronized void finishTestTemplates(ExtensionContext context) {

@@ -17,33 +17,25 @@
 apply plugin: 'java'
 apply from: 'https://raw.githubusercontent.com/reportportal/gradle-scripts/master/release-commons.gradle'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
-project.ext {
-    releaseMode = project.hasProperty('releaseMode')
-}
-ext {
-    junitJupiterVersion = '5.5.0'
-}
-
-description = 'JUnit5 Agent'
+project.ext.releaseMode = project.hasProperty('releaseMode')
 
 repositories {
     jcenter()
     mavenCentral()
     mavenLocal()
-    maven { url "http://dl.bintray.com/epam/reportportal" }
-    maven { url "https://jitpack.io" }
+    releaseMode ? maven { url "http://dl.bintray.com/epam/reportportal" } : maven { url "https://jitpack.io" }
 }
 
 dependencies {
     if (releaseMode) {
         compile 'com.epam.reportportal:client-java:5.0.0-BETA-4'
-        compile 'com.epam.reportportal:commons-model:5.0.0-BETA-11'
+        compile 'com.epam.reportportal:commons-model:5.0.0-RC-6'
     } else {
-        compile 'com.github.reportportal:client-java:d24f6c0'
-        compile 'com.github.reportportal:commons-model:feec39f3'
+        compile 'com.github.reportportal:client-java:da8fb0f'
+        compile 'com.github.reportportal:commons-model:2f23f50'
     }
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")

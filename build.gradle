@@ -21,6 +21,9 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 project.ext.releaseMode = project.hasProperty('releaseMode')
+if (project.hasProperty('reportDisabledTests')) {
+    systemProperty('reportDisabledTests', reportDisabledTests)
+}
 
 repositories {
     jcenter()
@@ -41,14 +44,6 @@ dependencies {
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
-}
-
-test {
-    useJUnitPlatform()
-    systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
-    if (project.hasProperty('reportDisabledTests')) {
-        systemProperty('reportDisabledTests', reportDisabledTests)
-    }
 }
 
 wrapper {

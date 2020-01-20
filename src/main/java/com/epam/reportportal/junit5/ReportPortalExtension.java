@@ -74,6 +74,8 @@ public class ReportPortalExtension
 			rq.setName(params.getLaunchName());
 			rq.setAttributes(params.getAttributes());
 			rq.setStartTime(Calendar.getInstance().getTime());
+			rq.setRerun(params.isRerun());
+			rq.setRerunOf(StringUtils.isEmpty(params.getRerunOf()) ? null : params.getRerunOf());
 
 			Boolean skippedAnIssue = params.getSkippedAnIssue();
 			ItemAttributesRQ skippedIssueAttr = new ItemAttributesRQ();

@@ -42,6 +42,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
@@ -187,7 +188,7 @@ public class ReportPortalExtension
 
 	@Override
 	public void testDisabled(ExtensionContext context, Optional<String> reason) {
-		if (Boolean.valueOf(System.getProperty("reportDisabledTests"))) {
+		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
 			isDisabledTest.set(true);
 			String description = reason.orElse(context.getDisplayName());
 			startTestItem(context, Collections.emptyList(), "STEP", description);
@@ -411,7 +412,7 @@ public class ReportPortalExtension
 	}
 
 	private static synchronized void sendStackTraceToRP(final Throwable cause) {
-		ReportPortal.emitLog(itemUuid -> {
+		ReportPortal.emitLog((Function<String, SaveLogRQ>) itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");

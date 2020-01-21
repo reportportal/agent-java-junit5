@@ -45,6 +45,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.epam.reportportal.junit5.ItemType.*;
+import static com.epam.reportportal.junit5.Status.*;
 import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -97,7 +99,7 @@ public class ReportPortalExtension
 	public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext extensionContext) throws Throwable {
 		String parentId = extensionContext.getUniqueId();
-		String uniqueId = startBeforeAfter(invocationContext.getExecutable(), extensionContext, parentId, "BEFORE_CLASS");
+		String uniqueId = startBeforeAfter(invocationContext.getExecutable(), extensionContext, parentId, BEFORE_CLASS);
 		finishBeforeAfter(invocation, extensionContext, uniqueId);
 	}
 
@@ -105,7 +107,7 @@ public class ReportPortalExtension
 	public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext extensionContext) throws Throwable {
 		String parentId = extensionContext.getParent().get().getUniqueId();
-		String uniqueId = startBeforeAfter(invocationContext.getExecutable(), extensionContext, parentId, "BEFORE_METHOD");
+		String uniqueId = startBeforeAfter(invocationContext.getExecutable(), extensionContext, parentId, BEFORE_METHOD);
 		finishBeforeAfter(invocation, extensionContext, uniqueId);
 	}
 
@@ -113,7 +115,7 @@ public class ReportPortalExtension
 	public void interceptAfterAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext extensionContext) throws Throwable {
 		String parentId = extensionContext.getUniqueId();
-		String uniqueId = startBeforeAfter(invocationContext.getExecutable(), extensionContext, parentId, "AFTER_CLASS");
+		String uniqueId = startBeforeAfter(invocationContext.getExecutable(), extensionContext, parentId, AFTER_CLASS);
 		finishBeforeAfter(invocation, extensionContext, uniqueId);
 	}
 
@@ -121,14 +123,14 @@ public class ReportPortalExtension
 	public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext extensionContext) throws Throwable {
 		String parentId = extensionContext.getParent().get().getUniqueId();
-		String uniqueId = startBeforeAfter(invocationContext.getExecutable(), extensionContext, parentId, "AFTER_METHOD");
+		String uniqueId = startBeforeAfter(invocationContext.getExecutable(), extensionContext, parentId, AFTER_METHOD);
 		finishBeforeAfter(invocation, extensionContext, uniqueId);
 	}
 
 	@Override
 	public void beforeAll(ExtensionContext context) {
 		isDisabledTest.set(false);
-		startTestItem(context, "SUITE");
+		startTestItem(context, SUITE);
 	}
 
 	@Override
@@ -140,26 +142,26 @@ public class ReportPortalExtension
 	@Override
 	public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext extensionContext) throws Throwable {
-		startTestItem(extensionContext, invocationContext.getArguments(), "STEP");
+		startTestItem(extensionContext, invocationContext.getArguments(), STEP);
 		invocation.proceed();
 	}
 
 	@Override
 	public <T> T interceptTestFactoryMethod(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext extensionContext) throws Throwable {
-		startTestItem(extensionContext, invocationContext.getArguments(), "STEP");
+		startTestItem(extensionContext, invocationContext.getArguments(), STEP);
 		return invocation.proceed();
 	}
 
 	@Override
 	public void interceptDynamicTest(Invocation<Void> invocation, ExtensionContext extensionContext) throws Throwable {
-		startTestItem(extensionContext, "STEP");
+		startTestItem(extensionContext, STEP);
 		try {
 			invocation.proceed();
 			finishTestItem(extensionContext);
 		} catch (Throwable throwable) {
 			sendStackTraceToRP(throwable);
-			finishTestItem(extensionContext, "FAILED");
+			finishTestItem(extensionContext, FAILED);
 			throw throwable;
 		}
 	}
@@ -167,7 +169,7 @@ public class ReportPortalExtension
 	@Override
 	public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext extensionContext) throws Throwable {
-		startTestItem(extensionContext, invocationContext.getArguments(), "STEP");
+		startTestItem(extensionContext, invocationContext.getArguments(), STEP);
 		invocation.proceed();
 	}
 
@@ -191,7 +193,7 @@ public class ReportPortalExtension
 		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
 			isDisabledTest.set(true);
 			String description = reason.orElse(context.getDisplayName());
-			startTestItem(context, Collections.emptyList(), "STEP", description);
+			startTestItem(context, Collections.emptyList(), STEP, description);
 			finishTestItem(context);
 		}
 	}
@@ -208,7 +210,7 @@ public class ReportPortalExtension
 	public void testFailed(ExtensionContext context, Throwable throwable) {
 	}
 
-	private synchronized String startBeforeAfter(Method method, ExtensionContext context, String parentId, String itemType) {
+	private synchronized String startBeforeAfter(Method method, ExtensionContext context, String parentId, ItemType itemType) {
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
@@ -219,7 +221,7 @@ public class ReportPortalExtension
 		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream()
 				.map(tag -> new ItemAttributesRQ(null, tag))
 				.collect(Collectors.toSet())));
-		rq.setType(itemType);
+		rq.setType(itemType.name());
 		rq.setRetry(false);
 		String codeRef = method.getDeclaringClass().getCanonicalName() + "." + method.getName();
 		rq.setCodeRef(codeRef);
@@ -236,18 +238,18 @@ public class ReportPortalExtension
 	private synchronized void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, String uniqueId) throws Throwable {
 		try {
 			invocation.proceed();
-			finishBeforeAfter(context, uniqueId, "PASSED");
+			finishBeforeAfter(context, uniqueId, PASSED);
 		} catch (Throwable throwable) {
 			sendStackTraceToRP(throwable);
-			finishBeforeAfter(context, uniqueId, "FAILED");
+			finishBeforeAfter(context, uniqueId, FAILED);
 			throw throwable;
 		}
 	}
 
-	private synchronized void finishBeforeAfter(ExtensionContext context, String uniqueId, String status) {
+	private synchronized void finishBeforeAfter(ExtensionContext context, String uniqueId, Status status) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setStatus(status);
+		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
 		launch.finishTestItem(idMapping.get(uniqueId), rq);
 	}
@@ -256,23 +258,23 @@ public class ReportPortalExtension
 		Optional<ExtensionContext> parent = context.getParent();
 		if ((parent.isPresent() && TEST_TEMPLATE_EXTENSION_CONTEXT.equals(parent.get().getClass().getName()))) {
 			if (!idMapping.containsKey(parent.get().getUniqueId())) {
-				startTestItem(context.getParent().get(), "TEMPLATE");
+				startTestItem(context.getParent().get(), TEMPLATE);
 			}
 		}
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, List<Object> arguments, String type) {
+	private synchronized void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
 		startTestItem(context, arguments, type, null);
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, String type) {
+	private synchronized void startTestItem(ExtensionContext context, ItemType type) {
 		startTestItem(context, Collections.emptyList(), type, null);
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, List<Object> arguments, String type, String reason) {
+	private synchronized void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type, String reason) {
 		boolean isTemplate = false;
-		if ("TEMPLATE".equals(type)) {
-			type = "SUITE";
+		if (TEMPLATE.equals(type)) {
+			type = SUITE;
 			isTemplate = true;
 		}
 		TestItem testItem = getTestItem(context);
@@ -282,9 +284,9 @@ public class ReportPortalExtension
 		rq.setName(testItem.getName());
 		rq.setDescription(null != reason ? reason : testItem.getDescription());
 		rq.setUniqueId(context.getUniqueId());
-		rq.setType(type);
+		rq.setType(type.name());
 		rq.setRetry(false);
-		if ("SUITE".equalsIgnoreCase(type)) {
+		if (SUITE.equals(type)) {
 			context.getTestClass().map(Class::getCanonicalName).ifPresent(codeRef -> {
 				rq.setCodeRef(codeRef);
 				TestCaseIdEntry testCaseIdEntry = getTestCaseId(codeRef);
@@ -360,7 +362,7 @@ public class ReportPortalExtension
 		getTestTemplateIds().forEach(id -> {
 			Launch launch = getLaunch(context);
 			FinishTestItemRQ rq = new FinishTestItemRQ();
-			rq.setStatus(isDisabledTest.get() ? "SKIPPED" : getExecutionStatus(context));
+			rq.setStatus(isDisabledTest.get() ? SKIPPED.name() : getExecutionStatus(context));
 			rq.setEndTime(Calendar.getInstance().getTime());
 			launch.finishTestItem(idMapping.get(id), rq);
 			testTemplates.entrySet().removeIf(e -> e.getKey().equals(id));
@@ -380,15 +382,15 @@ public class ReportPortalExtension
 	private synchronized void finishTestItem(ExtensionContext context) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setStatus(isDisabledTest.get() ? "SKIPPED" : getExecutionStatus(context));
+		rq.setStatus(isDisabledTest.get() ? SKIPPED.name() : getExecutionStatus(context));
 		rq.setEndTime(Calendar.getInstance().getTime());
 		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
 	}
 
-	private synchronized void finishTestItem(ExtensionContext context, String status) {
+	private synchronized void finishTestItem(ExtensionContext context, Status status) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setStatus(status);
+		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
 		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
 	}

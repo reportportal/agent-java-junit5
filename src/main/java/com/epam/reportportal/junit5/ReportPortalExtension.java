@@ -63,9 +63,8 @@ public class ReportPortalExtension
 	private final ConcurrentMap<String, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private ThreadLocal<Boolean> isDisabledTest = new ThreadLocal<>();
 
-	private static synchronized Launch getLaunch(ExtensionContext context) {
-		String launchId = context.getRoot().getUniqueId();
-		if (!launchMap.containsKey(launchId)) {
+	private static Launch getLaunch(ExtensionContext context) {
+		return launchMap.computeIfAbsent(context.getRoot().getUniqueId(), id -> {
 			ReportPortal rp = ReportPortal.builder().build();
 			ListenerParameters params = rp.getParameters();
 			StartLaunchRQ rq = new StartLaunchRQ();
@@ -83,11 +82,10 @@ public class ReportPortalExtension
 			rq.getAttributes().add(skippedIssueAttr);
 
 			Launch launch = rp.newLaunch(rq);
-			launchMap.put(launchId, launch);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
 			launch.start();
-		}
-		return launchMap.get(launchId);
+			return launch;
+		});
 	}
 
 	@Override
@@ -185,7 +183,7 @@ public class ReportPortalExtension
 
 	@Override
 	public void testDisabled(ExtensionContext context, Optional<String> reason) {
-		if (Boolean.valueOf(System.getProperty("reportDisabledTests"))) {
+		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
 			isDisabledTest.set(true);
 			String description = reason.orElse(context.getDisplayName());
 			startTestItem(context, Collections.emptyList(), "STEP", description);

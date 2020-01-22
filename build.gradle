@@ -38,3 +38,9 @@ test {
         systemProperty('reportDisabledTests', reportDisabledTests)
     }
 }
+
+release {
+    git {
+        requireBranch = 'v4-hotfix'
+    }
+}

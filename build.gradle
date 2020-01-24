@@ -32,6 +32,13 @@ repositories {
     releaseMode ? maven { url "http://dl.bintray.com/epam/reportportal" } : maven { url "https://jitpack.io" }
 }
 
+processResources {
+    project.properties.ext.set('agent', "$project.name:$project.version")
+    filesMatching('agent.properties') {
+        expand(project.properties)
+    }
+}
+
 dependencies {
     if (releaseMode) {
         compile 'com.epam.reportportal:client-java:5.0.0-BETA-4'

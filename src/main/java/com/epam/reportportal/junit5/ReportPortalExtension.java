@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.reportportal.junit5.ItemType.*;
 import static com.epam.reportportal.junit5.Status.*;
+import static com.epam.reportportal.junit5.SystemAttributesFetcher.collectSystemAttributes;
 import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -57,9 +58,6 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public class ReportPortalExtension
 		implements Extension, BeforeAllCallback, BeforeEachCallback, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
 				   TestWatcher, InvocationInterceptor {
-
-	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
-
 	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
 	private static final ConcurrentMap<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final ConcurrentMap<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
@@ -75,17 +73,12 @@ public class ReportPortalExtension
 			rq.setMode(params.getLaunchRunningMode());
 			rq.setDescription(params.getDescription());
 			rq.setName(params.getLaunchName());
-			rq.setAttributes(params.getAttributes());
+			Set<ItemAttributesRQ> attributes = Sets.newHashSet(params.getAttributes());
+			attributes.addAll(collectSystemAttributes(params.getSkippedAnIssue()));
+			rq.setAttributes(attributes);
 			rq.setStartTime(Calendar.getInstance().getTime());
 			rq.setRerun(params.isRerun());
 			rq.setRerunOf(StringUtils.isEmpty(params.getRerunOf()) ? null : params.getRerunOf());
-
-			Boolean skippedAnIssue = params.getSkippedAnIssue();
-			ItemAttributesRQ skippedIssueAttr = new ItemAttributesRQ();
-			skippedIssueAttr.setKey(SKIPPED_ISSUE_KEY);
-			skippedIssueAttr.setValue(skippedAnIssue == null ? "true" : skippedAnIssue.toString());
-			skippedIssueAttr.setSystem(true);
-			rq.getAttributes().add(skippedIssueAttr);
 
 			Launch launch = rp.newLaunch(rq);
 			launchMap.put(launchId, launch);

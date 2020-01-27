@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+plugins {
+    id 'java'
+}
 
-apply plugin: 'java'
-apply from: 'https://raw.githubusercontent.com/reportportal/gradle-scripts/master/release-commons.gradle'
+project.ext.releaseMode = project.hasProperty('releaseMode')
+
+def branch = releaseMode ? '5.0.0' : 'develop'
+apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
-project.ext.releaseMode = project.hasProperty('releaseMode')
 if (project.hasProperty('reportDisabledTests')) {
     systemProperty('reportDisabledTests', reportDisabledTests)
 }
@@ -56,3 +60,5 @@ dependencies {
 wrapper {
     gradleVersion = '5.4.1'
 }
+
+afterReleaseBuild.dependsOn bintrayUpload

@@ -41,11 +41,11 @@ processResources {
 
 dependencies {
     if (releaseMode) {
-        compile 'com.epam.reportportal:client-java:5.0.0-BETA-4'
-        compile 'com.epam.reportportal:commons-model:5.0.0-RC-6'
+        compile 'com.epam.reportportal:client-java:5.0.0-BETA-7'
+        compile 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        compile 'com.github.reportportal:client-java:da8fb0f'
-        compile 'com.github.reportportal:commons-model:2f23f50'
+        compile 'com.github.reportportal:client-java:13ccb81'
+        compile 'com.github.reportportal:commons-model:5.0.0'
     }
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")

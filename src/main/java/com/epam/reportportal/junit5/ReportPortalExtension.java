@@ -18,6 +18,7 @@ package com.epam.reportportal.junit5;
 
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.attribute.Attributes;
+import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
@@ -84,6 +85,7 @@ public class ReportPortalExtension
 
 			Launch launch = rp.newLaunch(rq);
 			launchMap.put(launchId, launch);
+			StepAspect.addLaunch(launchId, launch);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
 			launch.start();
 		}
@@ -325,6 +327,7 @@ public class ReportPortalExtension
 			testTemplates.put(context.getUniqueId(), itemId);
 		}
 		idMapping.put(context.getUniqueId(), itemId);
+		StepAspect.setParentId(itemId);
 	}
 
 	private String getCodeRef(Method method) {

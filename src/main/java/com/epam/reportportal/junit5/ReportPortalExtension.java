@@ -41,7 +41,6 @@ import rp.com.google.common.collect.Sets;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
@@ -50,7 +49,6 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 /*
  * ReportPortal Extension sends the results of test execution to ReportPortal in RealTime
  */
-
 public class ReportPortalExtension
 		implements Extension, BeforeAllCallback, BeforeEachCallback, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
 				   TestWatcher, InvocationInterceptor {
@@ -58,14 +56,18 @@ public class ReportPortalExtension
 	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 
 	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
-	private static final ConcurrentMap<String, Launch> launchMap = new ConcurrentHashMap<>();
-	private final ConcurrentMap<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
-	private final ConcurrentMap<String, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
+	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
+	private final Map<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
+	private final Map<String, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private ThreadLocal<Boolean> isDisabledTest = new ThreadLocal<>();
 
-	private static Launch getLaunch(ExtensionContext context) {
+	ReportPortal getReporter() {
+		return ReportPortal.builder().build();
+	}
+
+	Launch getLaunch(ExtensionContext context) {
 		return launchMap.computeIfAbsent(context.getRoot().getUniqueId(), id -> {
-			ReportPortal rp = ReportPortal.builder().build();
+			ReportPortal rp = getReporter();
 			ListenerParameters params = rp.getParameters();
 			StartLaunchRQ rq = new StartLaunchRQ();
 			rq.setMode(params.getLaunchRunningMode());
@@ -203,7 +205,7 @@ public class ReportPortalExtension
 	public void testFailed(ExtensionContext context, Throwable throwable) {
 	}
 
-	private synchronized String startBeforeAfter(Method method, ExtensionContext context, String parentId, String itemType) {
+	private String startBeforeAfter(Method method, ExtensionContext context, String parentId, String itemType) {
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
@@ -228,7 +230,7 @@ public class ReportPortalExtension
 		return uniqueId;
 	}
 
-	private synchronized void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, String uniqueId) throws Throwable {
+	private void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, String uniqueId) throws Throwable {
 		try {
 			invocation.proceed();
 			finishBeforeAfter(context, uniqueId, "PASSED");
@@ -239,7 +241,7 @@ public class ReportPortalExtension
 		}
 	}
 
-	private synchronized void finishBeforeAfter(ExtensionContext context, String uniqueId, String status) {
+	private void finishBeforeAfter(ExtensionContext context, String uniqueId, String status) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status);
@@ -247,7 +249,7 @@ public class ReportPortalExtension
 		launch.finishTestItem(idMapping.get(uniqueId), rq);
 	}
 
-	private synchronized void startTemplate(ExtensionContext context) {
+	private void startTemplate(ExtensionContext context) {
 		Optional<ExtensionContext> parent = context.getParent();
 		if ((parent.isPresent() && TEST_TEMPLATE_EXTENSION_CONTEXT.equals(parent.get().getClass().getName()))) {
 			if (!idMapping.containsKey(parent.get().getUniqueId())) {
@@ -256,15 +258,15 @@ public class ReportPortalExtension
 		}
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, List<Object> arguments, String type) {
+	private void startTestItem(ExtensionContext context, List<Object> arguments, String type) {
 		startTestItem(context, arguments, type, null);
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, String type) {
+	private void startTestItem(ExtensionContext context, String type) {
 		startTestItem(context, Collections.emptyList(), type, null);
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, List<Object> arguments, String type, String reason) {
+	private void startTestItem(ExtensionContext context, List<Object> arguments, String type, String reason) {
 		boolean isTemplate = false;
 		if ("TEMPLATE".equals(type)) {
 			type = "SUITE";
@@ -351,7 +353,7 @@ public class ReportPortalExtension
 				));
 	}
 
-	private synchronized void finishTestTemplates(ExtensionContext context) {
+	private void finishTestTemplates(ExtensionContext context) {
 		getTestTemplateIds().forEach(id -> {
 			Launch launch = getLaunch(context);
 			FinishTestItemRQ rq = new FinishTestItemRQ();
@@ -362,7 +364,7 @@ public class ReportPortalExtension
 		});
 	}
 
-	private synchronized List<String> getTestTemplateIds() {
+	private List<String> getTestTemplateIds() {
 		List<String> keys = new ArrayList<>();
 		for (Map.Entry<String, Maybe<String>> e : testTemplates.entrySet()) {
 			if (e.getKey().contains("/[test-template:") && !e.getKey().contains("-invocation")) {
@@ -372,7 +374,7 @@ public class ReportPortalExtension
 		return keys;
 	}
 
-	private synchronized void finishTestItem(ExtensionContext context) {
+	private void finishTestItem(ExtensionContext context) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(isDisabledTest.get() ? "SKIPPED" : getExecutionStatus(context));
@@ -380,7 +382,7 @@ public class ReportPortalExtension
 		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
 	}
 
-	private synchronized void finishTestItem(ExtensionContext context, String status) {
+	private void finishTestItem(ExtensionContext context, String status) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status);
@@ -388,7 +390,7 @@ public class ReportPortalExtension
 		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
 	}
 
-	private static synchronized String getExecutionStatus(ExtensionContext context) {
+	private static String getExecutionStatus(ExtensionContext context) {
 		Optional<Throwable> exception = context.getExecutionException();
 		if (!exception.isPresent()) {
 			return Statuses.PASSED;
@@ -406,8 +408,8 @@ public class ReportPortalExtension
 		});
 	}
 
-	private static synchronized void sendStackTraceToRP(final Throwable cause) {
-		ReportPortal.emitLog(itemUuid -> {
+	private static void sendStackTraceToRP(final Throwable cause) {
+		ReportPortal.emitLog((java.util.function.Function<String, SaveLogRQ>) itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");

@@ -39,24 +39,25 @@ repositories {
 
 dependencies {
     if (releaseMode) {
-        compile 'com.epam.reportportal:client-java:5.0.0-BETA-4'
-        compile 'com.epam.reportportal:commons-model:5.0.0-BETA-11'
+        compile 'com.epam.reportportal:client-java:5.0.0-BETA-8'
+        compile 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        compile 'com.github.reportportal:client-java:d24f6c0'
-        compile 'com.github.reportportal:commons-model:feec39f3'
+        compile 'com.github.reportportal:client-java:8934ff9'
+        compile 'com.github.reportportal:commons-model:e608d19'
     }
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
+
+    testImplementation 'org.junit.platform:junit-platform-runner:1.6.0'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+    testImplementation 'org.mockito:mockito-core:3.2.4'
 }
 
 test {
     useJUnitPlatform()
-    systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
-    if (project.hasProperty('reportDisabledTests')) {
-        systemProperty('reportDisabledTests', reportDisabledTests)
-    }
+    exclude("com/epam/reportportal/junit5/features/*.class")
 }
 
 wrapper {

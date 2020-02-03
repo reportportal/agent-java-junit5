@@ -229,6 +229,7 @@ public class ReportPortalExtension
 		rq.setTestCaseHash(testCaseIdEntry.getHash());
 		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentId), rq);
 		idMapping.put(uniqueId, itemId);
+		StepAspect.setParentId(itemId);
 		return uniqueId;
 	}
 

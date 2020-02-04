@@ -7,7 +7,6 @@ import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -19,11 +18,11 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CodeReferenceTests {
 
 	public static class CodeReferenceTestExtension extends ReportPortalExtension {
 		static final Launch LAUNCH;
+
 		static {
 			LAUNCH = mock(Launch.class);
 			when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
@@ -53,6 +52,7 @@ public class CodeReferenceTests {
 
 	public static class DynamicCodeReferenceTestExtension extends ReportPortalExtension {
 		static final Launch LAUNCH;
+
 		static {
 			LAUNCH = mock(Launch.class);
 			when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());

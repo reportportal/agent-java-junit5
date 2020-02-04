@@ -273,18 +273,10 @@ public class ReportPortalExtension
 	}
 
 	private String getCodeRef(ExtensionContext context, String currentCodeRef) {
-		Optional<Method> testMethod = context.getTestMethod();
-		if (testMethod.isPresent()) {
-			return appendSuffixIfNotEmpty(getCodeRef(testMethod.get()), currentCodeRef);
-		} else {
+		return context.getTestMethod().map(m -> appendSuffixIfNotEmpty(getCodeRef(m), currentCodeRef)).orElseGet(() -> {
 			String newCodeRef = appendSuffixIfNotEmpty(context.getDisplayName(), currentCodeRef);
-			Optional<ExtensionContext> parentContext = context.getParent();
-			if (parentContext.isPresent()) {
-				return getCodeRef(parentContext.get(), newCodeRef);
-			} else {
-				return newCodeRef;
-			}
-		}
+			return context.getParent().map(c -> getCodeRef(c, newCodeRef)).orElse(newCodeRef);
+		});
 	}
 
 	private Method getTestMethod(ExtensionContext context) {
@@ -348,11 +340,11 @@ public class ReportPortalExtension
 
 	private TestCaseIdEntry getTestCaseId(Method method, String codeRef, List<Object> arguments) {
 		if (method != null) {
-			TestCaseId tcId = method.getAnnotation(TestCaseId.class);
-			if (tcId != null) {
-				return tcId.parametrized() ?
+			TestCaseId caseId = method.getAnnotation(TestCaseId.class);
+			if (caseId != null) {
+				return caseId.parametrized() ?
 						TestCaseIdUtils.getParameterizedTestCaseId(method, arguments) :
-						new TestCaseIdEntry(tcId.value(), tcId.value().hashCode());
+						new TestCaseIdEntry(caseId.value(), caseId.value().hashCode());
 			}
 		}
 		return new TestCaseIdEntry(StringUtils.join(codeRef, arguments), Arrays.deepHashCode(new Object[] { codeRef, arguments }));

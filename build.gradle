@@ -58,7 +58,8 @@ dependencies {
 test {
     outputs.upToDateWhen {return false}
     useJUnitPlatform()
-    exclude("com/epam/reportportal/junit5/features/*.class")
+    exclude("com/epam/reportportal/junit5/features/**")
+    maxParallelForks(1);
 }
 
 wrapper {

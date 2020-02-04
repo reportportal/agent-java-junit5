@@ -1,6 +1,7 @@
 package com.epam.reportportal.junit5;
 
-import com.epam.reportportal.junit5.features.SingleDynamicTest;
+import com.epam.reportportal.junit5.features.coderef.SingleDynamicTest;
+import com.epam.reportportal.junit5.features.coderef.SingleTest;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -41,6 +42,23 @@ public class CodeReferenceTests {
 	@AfterEach
 	public void cleanUp() {
 		launchMap.clear();
+	}
+
+	@Test
+	public void verify_static_test_code_reference_generation() {
+		TestUtils.runClasses(SingleTest.class);
+
+		assertThat(launchMap.entrySet(), hasSize(1));
+		Launch launch = launchMap.entrySet().iterator().next().getValue();
+
+		verify(launch, times(1)).startTestItem(isNull(), any()); // Start parent Suite
+
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(launch, times(1)).startTestItem(notNull(), captor.capture()); // Start a test
+
+		List<StartTestItemRQ> rqValues = captor.getAllValues();
+		String className = SingleTest.class.getCanonicalName();
+		assertThat(rqValues.get(0).getCodeRef(), equalTo(className + ".singleTest"));
 	}
 
 	@Test

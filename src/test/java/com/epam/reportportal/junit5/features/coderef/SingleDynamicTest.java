@@ -1,4 +1,4 @@
-package com.epam.reportportal.junit5.features;
+package com.epam.reportportal.junit5.features.coderef;
 
 import com.epam.reportportal.junit5.CodeReferenceTests;
 import org.junit.jupiter.api.DynamicTest;

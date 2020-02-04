@@ -24,7 +24,7 @@ project.ext {
     releaseMode = project.hasProperty('releaseMode')
 }
 ext {
-    junitJupiterVersion = '5.5.0'
+    junitJupiterVersion = '5.6.0'
 }
 
 description = 'JUnit5 Agent'

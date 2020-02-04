@@ -32,10 +32,8 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import io.reactivex.annotations.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.extension.*;
-import org.junit.jupiter.engine.descriptor.DynamicExtensionContext;
 import rp.com.google.common.collect.Sets;
 
 import java.lang.reflect.Method;
@@ -266,6 +264,33 @@ public class ReportPortalExtension
 		startTestItem(context, Collections.emptyList(), type, null);
 	}
 
+	private String getCodeRef(Method method) {
+		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
+	}
+
+	private static String appendSuffixIfNotEmpty(String str, String suffix) {
+		return str + (suffix.isEmpty() ? "" : "$" + suffix);
+	}
+
+	private String getCodeRef(ExtensionContext context, String currentCodeRef) {
+		Optional<Method> testMethod = context.getTestMethod();
+		if (testMethod.isPresent()) {
+			return appendSuffixIfNotEmpty(getCodeRef(testMethod.get()), currentCodeRef);
+		} else {
+			String newCodeRef = appendSuffixIfNotEmpty(context.getDisplayName(), currentCodeRef);
+			Optional<ExtensionContext> parentContext = context.getParent();
+			if (parentContext.isPresent()) {
+				return getCodeRef(parentContext.get(), newCodeRef);
+			} else {
+				return newCodeRef;
+			}
+		}
+	}
+
+	private Method getTestMethod(ExtensionContext context) {
+		return context.getTestMethod().orElseGet(() -> context.getParent().map(this::getTestMethod).orElse(null));
+	}
+
 	private void startTestItem(ExtensionContext context, List<Object> arguments, String type, String reason) {
 		boolean isTemplate = false;
 		if ("TEMPLATE".equals(type)) {
@@ -289,27 +314,13 @@ public class ReportPortalExtension
 				rq.setTestCaseHash(testCaseIdEntry.getHash());
 			});
 		} else {
-			if (DynamicExtensionContext.class.isAssignableFrom(context.getClass())) {
-				context.getParent().flatMap(ExtensionContext::getTestMethod).ifPresent(m -> {
-					rq.setAttributes(getAttributes(m));
-					String codeRef = getCodeRef(m) + "$" + context.getDisplayName();
-					rq.setCodeRef(codeRef);
-					ofNullable(getTestCaseId(m, codeRef, arguments)).ifPresent(testCaseIdEntry -> {
-						rq.setTestCaseId(testCaseIdEntry.getId());
-						rq.setTestCaseHash(testCaseIdEntry.getHash());
-					});
-				});
-			} else {
-				context.getTestMethod().ifPresent(m -> {
-					rq.setAttributes(getAttributes(m));
-					String codeRef = getCodeRef(m);
-					rq.setCodeRef(codeRef);
-					ofNullable(getTestCaseId(m, codeRef, arguments)).ifPresent(testCaseIdEntry -> {
-						rq.setTestCaseId(testCaseIdEntry.getId());
-						rq.setTestCaseHash(testCaseIdEntry.getHash());
-					});
-				});
-			}
+			String codeRef = getCodeRef(context, "");
+			rq.setCodeRef(codeRef);
+			Method testMethod = getTestMethod(context);
+			rq.setAttributes(getAttributes(testMethod));
+			TestCaseIdEntry caseId = getTestCaseId(testMethod, codeRef, arguments);
+			rq.setTestCaseId(caseId.getId());
+			rq.setTestCaseHash(caseId.getHash());
 		}
 		ofNullable(testItem.getAttributes()).ifPresent(attributes -> ofNullable(rq.getAttributes()).orElseGet(() -> {
 			rq.setAttributes(Sets.newHashSet());
@@ -327,30 +338,24 @@ public class ReportPortalExtension
 		idMapping.put(context.getUniqueId(), itemId);
 	}
 
-	private String getCodeRef(Method method) {
-		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
-	}
-
 	private Set<ItemAttributesRQ> getAttributes(Method method) {
 		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElseGet(Sets::newHashSet);
-
 	}
 
 	private TestCaseIdEntry getTestCaseId(String codeRef) {
 		return new TestCaseIdEntry(codeRef, codeRef.hashCode());
 	}
 
-	@Nullable
 	private TestCaseIdEntry getTestCaseId(Method method, String codeRef, List<Object> arguments) {
-		return ofNullable(method.getAnnotation(TestCaseId.class)).map(testCaseId -> {
-			if (testCaseId.parametrized()) {
-				return TestCaseIdUtils.getParameterizedTestCaseId(method, arguments);
+		if (method != null) {
+			TestCaseId tcId = method.getAnnotation(TestCaseId.class);
+			if (tcId != null) {
+				return tcId.parametrized() ?
+						TestCaseIdUtils.getParameterizedTestCaseId(method, arguments) :
+						new TestCaseIdEntry(tcId.value(), tcId.value().hashCode());
 			}
-			return new TestCaseIdEntry(testCaseId.value(), testCaseId.value().hashCode());
-		})
-				.orElseGet(() -> new TestCaseIdEntry(StringUtils.join(codeRef, arguments),
-						Arrays.deepHashCode(new Object[] { codeRef, arguments })
-				));
+		}
+		return new TestCaseIdEntry(StringUtils.join(codeRef, arguments), Arrays.deepHashCode(new Object[] { codeRef, arguments }));
 	}
 
 	private void finishTestTemplates(ExtensionContext context) {

@@ -39,8 +39,6 @@ import rp.com.google.common.collect.Sets;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.junit5.ItemType.*;
@@ -202,7 +200,7 @@ public class ReportPortalExtension
 	public void testFailed(ExtensionContext context, Throwable throwable) {
 	}
 
-	private String startBeforeAfter(Method method, ExtensionContext context, String parentId, String itemType) {
+	private String startBeforeAfter(Method method, ExtensionContext context, String parentId, ItemType itemType) {
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
@@ -238,7 +236,7 @@ public class ReportPortalExtension
 		}
 	}
 
-	private void finishBeforeAfter(ExtensionContext context, String uniqueId, String status) {
+	private void finishBeforeAfter(ExtensionContext context, String uniqueId, Status status) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
@@ -255,11 +253,11 @@ public class ReportPortalExtension
 		}
 	}
 
-	private void startTestItem(ExtensionContext context, List<Object> arguments, String type) {
+	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
 		startTestItem(context, arguments, type, null);
 	}
 
-	private void startTestItem(ExtensionContext context, String type) {
+	private void startTestItem(ExtensionContext context, ItemType type) {
 		startTestItem(context, Collections.emptyList(), type, null);
 	}
 
@@ -282,7 +280,7 @@ public class ReportPortalExtension
 		return context.getTestMethod().orElseGet(() -> context.getParent().map(this::getTestMethod).orElse(null));
 	}
 
-	private void startTestItem(ExtensionContext context, List<Object> arguments, String type, String reason) {
+	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type, String reason) {
 		boolean isTemplate = false;
 		if (TEMPLATE.equals(type)) {
 			type = SUITE;
@@ -378,7 +376,7 @@ public class ReportPortalExtension
 		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
 	}
 
-	private void finishTestItem(ExtensionContext context, String status) {
+	private void finishTestItem(ExtensionContext context, Status status) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());

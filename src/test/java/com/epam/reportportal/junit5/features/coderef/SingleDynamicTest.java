@@ -1,6 +1,6 @@
-package com.epam.reportportal.junit5.features;
+package com.epam.reportportal.junit5.features.coderef;
 
-import com.epam.reportportal.junit5.CodeReferenceTests;
+import com.epam.reportportal.junit5.CodeReferenceTest;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-@ExtendWith(CodeReferenceTests.CodeReferenceTestExtension.class)
+@ExtendWith(CodeReferenceTest.DynamicCodeReferenceTestExtension.class)
 public class SingleDynamicTest {
 
 	public static final String TEST_CASE_DISPLAY_NAME = UUID.randomUUID().toString();

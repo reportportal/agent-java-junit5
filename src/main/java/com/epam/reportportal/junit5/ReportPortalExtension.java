@@ -32,10 +32,8 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import io.reactivex.annotations.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.extension.*;
-import org.junit.jupiter.engine.descriptor.DynamicExtensionContext;
 import rp.com.google.common.collect.Sets;
 
 import java.lang.reflect.Method;
@@ -54,20 +52,22 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 /*
  * ReportPortal Extension sends the results of test execution to ReportPortal in RealTime
  */
-
 public class ReportPortalExtension
 		implements Extension, BeforeAllCallback, BeforeEachCallback, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
 				   TestWatcher, InvocationInterceptor {
 	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
-	private static final ConcurrentMap<String, Launch> launchMap = new ConcurrentHashMap<>();
-	private final ConcurrentMap<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
-	private final ConcurrentMap<String, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
+	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
+	private final Map<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
+	private final Map<String, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private ThreadLocal<Boolean> isDisabledTest = new ThreadLocal<>();
 
-	private static synchronized Launch getLaunch(ExtensionContext context) {
-		String launchId = context.getRoot().getUniqueId();
-		if (!launchMap.containsKey(launchId)) {
-			ReportPortal rp = ReportPortal.builder().build();
+	ReportPortal getReporter() {
+		return ReportPortal.builder().build();
+	}
+
+	Launch getLaunch(ExtensionContext context) {
+		return launchMap.computeIfAbsent(context.getRoot().getUniqueId(), id -> {
+			ReportPortal rp = getReporter();
 			ListenerParameters params = rp.getParameters();
 			StartLaunchRQ rq = new StartLaunchRQ();
 			rq.setMode(params.getLaunchRunningMode());
@@ -81,11 +81,10 @@ public class ReportPortalExtension
 			rq.setRerunOf(StringUtils.isEmpty(params.getRerunOf()) ? null : params.getRerunOf());
 
 			Launch launch = rp.newLaunch(rq);
-			launchMap.put(launchId, launch);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
 			launch.start();
-		}
-		return launchMap.get(launchId);
+			return launch;
+		});
 	}
 
 	@Override
@@ -203,7 +202,7 @@ public class ReportPortalExtension
 	public void testFailed(ExtensionContext context, Throwable throwable) {
 	}
 
-	private synchronized String startBeforeAfter(Method method, ExtensionContext context, String parentId, ItemType itemType) {
+	private String startBeforeAfter(Method method, ExtensionContext context, String parentId, String itemType) {
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
@@ -228,7 +227,7 @@ public class ReportPortalExtension
 		return uniqueId;
 	}
 
-	private synchronized void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, String uniqueId) throws Throwable {
+	private void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, String uniqueId) throws Throwable {
 		try {
 			invocation.proceed();
 			finishBeforeAfter(context, uniqueId, PASSED);
@@ -239,7 +238,7 @@ public class ReportPortalExtension
 		}
 	}
 
-	private synchronized void finishBeforeAfter(ExtensionContext context, String uniqueId, Status status) {
+	private void finishBeforeAfter(ExtensionContext context, String uniqueId, String status) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
@@ -247,7 +246,7 @@ public class ReportPortalExtension
 		launch.finishTestItem(idMapping.get(uniqueId), rq);
 	}
 
-	private synchronized void startTemplate(ExtensionContext context) {
+	private void startTemplate(ExtensionContext context) {
 		Optional<ExtensionContext> parent = context.getParent();
 		if ((parent.isPresent() && TEST_TEMPLATE_EXTENSION_CONTEXT.equals(parent.get().getClass().getName()))) {
 			if (!idMapping.containsKey(parent.get().getUniqueId())) {
@@ -256,15 +255,34 @@ public class ReportPortalExtension
 		}
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
+	private void startTestItem(ExtensionContext context, List<Object> arguments, String type) {
 		startTestItem(context, arguments, type, null);
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, ItemType type) {
+	private void startTestItem(ExtensionContext context, String type) {
 		startTestItem(context, Collections.emptyList(), type, null);
 	}
 
-	private synchronized void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type, String reason) {
+	private String getCodeRef(Method method) {
+		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
+	}
+
+	private static String appendSuffixIfNotEmpty(String str, String suffix) {
+		return str + (suffix.isEmpty() ? "" : "$" + suffix);
+	}
+
+	private String getCodeRef(ExtensionContext context, String currentCodeRef) {
+		return context.getTestMethod().map(m -> appendSuffixIfNotEmpty(getCodeRef(m), currentCodeRef)).orElseGet(() -> {
+			String newCodeRef = appendSuffixIfNotEmpty(context.getDisplayName(), currentCodeRef);
+			return context.getParent().map(c -> getCodeRef(c, newCodeRef)).orElse(newCodeRef);
+		});
+	}
+
+	private Method getTestMethod(ExtensionContext context) {
+		return context.getTestMethod().orElseGet(() -> context.getParent().map(this::getTestMethod).orElse(null));
+	}
+
+	private void startTestItem(ExtensionContext context, List<Object> arguments, String type, String reason) {
 		boolean isTemplate = false;
 		if (TEMPLATE.equals(type)) {
 			type = SUITE;
@@ -287,27 +305,13 @@ public class ReportPortalExtension
 				rq.setTestCaseHash(testCaseIdEntry.getHash());
 			});
 		} else {
-			if (DynamicExtensionContext.class.isAssignableFrom(context.getClass())) {
-				context.getParent().flatMap(ExtensionContext::getTestMethod).ifPresent(m -> {
-					rq.setAttributes(getAttributes(m));
-					String codeRef = getCodeRef(m) + "$" + context.getDisplayName();
-					rq.setCodeRef(codeRef);
-					ofNullable(getTestCaseId(m, codeRef, arguments)).ifPresent(testCaseIdEntry -> {
-						rq.setTestCaseId(testCaseIdEntry.getId());
-						rq.setTestCaseHash(testCaseIdEntry.getHash());
-					});
-				});
-			} else {
-				context.getTestMethod().ifPresent(m -> {
-					rq.setAttributes(getAttributes(m));
-					String codeRef = getCodeRef(m);
-					rq.setCodeRef(codeRef);
-					ofNullable(getTestCaseId(m, codeRef, arguments)).ifPresent(testCaseIdEntry -> {
-						rq.setTestCaseId(testCaseIdEntry.getId());
-						rq.setTestCaseHash(testCaseIdEntry.getHash());
-					});
-				});
-			}
+			String codeRef = getCodeRef(context, "");
+			rq.setCodeRef(codeRef);
+			Method testMethod = getTestMethod(context);
+			rq.setAttributes(getAttributes(testMethod));
+			TestCaseIdEntry caseId = getTestCaseId(testMethod, codeRef, arguments);
+			rq.setTestCaseId(caseId.getId());
+			rq.setTestCaseHash(caseId.getHash());
 		}
 		ofNullable(testItem.getAttributes()).ifPresent(attributes -> ofNullable(rq.getAttributes()).orElseGet(() -> {
 			rq.setAttributes(Sets.newHashSet());
@@ -325,33 +329,27 @@ public class ReportPortalExtension
 		idMapping.put(context.getUniqueId(), itemId);
 	}
 
-	private String getCodeRef(Method method) {
-		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
-	}
-
 	private Set<ItemAttributesRQ> getAttributes(Method method) {
 		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElseGet(Sets::newHashSet);
-
 	}
 
 	private TestCaseIdEntry getTestCaseId(String codeRef) {
 		return new TestCaseIdEntry(codeRef, codeRef.hashCode());
 	}
 
-	@Nullable
 	private TestCaseIdEntry getTestCaseId(Method method, String codeRef, List<Object> arguments) {
-		return ofNullable(method.getAnnotation(TestCaseId.class)).map(testCaseId -> {
-			if (testCaseId.parametrized()) {
-				return TestCaseIdUtils.getParameterizedTestCaseId(method, arguments);
+		if (method != null) {
+			TestCaseId caseId = method.getAnnotation(TestCaseId.class);
+			if (caseId != null) {
+				return caseId.parametrized() ?
+						TestCaseIdUtils.getParameterizedTestCaseId(method, arguments) :
+						new TestCaseIdEntry(caseId.value(), caseId.value().hashCode());
 			}
-			return new TestCaseIdEntry(testCaseId.value(), testCaseId.value().hashCode());
-		})
-				.orElseGet(() -> new TestCaseIdEntry(StringUtils.join(codeRef, arguments),
-						Arrays.deepHashCode(new Object[] { codeRef, arguments })
-				));
+		}
+		return new TestCaseIdEntry(StringUtils.join(codeRef, arguments), Arrays.deepHashCode(new Object[] { codeRef, arguments }));
 	}
 
-	private synchronized void finishTestTemplates(ExtensionContext context) {
+	private void finishTestTemplates(ExtensionContext context) {
 		getTestTemplateIds().forEach(id -> {
 			Launch launch = getLaunch(context);
 			FinishTestItemRQ rq = new FinishTestItemRQ();
@@ -362,7 +360,7 @@ public class ReportPortalExtension
 		});
 	}
 
-	private synchronized List<String> getTestTemplateIds() {
+	private List<String> getTestTemplateIds() {
 		List<String> keys = new ArrayList<>();
 		for (Map.Entry<String, Maybe<String>> e : testTemplates.entrySet()) {
 			if (e.getKey().contains("/[test-template:") && !e.getKey().contains("-invocation")) {
@@ -372,7 +370,7 @@ public class ReportPortalExtension
 		return keys;
 	}
 
-	private synchronized void finishTestItem(ExtensionContext context) {
+	private void finishTestItem(ExtensionContext context) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(isDisabledTest.get() ? SKIPPED.name() : getExecutionStatus(context));
@@ -380,7 +378,7 @@ public class ReportPortalExtension
 		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
 	}
 
-	private synchronized void finishTestItem(ExtensionContext context, Status status) {
+	private void finishTestItem(ExtensionContext context, String status) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
@@ -388,7 +386,7 @@ public class ReportPortalExtension
 		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
 	}
 
-	private static synchronized String getExecutionStatus(ExtensionContext context) {
+	private static String getExecutionStatus(ExtensionContext context) {
 		Optional<Throwable> exception = context.getExecutionException();
 		if (!exception.isPresent()) {
 			return Statuses.PASSED;
@@ -406,8 +404,8 @@ public class ReportPortalExtension
 		});
 	}
 
-	private static synchronized void sendStackTraceToRP(final Throwable cause) {
-		ReportPortal.emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+	private static void sendStackTraceToRP(final Throwable cause) {
+		ReportPortal.emitLog((java.util.function.Function<String, SaveLogRQ>) itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");

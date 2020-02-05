@@ -13,28 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-apply plugin: 'java'
-apply from: 'https://raw.githubusercontent.com/reportportal/gradle-scripts/master/release-commons.gradle'
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-project.ext {
-    releaseMode = project.hasProperty('releaseMode')
-}
-ext {
-    junitJupiterVersion = '5.6.0'
+plugins {
+    id 'java'
 }
 
-description = 'JUnit5 Agent'
+project.ext.releaseMode = project.hasProperty('releaseMode')
+
+def branch = releaseMode ? '5.0.0' : 'develop'
+apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+if (project.hasProperty('reportDisabledTests')) {
+    systemProperty('reportDisabledTests', reportDisabledTests)
+}
 
 repositories {
     jcenter()
     mavenCentral()
     mavenLocal()
-    maven { url "http://dl.bintray.com/epam/reportportal" }
-    maven { url "https://jitpack.io" }
+    releaseMode ? maven { url "http://dl.bintray.com/epam/reportportal" } : maven { url "https://jitpack.io" }
+}
+
+processResources {
+    project.properties.ext.set('agent', "$project.name:$project.version")
+    filesMatching('agent.properties') {
+        expand(project.properties)
+    }
 }
 
 dependencies {
@@ -65,3 +71,5 @@ test {
 wrapper {
     gradleVersion = '5.4.1'
 }
+
+afterReleaseBuild.dependsOn bintrayUpload

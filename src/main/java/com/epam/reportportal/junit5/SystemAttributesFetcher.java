@@ -17,14 +17,9 @@
 
 package com.epam.reportportal.junit5;
 
+import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import org.slf4j.LoggerFactory;
-import rp.com.google.common.collect.Sets;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -32,33 +27,8 @@ import java.util.Set;
  */
 public class SystemAttributesFetcher {
 
-	private static final String SEPARATOR = " ";
 	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
-	private static final String JVM_KEY = "jvm";
-	private static final String OS_KEY = "os";
-	private static final String AGENT_KEY = "agent";
-
-	private static ItemAttributesRQ jvmInfo() {
-		String value = System.getProperty("java.vm.name") + SEPARATOR + System.getProperty("java.vm.version");
-		return new ItemAttributesRQ(JVM_KEY, value, true);
-	}
-
-	private static ItemAttributesRQ osInfo() {
-		String value = System.getProperty("os.name") + SEPARATOR + System.getProperty("os.arch") + SEPARATOR + System.getProperty("os.version");
-		return new ItemAttributesRQ(OS_KEY, value, true);
-	}
-
-	private static ItemAttributesRQ agentInfo() {
-		String agent = null;
-		try (InputStream inputStream = ClassLoader.getSystemResourceAsStream("agent.properties")) {
-			Properties properties = new Properties();
-			properties.load(Objects.requireNonNull(inputStream));
-			agent = properties.getProperty(AGENT_KEY);
-		} catch (IOException ex) {
-			LoggerFactory.getLogger(SystemAttributesFetcher.class).warn("Cannot load agent properties", ex);
-		}
-		return null == agent ? new ItemAttributesRQ(AGENT_KEY, "undefined", true) : new ItemAttributesRQ(AGENT_KEY, agent, true);
-	}
+	private static final String AGENT_PROPERTIES = "agent.properties";
 
 	private static ItemAttributesRQ skippedAnIssue(Boolean fromParams) {
 		ItemAttributesRQ skippedIssueAttr = new ItemAttributesRQ();
@@ -69,7 +39,10 @@ public class SystemAttributesFetcher {
 	}
 
 	static Set<ItemAttributesRQ> collectSystemAttributes(Boolean skippedAnIssue) {
-		return Sets.newHashSet(jvmInfo(), osInfo(), agentInfo(), skippedAnIssue(skippedAnIssue));
+
+		Set<ItemAttributesRQ> systemAttributes = SystemAttributesExtractor.extract(AGENT_PROPERTIES);
+		systemAttributes.add(skippedAnIssue(skippedAnIssue));
+		return systemAttributes;
 	}
 
 }

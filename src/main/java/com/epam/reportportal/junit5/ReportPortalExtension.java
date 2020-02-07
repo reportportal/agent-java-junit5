@@ -19,7 +19,6 @@ package com.epam.reportportal.junit5;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
@@ -58,6 +57,8 @@ public class ReportPortalExtension
 	private final Map<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<String, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private ThreadLocal<Boolean> isDisabledTest = new ThreadLocal<>();
+	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
+
 
 	ReportPortal getReporter() {
 		return ReportPortal.builder().build();
@@ -165,7 +166,11 @@ public class ReportPortalExtension
 
 	@Override
 	public void afterTestExecution(ExtensionContext context) {
-		finishTestItem(context);
+		Status status = getExecutionStatus(context);
+		if (FAILED.equals(status)) {
+			context.getParent().ifPresent(c -> c.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
+		}
+		finishTestItem(context, status);
 	}
 
 	@Override
@@ -174,8 +179,14 @@ public class ReportPortalExtension
 
 	@Override
 	public void afterAll(ExtensionContext context) {
-		finishTestTemplates(context);
-		finishTestItem(context);
+		if (context.getStore(NAMESPACE).get(FAILED) == null) {
+			finishTestTemplates(context);
+			finishTestItem(context);
+		} else {
+			finishTestTemplates(context, FAILED);
+			finishTestItem(context, FAILED);
+			context.getParent().ifPresent(p -> p.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
+		}
 	}
 
 	@Override
@@ -348,10 +359,14 @@ public class ReportPortalExtension
 	}
 
 	private void finishTestTemplates(ExtensionContext context) {
+		finishTestTemplates(context, isDisabledTest.get() ? SKIPPED : getExecutionStatus(context));
+	}
+
+	private void finishTestTemplates(ExtensionContext context, Status status) {
 		getTestTemplateIds().forEach(id -> {
 			Launch launch = getLaunch(context);
 			FinishTestItemRQ rq = new FinishTestItemRQ();
-			rq.setStatus(isDisabledTest.get() ? SKIPPED.name() : getExecutionStatus(context));
+			rq.setStatus(status.name());
 			rq.setEndTime(Calendar.getInstance().getTime());
 			launch.finishTestItem(idMapping.get(id), rq);
 			testTemplates.entrySet().removeIf(e -> e.getKey().equals(id));
@@ -369,11 +384,7 @@ public class ReportPortalExtension
 	}
 
 	private void finishTestItem(ExtensionContext context) {
-		Launch launch = getLaunch(context);
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setStatus(isDisabledTest.get() ? SKIPPED.name() : getExecutionStatus(context));
-		rq.setEndTime(Calendar.getInstance().getTime());
-		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
+		finishTestItem(context, isDisabledTest.get() ? SKIPPED : getExecutionStatus(context));
 	}
 
 	private void finishTestItem(ExtensionContext context, Status status) {
@@ -384,13 +395,13 @@ public class ReportPortalExtension
 		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
 	}
 
-	private static String getExecutionStatus(ExtensionContext context) {
+	private static Status getExecutionStatus(ExtensionContext context) {
 		Optional<Throwable> exception = context.getExecutionException();
 		if (!exception.isPresent()) {
-			return Statuses.PASSED;
+			return Status.PASSED;
 		} else {
 			sendStackTraceToRP(exception.get());
-			return Statuses.FAILED;
+			return Status.FAILED;
 		}
 	}
 

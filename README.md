@@ -34,10 +34,6 @@ with fully qualified custom Extension class name in this file.
         <id>bintray</id>
         <url>http://dl.bintray.com/epam/reportportal</url>
     </repository>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
 </repositories>
 
 <dependency>
@@ -74,7 +70,6 @@ repositories {
     jcenter()
     mavenLocal()
     maven { url "http://dl.bintray.com/epam/reportportal" }
-    maven { url "https://jitpack.io" }
 }
 
 testCompile 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
@@ -127,10 +122,6 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
     <repository>
         <id>bintray</id>
         <url>http://dl.bintray.com/epam/reportportal</url>
-    </repository>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
     </repository>
 </repositories>
 ```
@@ -353,10 +344,6 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
             <id>bintray</id>
             <url>http://dl.bintray.com/epam/reportportal</url>
         </repository>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
     </repositories>
 
     <dependencies>
@@ -472,7 +459,6 @@ repositories {
     mavenLocal()
     mavenCentral()
     jcenter()
-    maven { url 'https://jitpack.io' }
     maven { url "http://dl.bintray.com/epam/reportportal" }
 }
 

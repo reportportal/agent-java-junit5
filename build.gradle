@@ -37,7 +37,6 @@ repositories {
 }
 
 processResources {
-    project.properties.ext.set('agent', "$project.name:$project.version")
     filesMatching('agent.properties') {
         expand(project.properties)
     }
@@ -48,7 +47,7 @@ dependencies {
         compile 'com.epam.reportportal:client-java:5.0.0-BETA-8'
         compile 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        compile 'com.github.reportportal:client-java:8934ff9'
+        compile 'com.github.reportportal:client-java:2689300'
         compile 'com.github.reportportal:commons-model:e608d19'
     }
 
@@ -62,7 +61,7 @@ dependencies {
 }
 
 test {
-    outputs.upToDateWhen {return false}
+    outputs.upToDateWhen { return false }
     useJUnitPlatform()
     exclude("com/epam/reportportal/junit5/features/**")
     maxParallelForks(1);

@@ -59,13 +59,16 @@ public class ReportPortalExtension
 	private ThreadLocal<Boolean> isDisabledTest = new ThreadLocal<>();
 	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
 
-
 	ReportPortal getReporter() {
 		return ReportPortal.builder().build();
 	}
 
+	String getLaunchId(ExtensionContext context) {
+		return context.getRoot().getUniqueId();
+	}
+
 	Launch getLaunch(ExtensionContext context) {
-		return launchMap.computeIfAbsent(context.getRoot().getUniqueId(), id -> {
+		return launchMap.computeIfAbsent(getLaunchId(context), id -> {
 			ReportPortal rp = getReporter();
 			ListenerParameters params = rp.getParameters();
 			StartLaunchRQ rq = new StartLaunchRQ();

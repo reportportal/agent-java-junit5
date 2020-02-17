@@ -40,7 +40,7 @@ public class SystemAttributesFetcher {
 
 	static Set<ItemAttributesRQ> collectSystemAttributes(Boolean skippedAnIssue) {
 
-		Set<ItemAttributesRQ> systemAttributes = SystemAttributesExtractor.extract(AGENT_PROPERTIES);
+		Set<ItemAttributesRQ> systemAttributes = SystemAttributesExtractor.extract(AGENT_PROPERTIES, SystemAttributesFetcher.class.getClassLoader());
 		systemAttributes.add(skippedAnIssue(skippedAnIssue));
 		return systemAttributes;
 	}

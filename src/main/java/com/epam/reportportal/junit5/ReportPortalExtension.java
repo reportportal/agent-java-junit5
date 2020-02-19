@@ -84,7 +84,6 @@ public class ReportPortalExtension
 			rq.setRerunOf(StringUtils.isEmpty(params.getRerunOf()) ? null : params.getRerunOf());
 
 			Launch launch = rp.newLaunch(rq);
-			launchMap.put(id, launch);
 			StepAspect.addLaunch(id, launch);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
 			launch.start();

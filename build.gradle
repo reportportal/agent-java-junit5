@@ -13,52 +13,63 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-apply plugin: 'java'
-apply from: 'https://raw.githubusercontent.com/reportportal/gradle-scripts/master/release-commons.gradle'
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-project.ext {
-    releaseMode = project.hasProperty('releaseMode')
-}
-ext {
-    junitJupiterVersion = '5.5.0'
+plugins {
+    id 'java'
 }
 
-description = 'JUnit5 Agent'
+project.ext.releaseMode = project.hasProperty('releaseMode')
+
+def branch = releaseMode ? '5.0.0' : 'develop'
+apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+if (project.hasProperty('reportDisabledTests')) {
+    systemProperty('reportDisabledTests', reportDisabledTests)
+}
 
 repositories {
     jcenter()
     mavenCentral()
     mavenLocal()
-    maven { url "http://dl.bintray.com/epam/reportportal" }
-    maven { url "https://jitpack.io" }
+    releaseMode ? maven { url "http://dl.bintray.com/epam/reportportal" } : maven { url "https://jitpack.io" }
+}
+
+processResources {
+    filesMatching('agent.properties') {
+        expand(project.properties)
+    }
 }
 
 dependencies {
     if (releaseMode) {
-        compile 'com.epam.reportportal:client-java:5.0.0-BETA-4'
-        compile 'com.epam.reportportal:commons-model:5.0.0-BETA-11'
+        compile 'com.epam.reportportal:client-java:5.0.0-BETA-9'
+        compile 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        compile 'com.github.reportportal:client-java:9f6289bf'
-        compile 'com.github.reportportal:commons-model:feec39f3'
+        compile 'com.github.reportportal:client-java:51aef16'
+        compile 'com.github.reportportal:commons-model:5.0.0'
     }
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
+
+    testImplementation 'org.junit.platform:junit-platform-runner:1.6.0'
+    testImplementation 'org.junit.platform:junit-platform-launcher:1.6.0'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+    testImplementation 'org.mockito:mockito-core:3.2.4'
 }
 
 test {
+    outputs.upToDateWhen { return false }
     useJUnitPlatform()
-    systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
-    if (project.hasProperty('reportDisabledTests')) {
-        systemProperty('reportDisabledTests', reportDisabledTests)
-    }
+    exclude("com/epam/reportportal/junit5/features/**")
+    maxParallelForks(1);
 }
 
 wrapper {
     gradleVersion = '5.4.1'
 }
+
+afterReleaseBuild.dependsOn bintrayUpload

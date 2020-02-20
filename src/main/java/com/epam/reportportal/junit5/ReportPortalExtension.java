@@ -18,7 +18,6 @@ package com.epam.reportportal.junit5;
 
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
@@ -84,7 +83,6 @@ public class ReportPortalExtension
 			rq.setRerunOf(StringUtils.isEmpty(params.getRerunOf()) ? null : params.getRerunOf());
 
 			Launch launch = rp.newLaunch(rq);
-			StepAspect.addLaunch(id, launch);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
 			launch.start();
 			return launch;
@@ -238,7 +236,6 @@ public class ReportPortalExtension
 		rq.setTestCaseHash(testCaseIdEntry.getHash());
 		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentId), rq);
 		idMapping.put(uniqueId, itemId);
-		StepAspect.setParentId(itemId);
 		return uniqueId;
 	}
 
@@ -342,7 +339,6 @@ public class ReportPortalExtension
 			testTemplates.put(context.getUniqueId(), itemId);
 		}
 		idMapping.put(context.getUniqueId(), itemId);
-		StepAspect.setParentId(itemId);
 	}
 
 	private Set<ItemAttributesRQ> getAttributes(Method method) {

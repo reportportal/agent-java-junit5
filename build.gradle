@@ -55,7 +55,6 @@ dependencies {
     compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
 
-    testImplementation "org.aspectj:aspectjweaver:1.9.2"
     testImplementation 'org.junit.platform:junit-platform-runner:1.6.0'
     testImplementation 'org.junit.platform:junit-platform-launcher:1.6.0'
     testImplementation 'org.hamcrest:hamcrest:2.2'
@@ -67,10 +66,6 @@ test {
     useJUnitPlatform()
     exclude("com/epam/reportportal/junit5/features/**")
     maxParallelForks(1);
-    doFirst {
-        def weaver = configurations.compile.find { it.name.contains("aspectjweaver") }
-        jvmArgs += "-javaagent:$weaver"
-    }
 }
 
 wrapper {

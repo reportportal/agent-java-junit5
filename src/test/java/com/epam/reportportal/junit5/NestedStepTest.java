@@ -1,19 +1,26 @@
 package com.epam.reportportal.junit5;
 
-import com.epam.reportportal.annotations.Step;
-import com.epam.reportportal.aspect.StepAspect;
+import com.epam.reportportal.junit5.features.nested.NestedStepFeatureFailedTest;
+import com.epam.reportportal.junit5.features.nested.NestedStepFeaturePassedTest;
+import com.epam.reportportal.junit5.features.nested.NestedStepMultiLevelTest;
+import com.epam.reportportal.junit5.features.nested.NestedStepWithBeforeEachTest;
+import com.epam.reportportal.junit5.util.TestUtils;
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.ReportPortal;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.List;
+import java.util.UUID;
 
+import static com.epam.reportportal.junit5.NestedStepTest.NestedStepExtension.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -23,16 +30,65 @@ import static org.mockito.Mockito.*;
  */
 public class NestedStepTest {
 
-	private static final String NESTED_STEP_NAME_TEMPLATE = "I am nested step with parameter - '{param}'";
+	public static final String PARAM = "test param";
 
-	private static final String METHOD_WITH_INNER_METHOD_NAME_TEMPLATE = "I am method with inner method";
-	private static final String INNER_METHOD_NAME_TEMPLATE = "I am - {method}";
+	public static final String NESTED_STEP_NAME_TEMPLATE = "I am nested step with parameter - '{param}'";
 
-	@Mock
-	private Launch launch;
+	public static final String METHOD_WITH_INNER_METHOD_NAME_TEMPLATE = "I am method with inner method";
+	public static final String INNER_METHOD_NAME_TEMPLATE = "I am - {method}";
 
-	@Mock
-	private Maybe<String> parentId;
+	public static class NestedStepExtension extends ReportPortalExtension {
+
+		static final ThreadLocal<Maybe<String>> TEST_METHOD_ID = new ThreadLocal<>();
+		static final ThreadLocal<Maybe<String>> NESTED_STEP_ID = new ThreadLocal<>();
+		static final ThreadLocal<Maybe<String>> INNER_NESTED_STEP_ID = new ThreadLocal<>();
+
+		static final ThreadLocal<Launch> LAUNCH = new ThreadLocal<>();
+		final static ThreadLocal<String> LAUNCH_ID = new ThreadLocal<>();
+		static final ThreadLocal<ListenerParameters> LISTENER_PARAMETERS = new ThreadLocal<>();
+		static final ThreadLocal<ReportPortal> REPORT_PORTAL = new ThreadLocal<>();
+
+		public static Maybe<String> createIdMaybe(String id) {
+			return Maybe.create(emitter -> {
+				emitter.onSuccess(id);
+				emitter.onComplete();
+			});
+		}
+
+		public NestedStepExtension() {
+			LAUNCH.set(mock(Launch.class));
+			Maybe<String> rootItemId = createIdMaybe("Root item id");
+			when(LAUNCH.get().startTestItem(any())).thenReturn(rootItemId);
+
+			Maybe<String> launchId = createIdMaybe("Launch " + UUID.randomUUID().toString());
+			LAUNCH_ID.set(launchId.blockingGet());
+
+			TEST_METHOD_ID.set(createIdMaybe("Test method id"));
+			when(LAUNCH.get().startTestItem(eq(rootItemId), any())).thenReturn(TEST_METHOD_ID.get());
+
+			NESTED_STEP_ID.set(createIdMaybe("Nested step id"));
+			when(LAUNCH.get().startTestItem(eq(TEST_METHOD_ID.get()), any())).thenReturn(NESTED_STEP_ID.get());
+
+			INNER_NESTED_STEP_ID.set(createIdMaybe("Inner nested step id"));
+			when(LAUNCH.get().startTestItem(eq(NESTED_STEP_ID.get()), any())).thenReturn(INNER_NESTED_STEP_ID.get());
+
+			REPORT_PORTAL.set(mock(ReportPortal.class));
+			when(REPORT_PORTAL.get().newLaunch(any())).thenReturn(LAUNCH.get());
+
+			LISTENER_PARAMETERS.set(mock(ListenerParameters.class));
+			when(REPORT_PORTAL.get().getParameters()).thenReturn(LISTENER_PARAMETERS.get());
+		}
+
+		@Override
+		ReportPortal getReporter() {
+			return REPORT_PORTAL.get();
+		}
+
+		@Override
+		String getLaunchId(ExtensionContext context) {
+			return LAUNCH_ID.get();
+		}
+	}
 
 	@BeforeEach
 	public void init() {
@@ -41,26 +97,19 @@ public class NestedStepTest {
 
 	@Test
 	public void nestedTest() {
-		final String param = "test param";
 
-		StepAspect.addLaunch("test launch", launch);
-		StepAspect.setParentId(parentId);
-
-		Maybe<String> firstItemMaybe = createItemIdMaybe("first item");
-		when(launch.startTestItem(any(), any())).thenReturn(firstItemMaybe);
-
-		method(param);
+		TestUtils.runClasses(NestedStepFeaturePassedTest.class);
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(launch, times(1)).startTestItem(any(), nestedStepCaptor.capture());
-		verify(launch, times(1)).finishTestItem(any(), finishNestedCaptor.capture());
+		verify(LAUNCH.get(), times(1)).startTestItem(eq(TEST_METHOD_ID.get()), nestedStepCaptor.capture());
+		verify(LAUNCH.get(), times(1)).finishTestItem(eq(NESTED_STEP_ID.get()), finishNestedCaptor.capture());
 
 		StartTestItemRQ startTestItemRQ = nestedStepCaptor.getValue();
 
 		assertNotNull(startTestItemRQ);
 		assertFalse(startTestItemRQ.isHasStats());
-		assertEquals("I am nested step with parameter - '" + param + "'", startTestItemRQ.getName());
+		assertEquals("I am nested step with parameter - '" + PARAM + "'", startTestItemRQ.getName());
 
 		FinishTestItemRQ finishNestedRQ = finishNestedCaptor.getValue();
 		assertNotNull(finishNestedRQ);
@@ -68,38 +117,46 @@ public class NestedStepTest {
 
 	}
 
-	@Step(NESTED_STEP_NAME_TEMPLATE)
-	public void method(String param) {
+	@Test
+	public void nestedInBeforeMethodTest() {
+		TestUtils.runClasses(NestedStepWithBeforeEachTest.class);
+
+		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(LAUNCH.get(), times(1)).startTestItem(eq(TEST_METHOD_ID.get()), nestedStepCaptor.capture());
+		verify(LAUNCH.get(), times(1)).finishTestItem(eq(NESTED_STEP_ID.get()), finishNestedCaptor.capture());
+
+		StartTestItemRQ startTestItemRQ = nestedStepCaptor.getValue();
+
+		assertNotNull(startTestItemRQ);
+		assertFalse(startTestItemRQ.isHasStats());
+		assertEquals("I am nested step with parameter - '" + PARAM + "'", startTestItemRQ.getName());
+
+		FinishTestItemRQ finishNestedRQ = finishNestedCaptor.getValue();
+		assertNotNull(finishNestedRQ);
+		assertEquals("PASSED", finishNestedRQ.getStatus());
 
 	}
 
 	@Test
 	public void failedNestedTest() {
-		final String param = "test param";
-
-		StepAspect.addLaunch("test launch", launch);
-		StepAspect.setParentId(parentId);
-
-		Maybe<String> firstItemMaybe = createItemIdMaybe("first item");
-		when(launch.startTestItem(any(), any())).thenReturn(firstItemMaybe);
 
 		try {
-			failedMethod(param);
+			TestUtils.runClasses(NestedStepFeatureFailedTest.class);
 		} catch (Exception ex) {
 			//to prevent this test failing
 		}
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(launch, times(1)).startTestItem(any(), nestedStepCaptor.capture());
-		//2 times to finish nested and it's parent
-		verify(launch, times(2)).finishTestItem(any(), finishNestedCaptor.capture());
+		verify(LAUNCH.get(), times(1)).startTestItem(eq(TEST_METHOD_ID.get()), nestedStepCaptor.capture());
+		verify(LAUNCH.get(), times(1)).finishTestItem(eq(NESTED_STEP_ID.get()), finishNestedCaptor.capture());
 
 		StartTestItemRQ startTestItemRQ = nestedStepCaptor.getValue();
 
 		assertNotNull(startTestItemRQ);
 		assertFalse(startTestItemRQ.isHasStats());
-		assertEquals("I am nested step with parameter - '" + param + "'", startTestItemRQ.getName());
+		assertEquals("I am nested step with parameter - '" + PARAM + "'", startTestItemRQ.getName());
 
 		FinishTestItemRQ finishNestedRQ = finishNestedCaptor.getValue();
 		assertNotNull(finishNestedRQ);
@@ -107,23 +164,17 @@ public class NestedStepTest {
 
 	}
 
-	@Step(NESTED_STEP_NAME_TEMPLATE)
-	public void failedMethod(String param) {
-		throw new RuntimeException("Some random error");
-	}
-
 	@Test
 	public void testWithMultiLevelNested() throws NoSuchMethodException {
-		StepAspect.addLaunch("test launch", launch);
-		StepAspect.setParentId(parentId);
+
+		TestUtils.runClasses(NestedStepMultiLevelTest.class);
+
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-
-		Maybe<String> firstItemMaybe = createItemIdMaybe("first item");
-		when(launch.startTestItem(any(), any())).thenReturn(firstItemMaybe);
-
-		methodWithInnerMethod();
-
-		verify(launch, times(2)).startTestItem(any(), nestedStepCaptor.capture());
+		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(LAUNCH.get(), times(1)).startTestItem(eq(TEST_METHOD_ID.get()), nestedStepCaptor.capture());
+		verify(LAUNCH.get(), times(1)).finishTestItem(eq(NESTED_STEP_ID.get()), finishNestedCaptor.capture());
+		verify(LAUNCH.get(), times(1)).startTestItem(eq(NESTED_STEP_ID.get()), nestedStepCaptor.capture());
+		verify(LAUNCH.get(), times(1)).finishTestItem(eq(INNER_NESTED_STEP_ID.get()), finishNestedCaptor.capture());
 
 		List<StartTestItemRQ> nestedSteps = nestedStepCaptor.getAllValues();
 
@@ -136,23 +187,7 @@ public class NestedStepTest {
 		assertEquals(METHOD_WITH_INNER_METHOD_NAME_TEMPLATE, stepWithInnerStep.getName());
 
 		StartTestItemRQ innerStep = nestedSteps.get(1);
-		assertEquals("I am - " + NestedStepTest.class.getDeclaredMethod("innerMethod").getName(), innerStep.getName());
+		assertEquals("I am - " + NestedStepMultiLevelTest.class.getDeclaredMethod("innerMethod").getName(), innerStep.getName());
 	}
 
-	@Step(METHOD_WITH_INNER_METHOD_NAME_TEMPLATE)
-	public void methodWithInnerMethod() {
-		innerMethod();
-	}
-
-	@Step(INNER_METHOD_NAME_TEMPLATE)
-	public void innerMethod() {
-
-	}
-
-	private Maybe<String> createItemIdMaybe(String id) {
-		return Maybe.create(emitter -> {
-			emitter.onSuccess(id);
-			emitter.onComplete();
-		});
-	}
 }

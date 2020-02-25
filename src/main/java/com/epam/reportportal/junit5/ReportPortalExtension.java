@@ -23,9 +23,9 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
+import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
-import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -346,11 +346,11 @@ public class ReportPortalExtension
 
 		Maybe<String> itemId = context.getParent()
 				.map(ExtensionContext::getUniqueId)
-				.flatMap(parentId -> Optional.ofNullable(idMapping.get(parentId)))
+				.map(parentId -> Optional.ofNullable(idMapping.get(parentId)))
 				.map(parentTest -> {
-					Maybe<String> item = launch.startTestItem(parentTest, rq);
+					Maybe<String> item = launch.startTestItem(parentTest.orElse(null), rq);
 					if (REPORT_PORTAL.getParameters().isCallbackReportingEnabled()) {
-						TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest, item, 0));
+						TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest.orElse(null), item, 0));
 					}
 					return item;
 				})

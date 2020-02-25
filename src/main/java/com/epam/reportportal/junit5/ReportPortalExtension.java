@@ -33,6 +33,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.*;
 import rp.com.google.common.collect.Sets;
 
@@ -297,21 +298,28 @@ public class ReportPortalExtension
 		return context.getTestMethod().orElseGet(() -> context.getParent().map(this::getTestMethod).orElse(null));
 	}
 
+	private static boolean isRetry(ExtensionContext context) {
+		return context.getTestMethod().map(it -> Objects.nonNull(it.getAnnotation(RepeatedTest.class))).orElse(false);
+	}
+
 	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type, String reason) {
 		boolean isTemplate = false;
 		if (TEMPLATE.equals(type)) {
 			type = SUITE;
 			isTemplate = true;
 		}
-		TestItem testItem = getTestItem(context);
+		boolean retry = isRetry(context);
+
+		TestItem testItem = getTestItem(context, retry);
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = new StartTestItemRQ();
+
 		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setName(testItem.getName());
 		rq.setDescription(null != reason ? reason : testItem.getDescription());
-		rq.setUniqueId(context.getUniqueId());
+		rq.setUniqueId(testItem.getUniqueId());
 		rq.setType(type.name());
-		rq.setRetry(false);
+		rq.setRetry(retry);
 		if (SUITE.equals(type)) {
 			context.getTestClass().map(Class::getCanonicalName).ifPresent(codeRef -> {
 				rq.setCodeRef(codeRef);
@@ -436,10 +444,20 @@ public class ReportPortalExtension
 		});
 	}
 
+	protected TestItem getTestItem(ExtensionContext context, boolean isRetry) {
+		String name = isRetry ? context.getParent().get().getDisplayName() : context.getDisplayName();
+		String uniqueId = isRetry ? context.getParent().get().getUniqueId() : context.getUniqueId();
+		name = name.length() > 1024 ? name.substring(0, 1024) + "..." : name;
+		String description = context.getDisplayName();
+		Set<String> tags = context.getTags();
+		return new TestItem(name, description, uniqueId, tags);
+	}
+
 	protected static class TestItem {
 
 		private String name;
 		private String description;
+		private String uniqueId;
 		private Set<ItemAttributesRQ> attributes;
 
 		String getName() {
@@ -454,18 +472,15 @@ public class ReportPortalExtension
 			return attributes;
 		}
 
-		public TestItem(String name, String description, Set<String> tags) {
+		public TestItem(String name, String description, String uniqueId, Set<String> tags) {
 			this.name = name;
 			this.description = description;
+			this.uniqueId = uniqueId;
 			this.attributes = tags.stream().map(it -> new ItemAttributesRQ(null, it)).collect(Collectors.toSet());
 		}
-	}
 
-	protected TestItem getTestItem(ExtensionContext context) {
-		String name = context.getDisplayName();
-		name = name.length() > 1024 ? name.substring(0, 1024) + "..." : name;
-		String description = context.getDisplayName();
-		Set<String> tags = context.getTags();
-		return new TestItem(name, description, tags);
+		public String getUniqueId() {
+			return uniqueId;
+		}
 	}
 }

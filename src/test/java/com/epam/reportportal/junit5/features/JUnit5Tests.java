@@ -1,4 +1,4 @@
-package com.epam.reportportal.junit5.tests;
+package com.epam.reportportal.junit5.features;
 
 import com.epam.reportportal.service.ReportPortal;
 import org.junit.jupiter.api.*;

@@ -59,7 +59,7 @@ public class ReportPortalExtension
 				   TestWatcher, InvocationInterceptor {
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
-	public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+	public static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
 	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
@@ -349,14 +349,15 @@ public class ReportPortalExtension
 				.map(parentId -> Optional.ofNullable(idMapping.get(parentId)))
 				.map(parentTest -> {
 					Maybe<String> item = launch.startTestItem(parentTest.orElse(null), rq);
-					if (REPORT_PORTAL.getParameters().isCallbackReportingEnabled()) {
-						TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest.orElse(null), item, 0));
+					if (getReporter().getParameters().isCallbackReportingEnabled()) {
+						TEST_ITEM_TREE.getTestItems()
+								.put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest.orElse(null), item, 0));
 					}
 					return item;
 				})
 				.orElseGet(() -> {
 					Maybe<String> item = launch.startTestItem(rq);
-					if (REPORT_PORTAL.getParameters().isCallbackReportingEnabled()) {
+					if (getReporter().getParameters().isCallbackReportingEnabled()) {
 						TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(item, 0));
 					}
 					return item;
@@ -423,7 +424,7 @@ public class ReportPortalExtension
 		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
 		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
-		if (REPORT_PORTAL.getParameters().isCallbackReportingEnabled()) {
+		if (getReporter().getParameters().isCallbackReportingEnabled()) {
 			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
 					finishResponse));
 		}

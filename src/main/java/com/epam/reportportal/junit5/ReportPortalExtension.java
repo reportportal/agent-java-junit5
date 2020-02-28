@@ -23,10 +23,12 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
+import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -44,6 +46,8 @@ import java.util.stream.Collectors;
 import static com.epam.reportportal.junit5.ItemType.*;
 import static com.epam.reportportal.junit5.Status.*;
 import static com.epam.reportportal.junit5.SystemAttributesFetcher.collectSystemAttributes;
+import static com.epam.reportportal.junit5.utils.ItemTreeUtils.createItemTreeKey;
+import static com.epam.reportportal.service.tree.TestItemTree.createTestItemLeaf;
 import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -53,6 +57,10 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public class ReportPortalExtension
 		implements Extension, BeforeAllCallback, BeforeEachCallback, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
 				   TestWatcher, InvocationInterceptor {
+
+	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
+	public static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+
 	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final Map<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
@@ -61,7 +69,7 @@ public class ReportPortalExtension
 	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
 
 	ReportPortal getReporter() {
-		return ReportPortal.builder().build();
+		return REPORT_PORTAL;
 	}
 
 	String getLaunchId(ExtensionContext context) {
@@ -86,7 +94,10 @@ public class ReportPortalExtension
 			Launch launch = rp.newLaunch(rq);
 			StepAspect.addLaunch(id, launch);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
-			launch.start();
+			Maybe<String> launchIdResponse = launch.start();
+			if (params.isCallbackReportingEnabled()) {
+				TEST_ITEM_TREE.setLaunchId(launchIdResponse);
+			}
 			return launch;
 		});
 	}
@@ -335,9 +346,22 @@ public class ReportPortalExtension
 
 		Maybe<String> itemId = context.getParent()
 				.map(ExtensionContext::getUniqueId)
-				.map(parentId -> ofNullable(idMapping.get(parentId)))
-				.map(parentTest -> launch.startTestItem(parentTest.orElse(null), rq))
-				.orElseGet(() -> launch.startTestItem(rq));
+				.map(parentId -> Optional.ofNullable(idMapping.get(parentId)))
+				.map(parentTest -> {
+					Maybe<String> item = launch.startTestItem(parentTest.orElse(null), rq);
+					if (getReporter().getParameters().isCallbackReportingEnabled()) {
+						TEST_ITEM_TREE.getTestItems()
+								.put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest.orElse(null), item, 0));
+					}
+					return item;
+				})
+				.orElseGet(() -> {
+					Maybe<String> item = launch.startTestItem(rq);
+					if (getReporter().getParameters().isCallbackReportingEnabled()) {
+						TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(item, 0));
+					}
+					return item;
+				});
 		if (isTemplate) {
 			testTemplates.put(context.getUniqueId(), itemId);
 		}
@@ -399,7 +423,11 @@ public class ReportPortalExtension
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
-		launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
+		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.get(context.getUniqueId()), rq);
+		if (getReporter().getParameters().isCallbackReportingEnabled()) {
+			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
+					finishResponse));
+		}
 	}
 
 	private static Status getExecutionStatus(ExtensionContext context) {

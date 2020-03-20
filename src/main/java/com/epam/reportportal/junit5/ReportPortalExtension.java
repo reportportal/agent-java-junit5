@@ -66,7 +66,6 @@ public class ReportPortalExtension
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final Map<String, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<String, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
-	private ThreadLocal<Boolean> isDisabledTest = new ThreadLocal<>();
 	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
 
 	ReportPortal getReporter() {
@@ -137,13 +136,11 @@ public class ReportPortalExtension
 
 	@Override
 	public void beforeAll(ExtensionContext context) {
-		isDisabledTest.set(false);
 		startTestItem(context, SUITE);
 	}
 
 	@Override
 	public void beforeEach(ExtensionContext context) {
-		isDisabledTest.set(false);
 		startTemplate(context);
 	}
 
@@ -209,7 +206,7 @@ public class ReportPortalExtension
 	@Override
 	public void testDisabled(ExtensionContext context, Optional<String> reason) {
 		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
-			isDisabledTest.set(true);
+			context.getStore(NAMESPACE).put(SKIPPED, Boolean.TRUE);
 			String description = reason.orElse(context.getDisplayName());
 			startTestItem(context, Collections.emptyList(), STEP, description);
 			finishTestItem(context);
@@ -398,7 +395,7 @@ public class ReportPortalExtension
 	}
 
 	private void finishTestTemplates(ExtensionContext context) {
-		finishTestTemplates(context, isDisabledTest.get() ? SKIPPED : getExecutionStatus(context));
+		finishTestTemplates(context, context.getStore(NAMESPACE).get(SKIPPED) != null ? SKIPPED : getExecutionStatus(context));
 	}
 
 	private void finishTestTemplates(ExtensionContext context, Status status) {
@@ -423,7 +420,7 @@ public class ReportPortalExtension
 	}
 
 	private void finishTestItem(ExtensionContext context) {
-		finishTestItem(context, isDisabledTest.get() ? SKIPPED : getExecutionStatus(context));
+		finishTestItem(context, context.getStore(NAMESPACE).get(SKIPPED) != null ? SKIPPED : getExecutionStatus(context));
 	}
 
 	private void finishTestItem(ExtensionContext context, Status status) {

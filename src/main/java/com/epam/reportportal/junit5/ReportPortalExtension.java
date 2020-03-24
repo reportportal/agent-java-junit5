@@ -26,10 +26,7 @@ import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
-import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
@@ -43,6 +40,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.epam.reportportal.junit5.ItemType.*;
 import static com.epam.reportportal.junit5.Status.*;
@@ -59,12 +57,12 @@ public class ReportPortalExtension
 		implements Extension, BeforeAllCallback, BeforeEachCallback, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
 				   TestWatcher, InvocationInterceptor {
 
-	public static final String RP_ID = "rp_id";
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
 	public static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
 	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
+	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<String, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
 
@@ -225,7 +223,6 @@ public class ReportPortalExtension
 	public void testFailed(ExtensionContext context, Throwable throwable) {
 	}
 
-	@SuppressWarnings("unchecked")
 	private Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = new StartTestItemRQ();
@@ -246,7 +243,7 @@ public class ReportPortalExtension
 				.orElseGet(() -> getTestCaseId(codeRef));
 		rq.setTestCaseId(testCaseIdEntry.getId());
 		rq.setTestCaseHash(testCaseIdEntry.getHash());
-		Maybe<String> itemId = launch.startTestItem((Maybe<String>) parentContext.getStore(NAMESPACE).get(RP_ID), rq);
+		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentContext), rq);
 		StepAspect.setParentId(itemId);
 		return itemId;
 	}
@@ -273,7 +270,7 @@ public class ReportPortalExtension
 	private void startTemplate(ExtensionContext context) {
 		context.getParent().ifPresent(parent -> {
 			if (TEST_TEMPLATE_EXTENSION_CONTEXT.equals(parent.getClass().getCanonicalName())
-					&& parent.getStore(NAMESPACE).get(RP_ID) == null) {
+					&& !idMapping.containsKey(parent)) {
 				startTestItem(parent, TEMPLATE);
 			}
 		});
@@ -310,9 +307,7 @@ public class ReportPortalExtension
 		return context.getTestMethod().map(it -> Objects.nonNull(it.getAnnotation(RepeatedTest.class))).orElse(false);
 	}
 
-	@SuppressWarnings("unchecked")
 	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type, String reason) {
-		System.out.println("StartTestItem: " + context.toString());
 		boolean isTemplate = false;
 		if (TEMPLATE.equals(type)) {
 			type = SUITE;
@@ -345,34 +340,37 @@ public class ReportPortalExtension
 			TestCaseIdEntry caseId = getTestCaseId(testMethod, codeRef, arguments);
 			rq.setTestCaseId(caseId.getId());
 			rq.setTestCaseHash(caseId.getHash());
+			if (!arguments.isEmpty()) {
+				rq.setParameters(IntStream.rangeClosed(1, arguments.size()).boxed().map(i -> {
+					ParameterResource res = new ParameterResource();
+					res.setKey(i.toString());
+					res.setValue(arguments.get(i - 1).toString());
+					return res;
+				}).collect(Collectors.toList()));
+			}
 		}
 		ofNullable(testItem.getAttributes()).ifPresent(attributes -> ofNullable(rq.getAttributes()).orElseGet(() -> {
 			rq.setAttributes(Sets.newHashSet());
 			return rq.getAttributes();
 		}).addAll(attributes));
 
-		Maybe<String> itemId = context.getParent()
-				.flatMap(parent -> Optional.ofNullable((Maybe<String>) parent.getStore(NAMESPACE).get(RP_ID)))
-				.map(parentTest -> {
-					Maybe<String> item = launch.startTestItem(parentTest, rq);
-					if (getReporter().getParameters().isCallbackReportingEnabled()) {
-						TEST_ITEM_TREE.getTestItems()
-								.put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest, item, 0));
-					}
-					return item;
-				})
-				.orElseGet(() -> {
-					Maybe<String> item = launch.startTestItem(rq);
-					if (getReporter().getParameters().isCallbackReportingEnabled()) {
-						TEST_ITEM_TREE.getTestItems()
-								.put(createItemTreeKey(testItem.getName()), createTestItemLeaf(item, 0));
-					}
-					return item;
-				});
+		Maybe<String> itemId = context.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
+			Maybe<String> item = launch.startTestItem(parentTest, rq);
+			if (getReporter().getParameters().isCallbackReportingEnabled()) {
+				TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest, item, 0));
+			}
+			return item;
+		}).orElseGet(() -> {
+			Maybe<String> item = launch.startTestItem(rq);
+			if (getReporter().getParameters().isCallbackReportingEnabled()) {
+				TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(item, 0));
+			}
+			return item;
+		});
 		if (isTemplate) {
 			testTemplates.put(context.getUniqueId(), itemId);
 		}
-		context.getStore(NAMESPACE).put(RP_ID, itemId);
+		idMapping.put(context, itemId);
 		StepAspect.setParentId(itemId);
 	}
 
@@ -400,39 +398,32 @@ public class ReportPortalExtension
 		finishTestTemplates(context, context.getStore(NAMESPACE).get(SKIPPED) != null ? SKIPPED : getExecutionStatus(context));
 	}
 
-	@SuppressWarnings("unchecked")
 	private void finishTestTemplates(ExtensionContext context, Status status) {
 		getTestTemplateIds().forEach(id -> {
 			Launch launch = getLaunch(context);
 			FinishTestItemRQ rq = new FinishTestItemRQ();
 			rq.setStatus(status.name());
 			rq.setEndTime(Calendar.getInstance().getTime());
-			launch.finishTestItem((Maybe<String>) context.getStore(NAMESPACE).get(RP_ID), rq);
-			testTemplates.entrySet().removeIf(e -> e.getKey().equals(id));
+			launch.finishTestItem(testTemplates.remove(id), rq);
 		});
 	}
 
 	private List<String> getTestTemplateIds() {
-		List<String> keys = new ArrayList<>();
-		for (Map.Entry<String, Maybe<String>> e : testTemplates.entrySet()) {
-			if (e.getKey().contains("/[test-template:") && !e.getKey().contains("-invocation")) {
-				keys.add(e.getKey());
-			}
-		}
-		return keys;
+		return testTemplates.keySet().stream()
+				.filter(stringMaybe -> stringMaybe.contains("/[test-template:") && !stringMaybe.contains("-invocation"))
+				.collect(Collectors.toList());
 	}
 
 	private void finishTestItem(ExtensionContext context) {
 		finishTestItem(context, context.getStore(NAMESPACE).get(SKIPPED) != null ? SKIPPED : getExecutionStatus(context));
 	}
 
-	@SuppressWarnings("unchecked")
 	private void finishTestItem(ExtensionContext context, Status status) {
 		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
-		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem((Maybe<String>) context.getStore(NAMESPACE).get(RP_ID), rq);
+		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.get(context), rq);
 		if (getReporter().getParameters().isCallbackReportingEnabled()) {
 			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
 					finishResponse));
@@ -458,7 +449,7 @@ public class ReportPortalExtension
 	}
 
 	private static void sendStackTraceToRP(final Throwable cause) {
-		ReportPortal.emitLog((java.util.function.Function<String, SaveLogRQ>) itemUuid -> {
+		ReportPortal.emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");

@@ -103,56 +103,40 @@ public class ReportPortalExtension
 	}
 
 	@Override
-	public void beforeAll(ExtensionContext context) {
-		startTestItem(context, SUITE);
-	}
-
-	@Override
 	public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext parentContext) throws Throwable {
-		Maybe<String> id = startBeforeAfter(
-				invocationContext.getExecutable(),
-				parentContext,
-				BEFORE_CLASS
-		);
+		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, parentContext, BEFORE_CLASS);
 		finishBeforeAfter(invocation, parentContext, id);
 	}
 
 	@Override
 	public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
-			ExtensionContext extensionContext) throws Throwable {
-		ExtensionContext parentContext = extensionContext.getParent()
+			ExtensionContext context) throws Throwable {
+		ExtensionContext parentContext = context.getParent()
 				.orElseThrow(() -> new IllegalStateException("Unable to find parent test for @BeforeEach method"));
-		Maybe<String> id = startBeforeAfter(
-				invocationContext.getExecutable(),
-				parentContext,
-				BEFORE_METHOD
-		);
-		finishBeforeAfter(invocation, extensionContext, id);
+		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, context, BEFORE_METHOD);
+		finishBeforeAfter(invocation, context, id);
 	}
 
 	@Override
 	public void interceptAfterAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext parentContext) throws Throwable {
-		Maybe<String> id = startBeforeAfter(
-				invocationContext.getExecutable(),
-				parentContext,
-				AFTER_CLASS
-		);
+		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, parentContext, AFTER_CLASS);
 		finishBeforeAfter(invocation, parentContext, id);
 	}
 
 	@Override
 	public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
-			ExtensionContext extensionContext) throws Throwable {
-		ExtensionContext parentContext = extensionContext.getParent()
+			ExtensionContext context) throws Throwable {
+		ExtensionContext parentContext = context.getParent()
 				.orElseThrow(() -> new IllegalStateException("Unable to find parent test for @AfterEach method"));
-		Maybe<String> id = startBeforeAfter(
-				invocationContext.getExecutable(),
-				parentContext,
-				AFTER_METHOD
-		);
-		finishBeforeAfter(invocation, extensionContext, id);
+		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, context, AFTER_METHOD);
+		finishBeforeAfter(invocation, context, id);
+	}
+
+	@Override
+	public void beforeAll(ExtensionContext context) {
+		startTestItem(context, SUITE);
 	}
 
 	@Override
@@ -242,15 +226,15 @@ public class ReportPortalExtension
 	}
 
 	@SuppressWarnings("unchecked")
-	private Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ItemType itemType) {
-		Launch launch = getLaunch(parentContext);
+	private Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
+		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setName(method.getName() + "()");
 		rq.setDescription(method.getName());
 		String uniqueId = parentContext.getUniqueId() + "/[method:" + method.getName() + "()]";
 		rq.setUniqueId(uniqueId);
-		ofNullable(parentContext.getTags()).ifPresent(it -> rq.setAttributes(it.stream()
+		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream()
 				.map(tag -> new ItemAttributesRQ(null, tag))
 				.collect(Collectors.toSet())));
 		rq.setType(itemType.name());
@@ -328,6 +312,7 @@ public class ReportPortalExtension
 
 	@SuppressWarnings("unchecked")
 	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type, String reason) {
+		System.out.println("StartTestItem: " + context.toString());
 		boolean isTemplate = false;
 		if (TEMPLATE.equals(type)) {
 			type = SUITE;

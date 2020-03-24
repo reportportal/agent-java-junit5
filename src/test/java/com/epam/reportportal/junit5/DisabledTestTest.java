@@ -19,7 +19,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -42,10 +41,11 @@ public class DisabledTestTest {
 	@BeforeEach
 	public void setupMock() {
 		DisabledTestExtension.LAUNCH = mock(Launch.class);
-		when(DisabledTestExtension.LAUNCH.startTestItem(
-				any(),
+		when(DisabledTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
+		when(DisabledTestExtension.LAUNCH.startTestItem(any(),
 				any()
 		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
+
 	}
 
 	@Test
@@ -54,7 +54,7 @@ public class DisabledTestTest {
 
 		Launch launch = DisabledTestExtension.LAUNCH;
 
-		verify(launch, times(1)).startTestItem(isNull(), any()); // Start parent Suite
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
 		ArgumentCaptor<StartTestItemRQ> captorStart = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(1)).startTestItem(notNull(), captorStart.capture()); // Start a test
 
@@ -82,7 +82,7 @@ public class DisabledTestTest {
 
 		Launch launch = DisabledTestExtension.LAUNCH;
 
-		verify(launch, times(1)).startTestItem(isNull(), any()); // Start parent Suite
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
 		ArgumentCaptor<StartTestItemRQ> captorStart = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(1)).startTestItem(notNull(), captorStart.capture()); // Start a test
 
@@ -99,7 +99,7 @@ public class DisabledTestTest {
 
 		Launch launch = DisabledTestExtension.LAUNCH;
 
-		verify(launch, times(1)).startTestItem(isNull(), any()); // Start parent Suite
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
 		ArgumentCaptor<StartTestItemRQ> captorStart = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(2)).startTestItem(notNull(), captorStart.capture()); // Start a disabled test and an enabled one
 

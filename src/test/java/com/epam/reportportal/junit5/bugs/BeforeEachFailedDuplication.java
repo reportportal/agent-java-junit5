@@ -18,7 +18,8 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -43,6 +44,7 @@ public class BeforeEachFailedDuplication {
 	@BeforeEach
 	public void setupMock() {
 		BeforeEachFailedDuplicationExtension.LAUNCH = mock(Launch.class);
+		when(BeforeEachFailedDuplicationExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
 		when(BeforeEachFailedDuplicationExtension.LAUNCH.startTestItem(any(),
 				any()
 		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
@@ -54,12 +56,12 @@ public class BeforeEachFailedDuplication {
 
 		Launch launch = BeforeEachFailedDuplicationExtension.LAUNCH;
 
-		verify(launch, times(1)).startTestItem(isNull(), any()); // Start parent Suite
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
 		ArgumentCaptor<StartTestItemRQ> captorStart = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(launch, times(14)).startTestItem(notNull(), captorStart.capture()); // Start a test
+		verify(launch, times(16)).startTestItem(notNull(), captorStart.capture()); // Start a test
 
 		ArgumentCaptor<FinishTestItemRQ> captorFinish = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(launch, times(14)).finishTestItem(notNull(), captorFinish.capture()); // finish a test and a suite
+		verify(launch, times(17)).finishTestItem(notNull(), captorFinish.capture()); // finish a test and a suite
 
 		List<StartTestItemRQ> steps = captorStart.getAllValues();
 
@@ -68,6 +70,8 @@ public class BeforeEachFailedDuplication {
 				.collect(Collectors.toList());
 
 		assertThat("Before each request list have proper size", startMethodList, hasSize(4));
+
+		// TODO: Finish this test
 	}
 
 	@AfterAll

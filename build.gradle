@@ -66,7 +66,7 @@ test {
     outputs.upToDateWhen { return false }
     useJUnitPlatform()
     exclude("com/epam/reportportal/junit5/features/**")
-    maxParallelForks(1);
+    maxParallelForks(5); // it's forks - separate JVMs, should not interfere each other
     doFirst {
         def weaver = configurations.compile.find { it.name.contains("aspectjweaver") }
         jvmArgs += "-javaagent:$weaver"

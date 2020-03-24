@@ -68,7 +68,7 @@ public class RetryTest {
 		}
 
 		@Override
-		Launch getLaunch(ExtensionContext context) {
+		protected Launch getLaunch(ExtensionContext context) {
 			return LAUNCH;
 		}
 	}

@@ -29,7 +29,7 @@ public class CodeReferenceTest {
 		}
 
 		@Override
-		Launch getLaunch(ExtensionContext context) {
+		protected Launch getLaunch(ExtensionContext context) {
 			return LAUNCH;
 		}
 	}
@@ -59,7 +59,7 @@ public class CodeReferenceTest {
 		}
 
 		@Override
-		Launch getLaunch(ExtensionContext context) {
+		protected Launch getLaunch(ExtensionContext context) {
 			return LAUNCH;
 		}
 	}

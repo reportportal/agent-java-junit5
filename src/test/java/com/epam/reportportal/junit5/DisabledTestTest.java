@@ -29,7 +29,7 @@ public class DisabledTestTest {
 		static Launch LAUNCH;
 
 		@Override
-		Launch getLaunch(ExtensionContext context) {
+		protected Launch getLaunch(ExtensionContext context) {
 			return LAUNCH;
 		}
 	}

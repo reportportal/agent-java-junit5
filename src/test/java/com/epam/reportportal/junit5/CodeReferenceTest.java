@@ -35,10 +35,10 @@ public class CodeReferenceTest {
 	@BeforeEach
 	public void setupMock() {
 		CodeReferenceTestExtension.LAUNCH = mock(Launch.class);
-		when(CodeReferenceTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
+		when(CodeReferenceTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 		when(CodeReferenceTestExtension.LAUNCH.startTestItem(any(),
 				any()
-		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
+		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 	}
 
 	@Test

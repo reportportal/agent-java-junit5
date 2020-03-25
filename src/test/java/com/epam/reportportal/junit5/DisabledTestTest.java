@@ -41,10 +41,10 @@ public class DisabledTestTest {
 	@BeforeEach
 	public void setupMock() {
 		DisabledTestExtension.LAUNCH = mock(Launch.class);
-		when(DisabledTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
+		when(DisabledTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 		when(DisabledTestExtension.LAUNCH.startTestItem(any(),
 				any()
-		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
+		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 
 	}
 

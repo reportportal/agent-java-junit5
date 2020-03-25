@@ -36,7 +36,9 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.*;
 import rp.com.google.common.collect.Sets;
 
+import javax.validation.constraints.NotNull;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -269,8 +271,7 @@ public class ReportPortalExtension
 
 	private void startTemplate(ExtensionContext context) {
 		context.getParent().ifPresent(parent -> {
-			if (TEST_TEMPLATE_EXTENSION_CONTEXT.equals(parent.getClass().getCanonicalName())
-					&& !idMapping.containsKey(parent)) {
+			if (TEST_TEMPLATE_EXTENSION_CONTEXT.equals(parent.getClass().getCanonicalName()) && !idMapping.containsKey(parent)) {
 				startTestItem(parent, TEMPLATE);
 			}
 		});
@@ -299,8 +300,8 @@ public class ReportPortalExtension
 		});
 	}
 
-	private Method getTestMethod(ExtensionContext context) {
-		return context.getTestMethod().orElseGet(() -> context.getParent().map(this::getTestMethod).orElse(null));
+	private Optional<Method> getTestMethod(ExtensionContext context) {
+		return ofNullable(context.getTestMethod().orElseGet(() -> context.getParent().flatMap(this::getTestMethod).orElse(null)));
 	}
 
 	private static boolean isRetry(ExtensionContext context) {
@@ -335,19 +336,26 @@ public class ReportPortalExtension
 		} else {
 			String codeRef = getCodeRef(context, "");
 			rq.setCodeRef(codeRef);
-			Method testMethod = getTestMethod(context);
-			rq.setAttributes(getAttributes(testMethod));
-			TestCaseIdEntry caseId = getTestCaseId(testMethod, codeRef, arguments);
-			rq.setTestCaseId(caseId.getId());
-			rq.setTestCaseHash(caseId.getHash());
-			if (!arguments.isEmpty()) {
-				rq.setParameters(IntStream.rangeClosed(1, arguments.size()).boxed().map(i -> {
+			Optional<Method> testMethod = getTestMethod(context);
+			TestCaseIdEntry caseId = testMethod.map(m -> {
+				rq.setAttributes(getAttributes(m));
+
+				Parameter[] params = m.getParameters();
+				rq.setParameters(IntStream.range(0, arguments.size()).boxed().map(i -> {
 					ParameterResource res = new ParameterResource();
-					res.setKey(i.toString());
-					res.setValue(arguments.get(i - 1).toString());
+					if (i >= params.length) {
+						res.setKey(Integer.toString(i + 1));
+					} else {
+						res.setKey(params[i].getType().getName());
+					}
+					res.setValue(ofNullable(arguments.get(i)).orElse("NULL").toString());
 					return res;
 				}).collect(Collectors.toList()));
-			}
+				return getTestCaseId(m, codeRef, arguments);
+			}).orElseGet(() -> getTestCaseId(codeRef, arguments));
+
+			rq.setTestCaseId(caseId.getId());
+			rq.setTestCaseHash(caseId.getHash());
 		}
 		ofNullable(testItem.getAttributes()).ifPresent(attributes -> ofNullable(rq.getAttributes()).orElseGet(() -> {
 			rq.setAttributes(Sets.newHashSet());
@@ -382,15 +390,17 @@ public class ReportPortalExtension
 		return new TestCaseIdEntry(codeRef, codeRef.hashCode());
 	}
 
-	private TestCaseIdEntry getTestCaseId(Method method, String codeRef, List<Object> arguments) {
-		if (method != null) {
-			TestCaseId caseId = method.getAnnotation(TestCaseId.class);
-			if (caseId != null) {
-				return caseId.parametrized() ?
-						TestCaseIdUtils.getParameterizedTestCaseId(method, arguments) :
-						new TestCaseIdEntry(caseId.value(), caseId.value().hashCode());
-			}
+	private TestCaseIdEntry getTestCaseId(@NotNull Method method, String codeRef, List<Object> arguments) {
+		TestCaseId caseId = method.getAnnotation(TestCaseId.class);
+		if (caseId != null) {
+			return caseId.parametrized() ?
+					TestCaseIdUtils.getParameterizedTestCaseId(method, arguments) :
+					new TestCaseIdEntry(caseId.value(), caseId.value().hashCode());
 		}
+		return getTestCaseId(codeRef, arguments);
+	}
+
+	private TestCaseIdEntry getTestCaseId(String codeRef, List<Object> arguments) {
 		return new TestCaseIdEntry(StringUtils.join(codeRef, arguments), Arrays.deepHashCode(new Object[] { codeRef, arguments }));
 	}
 
@@ -409,7 +419,8 @@ public class ReportPortalExtension
 	}
 
 	private List<String> getTestTemplateIds() {
-		return testTemplates.keySet().stream()
+		return testTemplates.keySet()
+				.stream()
 				.filter(stringMaybe -> stringMaybe.contains("/[test-template:") && !stringMaybe.contains("-invocation"))
 				.collect(Collectors.toList());
 	}

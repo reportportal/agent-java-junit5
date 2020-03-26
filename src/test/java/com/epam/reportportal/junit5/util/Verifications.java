@@ -26,24 +26,25 @@ public class Verifications {
 	private Verifications() {
 	}
 
+	@SuppressWarnings("unchecked")
 	public static Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> verify_call_number_and_capture_arguments(
 			int itemNum, Launch launch) {
-		ArgumentCaptor<Maybe<String>> startParentItemId = ArgumentCaptor.forClass(Maybe.class);
+		ArgumentCaptor<Maybe<String>> parentItemIdCaptor = ArgumentCaptor.forClass(Maybe.class);
 		ArgumentCaptor<StartTestItemRQ> startItemCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<Maybe<String>> finishItemId = ArgumentCaptor.forClass(Maybe.class);
 		ArgumentCaptor<FinishTestItemRQ> finishItemCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(launch, times(1)).start();
-		verify(launch, times(itemNum)).startTestItem(startParentItemId.capture(), startItemCaptor.capture());
+		verify(launch, times(1)).startTestItem(startItemCaptor.capture());
+		verify(launch, times(itemNum - 1)).startTestItem(parentItemIdCaptor.capture(), startItemCaptor.capture());
 		verify(launch, times(itemNum)).finishTestItem(finishItemId.capture(), finishItemCaptor.capture());
 		verifyNoMoreInteractions(launch);
 
-		List<String> startItemIds = startParentItemId.getAllValues()
+		List<String> startParentItemIds = parentItemIdCaptor.getAllValues()
 				.stream()
 				.map(m -> m == null ? null : m.blockingGet())
 				.collect(Collectors.toList());
 		List<StartTestItemRQ> startItemValues = startItemCaptor.getAllValues();
-		List<Pair<String, StartTestItemRQ>> startResult = IntStream.range(0, startItemIds.size())
-				.mapToObj(i -> ImmutablePair.of(startItemIds.get(i), startItemValues.get(i)))
+		List<Pair<String, StartTestItemRQ>> startResult = IntStream.range(0, startItemValues.size())
+				.mapToObj(i -> ImmutablePair.of(i == 0 ? null : startParentItemIds.get(i - 1), startItemValues.get(i)))
 				.collect(Collectors.toList());
 		List<String> finishItemIds = finishItemId.getAllValues()
 				.stream()

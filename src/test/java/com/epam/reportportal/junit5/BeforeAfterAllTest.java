@@ -2,16 +2,12 @@ package com.epam.reportportal.junit5;
 
 import com.epam.reportportal.junit5.features.beforeafterall.*;
 import com.epam.reportportal.junit5.util.TestUtils;
-import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
-import com.epam.reportportal.service.ReportPortal;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.stubbing.Answer;
 
@@ -19,8 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.epam.reportportal.junit5.BeforeAfterAllTest.BeforeAfterAllTestExtension.LAUNCHES;
-import static com.epam.reportportal.junit5.BeforeAfterAllTest.BeforeAfterAllTestExtension.getItemId;
+import static com.epam.reportportal.junit5.BeforeAfterAllTest.BeforeAfterAllTestExtension.ITEMS;
+import static com.epam.reportportal.junit5.BeforeAfterAllTest.BeforeAfterAllTestExtension.LAUNCH;
 import static com.epam.reportportal.junit5.util.Verifications.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -28,45 +24,33 @@ import static org.mockito.Mockito.*;
 /**
  * Tests on {@link BeforeAll} and {@link AfterAll} test methods, which should be executed before and after all tests.
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class BeforeAfterAllTest {
 	public static class BeforeAfterAllTestExtension extends ReportPortalExtension {
 
-		final static ThreadLocal<List<String>> ITEMS = ThreadLocal.withInitial(ArrayList::new);
-		final static ThreadLocal<String> LAUNCH_ID = new ThreadLocal<>();
-		final static ThreadLocal<Launch> LAUNCHES = new ThreadLocal<>();
-
-		private final ReportPortal reportPortal;
-
-		public BeforeAfterAllTestExtension() {
-			reportPortal = mock(ReportPortal.class);
-			Launch launch = mock(Launch.class);
-			LAUNCHES.set(launch);
-			ITEMS.get().clear();
-			Maybe<String> launchIdMaybe = TestUtils.createItemUuidMaybe();
-			LAUNCH_ID.set(launchIdMaybe.blockingGet());
-			when(reportPortal.getParameters()).thenReturn(new ListenerParameters());
-			when(reportPortal.newLaunch(any())).thenReturn(launch);
-			when(launch.start()).thenAnswer((Answer<Maybe<String>>) invocation -> launchIdMaybe);
-			when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> {
-				Maybe<String> result = TestUtils.createItemUuidMaybe();
-				ITEMS.get().add(result.blockingGet());
-				return result;
-			});
-		}
+		final static List<String> ITEMS = new ArrayList<>();
+		static Launch LAUNCH;
 
 		@Override
-		ReportPortal getReporter() {
-			return reportPortal;
+		protected Launch getLaunch(ExtensionContext context) {
+			return LAUNCH;
 		}
+	}
 
-		@Override
-		String getLaunchId(ExtensionContext context) {
-			return LAUNCH_ID.get();
-		}
-
-		public static String getItemId(int index) {
-			return ITEMS.get().get(index);
-		}
+	@BeforeEach
+	public void setupMocks() {
+		ITEMS.clear();
+		LAUNCH = mock(Launch.class);
+		when(LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> {
+			Maybe<String> result = TestUtils.createMaybeUuid();
+			ITEMS.add(result.blockingGet());
+			return result;
+		});
+		when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> {
+			Maybe<String> result = TestUtils.createMaybeUuid();
+			ITEMS.add(result.blockingGet());
+			return result;
+		});
 	}
 
 	@Test
@@ -77,17 +61,16 @@ public class BeforeAfterAllTest {
 		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
 
 		TestUtils.runClasses(BeforeAllTest.class);
-		Launch launch = LAUNCHES.get();
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
-				launch
+				LAUNCH
 		);
-		verifyNoMoreInteractions(launch);
+		verifyNoMoreInteractions(LAUNCH);
 
-		String suiteUuid = getItemId(0);
+		String suiteUuid = ITEMS.get(0);
 		verify_suite_calls_positive_finish(suiteUuid, launchCalls);
 
-		verify_before_class_positive_calls(1, suiteUuid, getItemId(1), launchCalls);
-		verify_test_positive_calls(2, suiteUuid, getItemId(2), launchCalls);
+		verify_before_class_positive_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
+		verify_test_positive_calls(2, suiteUuid, ITEMS.get(2), launchCalls);
 	}
 
 	@Test
@@ -98,17 +81,16 @@ public class BeforeAfterAllTest {
 		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
 
 		TestUtils.runClasses(AfterAllTest.class);
-		Launch launch = LAUNCHES.get();
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
-				launch
+				LAUNCH
 		);
-		verifyNoMoreInteractions(launch);
+		verifyNoMoreInteractions(LAUNCH);
 
-		String suiteUuid = getItemId(0);
+		String suiteUuid = ITEMS.get(0);
 		verify_suite_calls_positive_finish(suiteUuid, launchCalls);
 
-		verify_test_positive_calls(1, suiteUuid, getItemId(1), launchCalls);
-		verify_after_class_positive_calls(2, suiteUuid, getItemId(2), launchCalls);
+		verify_test_positive_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
+		verify_after_class_positive_calls(2, suiteUuid, ITEMS.get(2), launchCalls);
 	}
 
 	@Test
@@ -119,18 +101,17 @@ public class BeforeAfterAllTest {
 		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
 
 		TestUtils.runClasses(com.epam.reportportal.junit5.features.beforeafterall.BeforeAfterAllTest.class);
-		Launch launch = LAUNCHES.get();
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
-				launch
+				LAUNCH
 		);
-		verifyNoMoreInteractions(launch);
+		verifyNoMoreInteractions(LAUNCH);
 
-		String suiteUuid = getItemId(0);
+		String suiteUuid = ITEMS.get(0);
 		verify_suite_calls_positive_finish(suiteUuid, launchCalls);
 
-		verify_before_class_positive_calls(1, suiteUuid, getItemId(1), launchCalls);
-		verify_test_positive_calls(2, suiteUuid, getItemId(2), launchCalls);
-		verify_after_class_positive_calls(3, suiteUuid, getItemId(3), launchCalls);
+		verify_before_class_positive_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
+		verify_test_positive_calls(2, suiteUuid, ITEMS.get(2), launchCalls);
+		verify_after_class_positive_calls(3, suiteUuid, ITEMS.get(3), launchCalls);
 	}
 
 	@Test
@@ -141,19 +122,18 @@ public class BeforeAfterAllTest {
 		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
 
 		TestUtils.runClasses(BeforeAfterAllTwoTestsTest.class);
-		Launch launch = LAUNCHES.get();
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
-				launch
+				LAUNCH
 		);
-		verifyNoMoreInteractions(launch);
+		verifyNoMoreInteractions(LAUNCH);
 
-		String suiteUuid = getItemId(0);
+		String suiteUuid = ITEMS.get(0);
 		verify_suite_calls_positive_finish(suiteUuid, launchCalls);
 
-		verify_before_class_positive_calls(1, suiteUuid, getItemId(1), launchCalls);
-		verify_test_positive_calls(2, suiteUuid, getItemId(2), launchCalls);
-		verify_test_positive_calls(3, suiteUuid, getItemId(3), launchCalls);
-		verify_after_class_positive_calls(4, suiteUuid, getItemId(4), launchCalls);
+		verify_before_class_positive_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
+		verify_test_positive_calls(2, suiteUuid, ITEMS.get(2), launchCalls);
+		verify_test_positive_calls(3, suiteUuid, ITEMS.get(3), launchCalls);
+		verify_after_class_positive_calls(4, suiteUuid, ITEMS.get(4), launchCalls);
 	}
 
 	@Test
@@ -164,16 +144,15 @@ public class BeforeAfterAllTest {
 		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
 
 		TestUtils.runClasses(BeforeAllFailedTest.class);
-		Launch launch = LAUNCHES.get();
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
-				launch
+				LAUNCH
 		);
-		verifyNoMoreInteractions(launch);
+		verifyNoMoreInteractions(LAUNCH);
 
-		String suiteUuid = getItemId(0);
+		String suiteUuid = ITEMS.get(0);
 		verify_suite_calls_negative_finish(suiteUuid, launchCalls);
 
-		verify_before_class_negative_calls(1, suiteUuid, getItemId(1), launchCalls);
+		verify_before_class_negative_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
 	}
 
 	@Test
@@ -184,18 +163,17 @@ public class BeforeAfterAllTest {
 		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
 
 		TestUtils.runClasses(BeforeAllFailedAfterAllTest.class);
-		Launch launch = LAUNCHES.get();
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
-				launch
+				LAUNCH
 		);
-		verifyNoMoreInteractions(launch);
+		verifyNoMoreInteractions(LAUNCH);
 
-		String suiteUuid = getItemId(0);
+		String suiteUuid = ITEMS.get(0);
 		verify_suite_calls_negative_finish(suiteUuid, launchCalls);
 
-		verify_before_class_positive_calls(1, suiteUuid, getItemId(1), launchCalls);
-		verify_test_positive_calls(2, suiteUuid, getItemId(2), launchCalls);
-		verify_after_class_negative_calls(3, suiteUuid, getItemId(3), launchCalls);
+		verify_before_class_positive_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
+		verify_test_positive_calls(2, suiteUuid, ITEMS.get(2), launchCalls);
+		verify_after_class_negative_calls(3, suiteUuid, ITEMS.get(3), launchCalls);
 	}
 
 	@Test
@@ -206,18 +184,17 @@ public class BeforeAfterAllTest {
 		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
 
 		TestUtils.runClasses(BeforeAfterAllFailedTest.class);
-		Launch launch = LAUNCHES.get();
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
-				launch
+				LAUNCH
 		);
-		verifyNoMoreInteractions(launch);
+		verifyNoMoreInteractions(LAUNCH);
 
-		String suiteUuid = getItemId(0);
+		String suiteUuid = ITEMS.get(0);
 		verify_suite_calls_negative_finish(suiteUuid, launchCalls);
 
-		verify_before_class_positive_calls(1, suiteUuid, getItemId(1), launchCalls);
-		verify_test_negative_calls(2, suiteUuid, getItemId(2), launchCalls);
-		verify_after_class_positive_calls(3, suiteUuid, getItemId(3), launchCalls);
+		verify_before_class_positive_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
+		verify_test_negative_calls(2, suiteUuid, ITEMS.get(2), launchCalls);
+		verify_after_class_positive_calls(3, suiteUuid, ITEMS.get(3), launchCalls);
 	}
 
 	@Test
@@ -228,23 +205,22 @@ public class BeforeAfterAllTest {
 		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
 
 		TestUtils.runClasses(BeforeAfterAllBeforeAfterEachTwoTestsTest.class);
-		Launch launch = LAUNCHES.get();
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
-				launch
+				LAUNCH
 		);
-		verifyNoMoreInteractions(launch);
+		verifyNoMoreInteractions(LAUNCH);
 
-		String suiteUuid = getItemId(0);
+		String suiteUuid = ITEMS.get(0);
 		verify_suite_calls_positive_finish(suiteUuid, launchCalls);
 
-		verify_before_class_positive_calls(1, suiteUuid, getItemId(1), launchCalls);
-		verify_before_each_positive_calls(2, suiteUuid, getItemId(2), launchCalls);
-		verify_test_positive_calls(3, suiteUuid, getItemId(3), launchCalls);
-		verify_after_each_positive_calls(4, suiteUuid, getItemId(4), launchCalls);
-		verify_before_each_positive_calls(5, suiteUuid, getItemId(5), launchCalls);
-		verify_test_positive_calls(6, suiteUuid, getItemId(6), launchCalls);
-		verify_after_each_positive_calls(7, suiteUuid, getItemId(7), launchCalls);
-		verify_after_class_positive_calls(8, suiteUuid, getItemId(8), launchCalls);
+		verify_before_class_positive_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
+		verify_before_each_positive_calls(2, suiteUuid, ITEMS.get(2), launchCalls);
+		verify_test_positive_calls(3, suiteUuid, ITEMS.get(3), launchCalls);
+		verify_after_each_positive_calls(4, suiteUuid, ITEMS.get(4), launchCalls);
+		verify_before_each_positive_calls(5, suiteUuid, ITEMS.get(5), launchCalls);
+		verify_test_positive_calls(6, suiteUuid, ITEMS.get(6), launchCalls);
+		verify_after_each_positive_calls(7, suiteUuid, ITEMS.get(7), launchCalls);
+		verify_after_class_positive_calls(8, suiteUuid, ITEMS.get(8), launchCalls);
 	}
 
 	@Test
@@ -255,17 +231,16 @@ public class BeforeAfterAllTest {
 		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
 
 		TestUtils.runClasses(NonStaticBeforeAfterAllTest.class);
-		Launch launch = LAUNCHES.get();
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
-				launch
+				LAUNCH
 		);
-		verifyNoMoreInteractions(launch);
+		verifyNoMoreInteractions(LAUNCH);
 
-		String suiteUuid = getItemId(0);
+		String suiteUuid = ITEMS.get(0);
 		verify_suite_calls_positive_finish(suiteUuid, launchCalls);
 
-		verify_before_class_positive_calls(1, suiteUuid, getItemId(1), launchCalls);
-		verify_test_positive_calls(2, suiteUuid, getItemId(2), launchCalls);
-		verify_after_class_positive_calls(3, suiteUuid, getItemId(3), launchCalls);
+		verify_before_class_positive_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
+		verify_test_positive_calls(2, suiteUuid, ITEMS.get(2), launchCalls);
+		verify_after_class_positive_calls(3, suiteUuid, ITEMS.get(3), launchCalls);
 	}
 }

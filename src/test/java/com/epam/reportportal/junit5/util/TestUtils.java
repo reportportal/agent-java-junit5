@@ -23,10 +23,13 @@ public class TestUtils {
 		LauncherFactory.create(config).execute(request);
 	}
 
-	public static Maybe<String> createItemUuidMaybe() {
-		final String uuid = UUID.randomUUID().toString();
+	public static Maybe<String> createMaybeUuid() {
+		return createMaybe(UUID.randomUUID().toString());
+	}
+
+	public static <T> Maybe<T> createMaybe(T id) {
 		return Maybe.create(emitter -> {
-			emitter.onSuccess(uuid);
+			emitter.onSuccess(id);
 			emitter.onComplete();
 		});
 	}

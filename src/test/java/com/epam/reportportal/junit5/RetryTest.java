@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 /**
@@ -46,7 +45,7 @@ public class RetryTest {
 
 		Launch launch = RetryTestExtension.LAUNCH;
 
-		verify(launch, times(1)).startTestItem(isNull(), any()); // Start parent Suite
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(4)).startTestItem(notNull(), captor.capture()); // Start a test
@@ -64,11 +63,12 @@ public class RetryTest {
 
 		static {
 			LAUNCH = mock(Launch.class);
-			when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
+			when(LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+			when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 		}
 
 		@Override
-		Launch getLaunch(ExtensionContext context) {
+		protected Launch getLaunch(ExtensionContext context) {
 			return LAUNCH;
 		}
 	}

@@ -23,6 +23,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.ta.reportportal.ws.model.EntryCreatedAsyncRS;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.epam.reportportal.junit5.CallbackReportingTest.CallbackReportingExtension.*;
+import static com.epam.reportportal.junit5.util.TestUtils.createMaybe;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -65,24 +67,17 @@ public class CallbackReportingTest {
 		static final ThreadLocal<ReportPortalClient> REPORT_PORTAL_CLIENT = new ThreadLocal<>();
 		static final ThreadLocal<ReportPortal> REPORT_PORTAL = new ThreadLocal<>();
 
-		public static Maybe<String> createIdMaybe(String id) {
-			return Maybe.create(emitter -> {
-				emitter.onSuccess(id);
-				emitter.onComplete();
-			});
-		}
-
 		public CallbackReportingExtension() {
 			LAUNCH.set(mock(Launch.class));
-			ROOT_ITEM_ID.set(createIdMaybe("Root item id"));
+			ROOT_ITEM_ID.set(createMaybe("Root item id"));
 			when(LAUNCH.get().startTestItem(any())).thenReturn(ROOT_ITEM_ID.get());
 
-			Maybe<String> launchId = createIdMaybe("Launch " + UUID.randomUUID().toString());
+			Maybe<String> launchId = createMaybe("Launch " + UUID.randomUUID().toString());
 			LAUNCH_MAYBE_ID.set(launchId);
 			LAUNCH_ID.set(launchId.blockingGet());
 			when(LAUNCH.get().start()).thenReturn(LAUNCH_MAYBE_ID.get());
 
-			TEST_METHOD_ID.set(createIdMaybe("Test method id"));
+			TEST_METHOD_ID.set(createMaybe("Test method id"));
 			when(LAUNCH.get().startTestItem(eq(ROOT_ITEM_ID.get()), any())).thenReturn(TEST_METHOD_ID.get());
 
 			REPORT_PORTAL.set(mock(ReportPortal.class));
@@ -94,10 +89,11 @@ public class CallbackReportingTest {
 
 			REPORT_PORTAL_CLIENT.set(mock(ReportPortalClient.class));
 			when(REPORT_PORTAL_CLIENT.get()
-					.finishTestItem(eq(TEST_METHOD_ID.get().blockingGet()), any())).thenReturn(Maybe.create(emitter -> {
-				emitter.onSuccess(new OperationCompletionRS("Success"));
-				emitter.onComplete();
-			}));
+					.finishTestItem(eq(TEST_METHOD_ID.get().blockingGet()), any())).thenReturn(createMaybe(new OperationCompletionRS(
+					"Success")));
+
+			when(REPORT_PORTAL_CLIENT.get().log(any(SaveLogRQ.class))).thenReturn(createMaybe(new EntryCreatedAsyncRS(UUID.randomUUID()
+					.toString())));
 
 			when(REPORT_PORTAL.get().getClient()).thenReturn(REPORT_PORTAL_CLIENT.get());
 

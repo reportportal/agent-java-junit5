@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-@ExtendWith(CodeReferenceTest.DynamicCodeReferenceTestExtension.class)
+@ExtendWith(CodeReferenceTest.CodeReferenceTestExtension.class)
 public class SingleDynamicTest {
 
 	public static final String TEST_CASE_DISPLAY_NAME = UUID.randomUUID().toString();

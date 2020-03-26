@@ -6,7 +6,9 @@ import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -18,20 +20,25 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CodeReferenceTest {
 
 	public static class CodeReferenceTestExtension extends ReportPortalExtension {
-		static final Launch LAUNCH;
-
-		static {
-			LAUNCH = mock(Launch.class);
-			when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
-		}
+		static Launch LAUNCH;
 
 		@Override
-		Launch getLaunch(ExtensionContext context) {
+		protected Launch getLaunch(ExtensionContext context) {
 			return LAUNCH;
 		}
+	}
+
+	@BeforeEach
+	public void setupMock() {
+		CodeReferenceTestExtension.LAUNCH = mock(Launch.class);
+		when(CodeReferenceTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		when(CodeReferenceTestExtension.LAUNCH.startTestItem(any(),
+				any()
+		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 	}
 
 	@Test
@@ -40,7 +47,7 @@ public class CodeReferenceTest {
 
 		Launch launch = CodeReferenceTestExtension.LAUNCH;
 
-		verify(launch, times(1)).startTestItem(isNull(), any()); // Start parent Suite
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(1)).startTestItem(notNull(), captor.capture()); // Start a test
@@ -50,27 +57,13 @@ public class CodeReferenceTest {
 		assertThat(rqValues.get(0).getCodeRef(), equalTo(className + ".singleTest"));
 	}
 
-	public static class DynamicCodeReferenceTestExtension extends ReportPortalExtension {
-		static final Launch LAUNCH;
-
-		static {
-			LAUNCH = mock(Launch.class);
-			when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createItemUuidMaybe());
-		}
-
-		@Override
-		Launch getLaunch(ExtensionContext context) {
-			return LAUNCH;
-		}
-	}
-
 	@Test
 	public void verify_dynamic_test_code_reference_generation() {
 		TestUtils.runClasses(SingleDynamicTest.class);
 
-		Launch launch = DynamicCodeReferenceTestExtension.LAUNCH;
+		Launch launch = CodeReferenceTestExtension.LAUNCH;
 
-		verify(launch, times(1)).startTestItem(isNull(), any()); // Start parent Suite
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(2)).startTestItem(notNull(), captor.capture()); // Start a test class and a test

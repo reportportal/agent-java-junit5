@@ -339,18 +339,7 @@ public class ReportPortalExtension
 			Optional<Method> testMethod = getTestMethod(context);
 			TestCaseIdEntry caseId = testMethod.map(m -> {
 				rq.setAttributes(getAttributes(m));
-
-				Parameter[] params = m.getParameters();
-				rq.setParameters(IntStream.range(0, arguments.size()).boxed().map(i -> {
-					ParameterResource res = new ParameterResource();
-					if (i >= params.length) {
-						res.setKey(Integer.toString(i + 1));
-					} else {
-						res.setKey(params[i].getType().getName());
-					}
-					res.setValue(ofNullable(arguments.get(i)).orElse("NULL").toString());
-					return res;
-				}).collect(Collectors.toList()));
+				rq.setParameters(getParameters(m, arguments));
 				return getTestCaseId(m, codeRef, arguments);
 			}).orElseGet(() -> getTestCaseId(codeRef, arguments));
 
@@ -382,15 +371,29 @@ public class ReportPortalExtension
 		StepAspect.setParentId(itemId);
 	}
 
-	private Set<ItemAttributesRQ> getAttributes(Method method) {
+	private @NotNull Set<ItemAttributesRQ> getAttributes(@NotNull final Method method) {
 		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElseGet(Sets::newHashSet);
 	}
 
-	private TestCaseIdEntry getTestCaseId(String codeRef) {
+	private @NotNull List<ParameterResource> getParameters(@NotNull final Method method, final List<Object> arguments) {
+		final Parameter[] params = method.getParameters();
+		return IntStream.range(0, arguments.size()).boxed().map(i -> {
+			ParameterResource res = new ParameterResource();
+			if (i >= params.length) {
+				res.setKey(Integer.toString(i + 1));
+			} else {
+				res.setKey(params[i].getType().getName());
+			}
+			res.setValue(ofNullable(arguments.get(i)).orElse("NULL").toString());
+			return res;
+		}).collect(Collectors.toList());
+	}
+
+	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull String codeRef) {
 		return new TestCaseIdEntry(codeRef, codeRef.hashCode());
 	}
 
-	private TestCaseIdEntry getTestCaseId(@NotNull Method method, String codeRef, List<Object> arguments) {
+	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull Method method, String codeRef, List<Object> arguments) {
 		TestCaseId caseId = method.getAnnotation(TestCaseId.class);
 		if (caseId != null) {
 			return caseId.parametrized() ?
@@ -400,7 +403,7 @@ public class ReportPortalExtension
 		return getTestCaseId(codeRef, arguments);
 	}
 
-	private TestCaseIdEntry getTestCaseId(String codeRef, List<Object> arguments) {
+	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull String codeRef, @NotNull List<Object> arguments) {
 		return new TestCaseIdEntry(StringUtils.join(codeRef, arguments), Arrays.deepHashCode(new Object[] { codeRef, arguments }));
 	}
 

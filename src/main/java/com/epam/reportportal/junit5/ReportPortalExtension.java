@@ -308,67 +308,66 @@ public class ReportPortalExtension
 		return context.getTestMethod().map(it -> Objects.nonNull(it.getAnnotation(RepeatedTest.class))).orElse(false);
 	}
 
-	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type, String reason) {
-		boolean isTemplate = false;
-		if (TEMPLATE.equals(type)) {
-			type = SUITE;
-			isTemplate = true;
-		}
-		boolean retry = isRetry(context);
+	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType itemType, String reason) {
+		idMapping.computeIfAbsent(context, c -> {
+			boolean isTemplate = TEMPLATE == itemType;
+			ItemType type = isTemplate ? SUITE : itemType;
+			boolean retry = isRetry(c);
 
-		TestItem testItem = getTestItem(context, retry);
-		Launch launch = getLaunch(context);
-		StartTestItemRQ rq = new StartTestItemRQ();
+			TestItem testItem = getTestItem(c, retry);
+			Launch launch = getLaunch(c);
+			StartTestItemRQ rq = new StartTestItemRQ();
 
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setName(testItem.getName());
-		rq.setDescription(null != reason ? reason : testItem.getDescription());
-		rq.setUniqueId(testItem.getUniqueId());
-		rq.setType(type.name());
-		rq.setRetry(retry);
-		if (SUITE.equals(type)) {
-			context.getTestClass().map(Class::getCanonicalName).ifPresent(codeRef -> {
+			rq.setStartTime(Calendar.getInstance().getTime());
+			rq.setName(testItem.getName());
+			rq.setDescription(null != reason ? reason : testItem.getDescription());
+			rq.setUniqueId(testItem.getUniqueId());
+			rq.setType(type.name());
+			rq.setRetry(retry);
+			if (SUITE.equals(type)) {
+				c.getTestClass().map(Class::getCanonicalName).ifPresent(codeRef -> {
+					rq.setCodeRef(codeRef);
+					TestCaseIdEntry testCaseIdEntry = getTestCaseId(codeRef);
+					rq.setTestCaseId(testCaseIdEntry.getId());
+					rq.setTestCaseHash(testCaseIdEntry.getHash());
+				});
+			} else {
+				String codeRef = getCodeRef(c, "");
 				rq.setCodeRef(codeRef);
-				TestCaseIdEntry testCaseIdEntry = getTestCaseId(codeRef);
-				rq.setTestCaseId(testCaseIdEntry.getId());
-				rq.setTestCaseHash(testCaseIdEntry.getHash());
+				Optional<Method> testMethod = getTestMethod(c);
+				TestCaseIdEntry caseId = testMethod.map(m -> {
+					rq.setAttributes(getAttributes(m));
+					rq.setParameters(getParameters(m, arguments));
+					return getTestCaseId(m, codeRef, arguments);
+				}).orElseGet(() -> getTestCaseId(codeRef, arguments));
+
+				rq.setTestCaseId(caseId.getId());
+				rq.setTestCaseHash(caseId.getHash());
+			}
+			ofNullable(testItem.getAttributes()).ifPresent(attributes -> ofNullable(rq.getAttributes()).orElseGet(() -> {
+				rq.setAttributes(Sets.newHashSet());
+				return rq.getAttributes();
+			}).addAll(attributes));
+
+			Maybe<String> itemId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
+				Maybe<String> item = launch.startTestItem(parentTest, rq);
+				if (getReporter().getParameters().isCallbackReportingEnabled()) {
+					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest, item, 0));
+				}
+				return item;
+			}).orElseGet(() -> {
+				Maybe<String> item = launch.startTestItem(rq);
+				if (getReporter().getParameters().isCallbackReportingEnabled()) {
+					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(item, 0));
+				}
+				return item;
 			});
-		} else {
-			String codeRef = getCodeRef(context, "");
-			rq.setCodeRef(codeRef);
-			Optional<Method> testMethod = getTestMethod(context);
-			TestCaseIdEntry caseId = testMethod.map(m -> {
-				rq.setAttributes(getAttributes(m));
-				rq.setParameters(getParameters(m, arguments));
-				return getTestCaseId(m, codeRef, arguments);
-			}).orElseGet(() -> getTestCaseId(codeRef, arguments));
-
-			rq.setTestCaseId(caseId.getId());
-			rq.setTestCaseHash(caseId.getHash());
-		}
-		ofNullable(testItem.getAttributes()).ifPresent(attributes -> ofNullable(rq.getAttributes()).orElseGet(() -> {
-			rq.setAttributes(Sets.newHashSet());
-			return rq.getAttributes();
-		}).addAll(attributes));
-
-		Maybe<String> itemId = context.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
-			Maybe<String> item = launch.startTestItem(parentTest, rq);
-			if (getReporter().getParameters().isCallbackReportingEnabled()) {
-				TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest, item, 0));
+			if (isTemplate) {
+				testTemplates.put(c.getUniqueId(), itemId);
 			}
-			return item;
-		}).orElseGet(() -> {
-			Maybe<String> item = launch.startTestItem(rq);
-			if (getReporter().getParameters().isCallbackReportingEnabled()) {
-				TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(item, 0));
-			}
-			return item;
+			StepAspect.setParentId(itemId);
+			return itemId;
 		});
-		if (isTemplate) {
-			testTemplates.put(context.getUniqueId(), itemId);
-		}
-		idMapping.put(context, itemId);
-		StepAspect.setParentId(itemId);
 	}
 
 	private @NotNull Set<ItemAttributesRQ> getAttributes(@NotNull final Method method) {

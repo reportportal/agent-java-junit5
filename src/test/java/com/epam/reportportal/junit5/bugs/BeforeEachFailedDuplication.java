@@ -45,7 +45,7 @@ public class BeforeEachFailedDuplication {
 		System.setProperty("junit.jupiter.execution.parallel.enabled", "true");
 		System.setProperty("junit.jupiter.execution.parallel.mode.default", "concurrent");
 		System.setProperty("junit.jupiter.execution.parallel.config.strategy", "fixed");
-		System.setProperty("junit.jupiter.execution.parallel.config.fixed.parallelism", "2");
+		System.setProperty("junit.jupiter.execution.parallel.config.fixed.parallelism", "5");
 	}
 
 	@BeforeEach

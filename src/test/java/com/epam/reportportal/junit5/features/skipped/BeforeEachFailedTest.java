@@ -6,7 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(ReportPortalExtension.class)
+@ExtendWith(FailedBeforeEachReportsSkippedTestTest.SkippedTestExtension.class)
 public class BeforeEachFailedTest {
 
 	@BeforeEach

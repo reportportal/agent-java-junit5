@@ -308,7 +308,8 @@ public class ReportPortalExtension
 		return context.getTestMethod().map(it -> Objects.nonNull(it.getAnnotation(RepeatedTest.class))).orElse(false);
 	}
 
-	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType itemType, String reason) {
+	private void startTestItem(@NotNull final ExtensionContext context, @NotNull final List<Object> arguments,
+			@NotNull final ItemType itemType, String reason) {
 		idMapping.computeIfAbsent(context, c -> {
 			boolean isTemplate = TEMPLATE == itemType;
 			ItemType type = isTemplate ? SUITE : itemType;
@@ -478,8 +479,17 @@ public class ReportPortalExtension
 	}
 
 	protected TestItem getTestItem(ExtensionContext context, boolean isRetry) {
-		String name = isRetry ? context.getParent().get().getDisplayName() : context.getDisplayName();
-		String uniqueId = isRetry ? context.getParent().get().getUniqueId() : context.getUniqueId();
+		String name;
+		String uniqueId;
+		Optional<ExtensionContext> parent = context.getParent();
+		if (isRetry && parent.isPresent()) {
+			ExtensionContext parentContext = parent.get();
+			name = parentContext.getDisplayName();
+			uniqueId = parentContext.getUniqueId();
+		} else {
+			name = context.getDisplayName();
+			uniqueId = context.getUniqueId();
+		}
 		name = name.length() > 1024 ? name.substring(0, 1024) + "..." : name;
 		String description = context.getDisplayName();
 		Set<String> tags = context.getTags();

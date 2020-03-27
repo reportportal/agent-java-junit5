@@ -265,9 +265,10 @@ public class ReportPortalExtension
 			Maybe<String> id) throws Throwable {
 		try {
 			finishBeforeAfter(invocation, context, id);
-		} finally {
+		} catch (Throwable throwable) {
 			startTestItem(context, invocationContext.getArguments(), STEP);
 			finishTestItem(context, SKIPPED_NOT_ISSUE); // an issue relates to @BeforeEach method in this case
+			throw throwable;
 		}
 	}
 

@@ -21,6 +21,7 @@ import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
@@ -28,6 +29,7 @@ import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
@@ -61,6 +63,16 @@ public class ReportPortalExtension
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
 	public static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+
+	public static final FinishTestItemRQ SKIPPED_NOT_ISSUE;
+
+	static {
+		Issue issue = new Issue();
+		issue.setIssueType(LaunchImpl.NOT_ISSUE);
+		SKIPPED_NOT_ISSUE = new FinishTestItemRQ();
+		SKIPPED_NOT_ISSUE.setIssue(issue);
+		SKIPPED_NOT_ISSUE.setStatus(SKIPPED.name());
+	}
 
 	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
@@ -115,7 +127,7 @@ public class ReportPortalExtension
 		ExtensionContext parentContext = context.getParent()
 				.orElseThrow(() -> new IllegalStateException("Unable to find parent test for @BeforeEach method"));
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, context, BEFORE_METHOD);
-		finishBeforeAfter(invocation, context, id);
+		finishBeforeTestSkip(invocation, invocationContext, context, id);
 	}
 
 	@Override
@@ -206,10 +218,9 @@ public class ReportPortalExtension
 	@Override
 	public void testDisabled(ExtensionContext context, Optional<String> reason) {
 		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
-			context.getStore(NAMESPACE).put(SKIPPED, Boolean.TRUE);
 			String description = reason.orElse(context.getDisplayName());
 			startTestItem(context, Collections.emptyList(), STEP, description);
-			finishTestItem(context);
+			finishTestItem(context, SKIPPED);
 		}
 	}
 
@@ -248,6 +259,16 @@ public class ReportPortalExtension
 		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentContext), rq);
 		StepAspect.setParentId(itemId);
 		return itemId;
+	}
+
+	private void finishBeforeTestSkip(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context,
+			Maybe<String> id) throws Throwable {
+		try {
+			finishBeforeAfter(invocation, context, id);
+		} finally {
+			startTestItem(context, invocationContext.getArguments(), STEP);
+			finishTestItem(context, SKIPPED_NOT_ISSUE); // an issue relates to @BeforeEach method in this case
+		}
 	}
 
 	private void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, Maybe<String> id) throws Throwable {
@@ -429,13 +450,17 @@ public class ReportPortalExtension
 	}
 
 	private void finishTestItem(ExtensionContext context) {
-		finishTestItem(context, context.getStore(NAMESPACE).get(SKIPPED) != null ? SKIPPED : getExecutionStatus(context));
+		finishTestItem(context, getExecutionStatus(context));
 	}
 
 	private void finishTestItem(ExtensionContext context, Status status) {
-		Launch launch = getLaunch(context);
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
+		finishTestItem(context, rq);
+	}
+
+	private void finishTestItem(ExtensionContext context, FinishTestItemRQ rq) {
+		Launch launch = getLaunch(context);
 		rq.setEndTime(Calendar.getInstance().getTime());
 		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.get(context), rq);
 		if (getReporter().getParameters().isCallbackReportingEnabled()) {

@@ -1,6 +1,5 @@
 package com.epam.reportportal.junit5.features.skipped;
 
-import com.epam.reportportal.junit5.ReportPortalExtension;
 import com.epam.reportportal.junit5.miscellaneous.FailedBeforeEachReportsSkippedTestTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

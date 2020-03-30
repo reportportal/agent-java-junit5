@@ -405,8 +405,7 @@ public class ReportPortalExtension
 	}
 
 	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull String codeRef, @NotNull List<Object> arguments) {
-		boolean isParametersPresent = Objects.nonNull(arguments) && !arguments.isEmpty();
-		String caseId = isParametersPresent ? codeRef + TRANSFORM_PARAMETERS.apply(arguments) : codeRef;
+		String caseId = arguments.isEmpty() ? codeRef : codeRef + TRANSFORM_PARAMETERS.apply(arguments);
 		return new TestCaseIdEntry(caseId);
 	}
 

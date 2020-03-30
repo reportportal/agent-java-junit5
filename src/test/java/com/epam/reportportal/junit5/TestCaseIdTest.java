@@ -16,10 +16,7 @@
 
 package com.epam.reportportal.junit5;
 
-import com.epam.reportportal.junit5.features.testcaseid.TestCaseIdFromAnnotationTest;
-import com.epam.reportportal.junit5.features.testcaseid.TestCaseIdFromCodeRefAndParamsTest;
-import com.epam.reportportal.junit5.features.testcaseid.TestCaseIdFromCodeRefTest;
-import com.epam.reportportal.junit5.features.testcaseid.TestCaseIdFromParametrizedAnnotationTest;
+import com.epam.reportportal.junit5.features.testcaseid.*;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -37,6 +34,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -135,6 +134,39 @@ public class TestCaseIdTest {
 				.collect(Collectors.toList());
 		assertEquals(expected.size(), actual.size());
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	void singleDynamicTest() {
+		TestUtils.runClasses(SingleDynamicTest.class);
+
+		Launch launch = TestCaseIdExtension.LAUNCH;
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
+
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(launch, times(2)).startTestItem(notNull(), captor.capture()); // Start a test
+
+		List<StartTestItemRQ> requests = captor.getAllValues();
+
+		String testName = SingleDynamicTest.class.getCanonicalName() + ".testForTestFactory";
+		assertThat(requests.get(0).getTestCaseId(), equalTo(testName));
+		assertThat(requests.get(1).getTestCaseId(), equalTo(testName + "$" + SingleDynamicTest.TEST_CASE_DISPLAY_NAME));
+	}
+
+	@Test
+	void singleDynamicAnnotatedTest() {
+		TestUtils.runClasses(SingleDynamicAnnotatedTest.class);
+
+		Launch launch = TestCaseIdExtension.LAUNCH;
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
+
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(launch, times(2)).startTestItem(notNull(), captor.capture()); // Start a test
+
+		assertTrue(captor.getAllValues()
+				.stream()
+				.map(StartTestItemRQ::getTestCaseId)
+				.allMatch(it -> it.equals(SingleDynamicAnnotatedTest.TEST_CASE_ID_VALUE)));
 	}
 
 	public static class TestCaseIdExtension extends ReportPortalExtension {

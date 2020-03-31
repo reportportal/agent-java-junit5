@@ -41,6 +41,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -225,30 +226,9 @@ public class ReportPortalExtension
 	public void testFailed(ExtensionContext context, Throwable throwable) {
 	}
 
-	private Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
-		Launch launch = getLaunch(context);
-		StartTestItemRQ rq = new StartTestItemRQ();
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setName(method.getName() + "()");
-		rq.setDescription(method.getName());
-		String uniqueId = parentContext.getUniqueId() + "/[method:" + method.getName() + "()]";
-		rq.setUniqueId(uniqueId);
-		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream()
-				.map(tag -> new ItemAttributesRQ(null, tag))
-				.collect(Collectors.toSet())));
-		rq.setType(itemType.name());
-		rq.setRetry(false);
-		String codeRef = method.getDeclaringClass().getCanonicalName() + "." + method.getName();
-		rq.setCodeRef(codeRef);
-		TestCaseIdEntry testCaseIdEntry = ofNullable(method.getAnnotation(TestCaseId.class)).map(TestCaseId::value)
-				.map(value -> new TestCaseIdEntry(value, value.hashCode()))
-				.orElseGet(() -> getTestCaseId(codeRef));
-		rq.setTestCaseId(testCaseIdEntry.getId());
-		rq.setTestCaseHash(testCaseIdEntry.getHash());
-		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentContext), rq);
-		StepAspect.setParentId(itemId);
-		return itemId;
-	}
+	private static final Function<List<Object>, String> TRANSFORM_PARAMETERS = it -> "[" + it.stream()
+			.map(parameter -> Objects.isNull(parameter) ? "NULL" : parameter.toString())
+			.collect(Collectors.joining(",")) + "]";
 
 	private void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, Maybe<String> id) throws Throwable {
 		try {
@@ -329,7 +309,6 @@ public class ReportPortalExtension
 					rq.setCodeRef(codeRef);
 					TestCaseIdEntry testCaseIdEntry = getTestCaseId(codeRef);
 					rq.setTestCaseId(testCaseIdEntry.getId());
-					rq.setTestCaseHash(testCaseIdEntry.getHash());
 				});
 			} else {
 				String codeRef = getCodeRef(c, "");
@@ -342,7 +321,6 @@ public class ReportPortalExtension
 				}).orElseGet(() -> getTestCaseId(codeRef, arguments));
 
 				rq.setTestCaseId(caseId.getId());
-				rq.setTestCaseHash(caseId.getHash());
 			}
 			ofNullable(testItem.getAttributes()).ifPresent(attributes -> ofNullable(rq.getAttributes()).orElseGet(() -> {
 				rq.setAttributes(Sets.newHashSet());
@@ -388,8 +366,32 @@ public class ReportPortalExtension
 		}).collect(Collectors.toList());
 	}
 
+	private Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
+		Launch launch = getLaunch(context);
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setName(method.getName() + "()");
+		rq.setDescription(method.getName());
+		String uniqueId = parentContext.getUniqueId() + "/[method:" + method.getName() + "()]";
+		rq.setUniqueId(uniqueId);
+		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream()
+				.map(tag -> new ItemAttributesRQ(null, tag))
+				.collect(Collectors.toSet())));
+		rq.setType(itemType.name());
+		rq.setRetry(false);
+		String codeRef = method.getDeclaringClass().getCanonicalName() + "." + method.getName();
+		rq.setCodeRef(codeRef);
+		TestCaseIdEntry testCaseIdEntry = ofNullable(method.getAnnotation(TestCaseId.class)).map(TestCaseId::value)
+				.map(TestCaseIdEntry::new)
+				.orElseGet(() -> getTestCaseId(codeRef));
+		rq.setTestCaseId(testCaseIdEntry.getId());
+		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentContext), rq);
+		StepAspect.setParentId(itemId);
+		return itemId;
+	}
+
 	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull String codeRef) {
-		return new TestCaseIdEntry(codeRef, codeRef.hashCode());
+		return new TestCaseIdEntry(codeRef);
 	}
 
 	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull Method method, String codeRef, List<Object> arguments) {
@@ -397,13 +399,14 @@ public class ReportPortalExtension
 		if (caseId != null) {
 			return caseId.parametrized() ?
 					TestCaseIdUtils.getParameterizedTestCaseId(method, arguments) :
-					new TestCaseIdEntry(caseId.value(), caseId.value().hashCode());
+					new TestCaseIdEntry(caseId.value());
 		}
 		return getTestCaseId(codeRef, arguments);
 	}
 
 	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull String codeRef, @NotNull List<Object> arguments) {
-		return new TestCaseIdEntry(StringUtils.join(codeRef, arguments), Arrays.deepHashCode(new Object[] { codeRef, arguments }));
+		String caseId = arguments.isEmpty() ? codeRef : codeRef + TRANSFORM_PARAMETERS.apply(arguments);
+		return new TestCaseIdEntry(caseId);
 	}
 
 	private void finishTestTemplates(ExtensionContext context) {

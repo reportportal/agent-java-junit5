@@ -220,7 +220,7 @@ public class ReportPortalExtension
 	public void testDisabled(ExtensionContext context, Optional<String> reason) {
 		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
 			String description = reason.orElse(context.getDisplayName());
-			startTestItem(context, Collections.emptyList(), STEP, description);
+			startTestItem(context, Collections.emptyList(), STEP, description, null);
 			finishTestItem(context, SKIPPED);
 		}
 	}
@@ -241,12 +241,18 @@ public class ReportPortalExtension
 			.map(parameter -> Objects.isNull(parameter) ? "NULL" : parameter.toString())
 			.collect(Collectors.joining(",")) + "]";
 
-	private void finishBeforeTestSkip(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context,
-			Maybe<String> id) throws Throwable {
+	private void finishBeforeTestSkip(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+			ExtensionContext context, Maybe<String> id) throws Throwable {
+		Date startTime = Calendar.getInstance().getTime();
 		try {
 			finishBeforeAfter(invocation, context, id);
 		} catch (Throwable throwable) {
-			startTestItem(context, invocationContext.getArguments(), STEP);
+			Date skipStartTime = Calendar.getInstance().getTime();
+			if (skipStartTime.after(startTime)) {
+				// to fix item ordering when @AfterEach starts in the same millisecond as skipped test
+				skipStartTime = new Date(skipStartTime.getTime() - 1);
+			}
+			startTestItem(context, invocationContext.getArguments(), STEP, null, skipStartTime);
 			finishTestItem(context, SKIPPED_NOT_ISSUE); // an issue relates to @BeforeEach method in this case
 			throw throwable;
 		}
@@ -280,11 +286,11 @@ public class ReportPortalExtension
 	}
 
 	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
-		startTestItem(context, arguments, type, null);
+		startTestItem(context, arguments, type, null, null);
 	}
 
 	private void startTestItem(ExtensionContext context, ItemType type) {
-		startTestItem(context, Collections.emptyList(), type, null);
+		startTestItem(context, Collections.emptyList(), type, null, null);
 	}
 
 	private String getCodeRef(Method method) {
@@ -311,7 +317,7 @@ public class ReportPortalExtension
 	}
 
 	private void startTestItem(@NotNull final ExtensionContext context, @NotNull final List<Object> arguments,
-			@NotNull final ItemType itemType, String reason) {
+			@NotNull final ItemType itemType, final String description, final Date startTime) {
 		idMapping.computeIfAbsent(context, c -> {
 			boolean isTemplate = TEMPLATE == itemType;
 			ItemType type = isTemplate ? SUITE : itemType;
@@ -320,10 +326,13 @@ public class ReportPortalExtension
 			TestItem testItem = getTestItem(c, retry);
 			Launch launch = getLaunch(c);
 			StartTestItemRQ rq = new StartTestItemRQ();
-
-			rq.setStartTime(Calendar.getInstance().getTime());
+			if (startTime == null) {
+				rq.setStartTime(Calendar.getInstance().getTime());
+			} else {
+				rq.setStartTime(startTime);
+			}
 			rq.setName(testItem.getName());
-			rq.setDescription(null != reason ? reason : testItem.getDescription());
+			rq.setDescription(null != description ? description : testItem.getDescription());
 			rq.setUniqueId(testItem.getUniqueId());
 			rq.setType(type.name());
 			rq.setRetry(retry);
@@ -413,11 +422,11 @@ public class ReportPortalExtension
 		return itemId;
 	}
 
-	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull String codeRef) {
+	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull final String codeRef) {
 		return new TestCaseIdEntry(codeRef);
 	}
 
-	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull Method method, String codeRef, List<Object> arguments) {
+	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull final Method method, final String codeRef, final List<Object> arguments) {
 		TestCaseId caseId = method.getAnnotation(TestCaseId.class);
 		if (caseId != null) {
 			return caseId.parametrized() ?
@@ -427,16 +436,16 @@ public class ReportPortalExtension
 		return getTestCaseId(codeRef, arguments);
 	}
 
-	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull String codeRef, @NotNull List<Object> arguments) {
+	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull final String codeRef, @NotNull final List<Object> arguments) {
 		String caseId = arguments.isEmpty() ? codeRef : codeRef + TRANSFORM_PARAMETERS.apply(arguments);
 		return new TestCaseIdEntry(caseId);
 	}
 
-	private void finishTestTemplates(ExtensionContext context) {
+	private void finishTestTemplates(final ExtensionContext context) {
 		finishTestTemplates(context, context.getStore(NAMESPACE).get(SKIPPED) != null ? SKIPPED : getExecutionStatus(context));
 	}
 
-	private void finishTestTemplates(ExtensionContext context, Status status) {
+	private void finishTestTemplates(final ExtensionContext context, final Status status) {
 		getTestTemplateIds().forEach(id -> {
 			Launch launch = getLaunch(context);
 			FinishTestItemRQ rq = new FinishTestItemRQ();
@@ -453,33 +462,35 @@ public class ReportPortalExtension
 				.collect(Collectors.toList());
 	}
 
-	private void finishTestItem(ExtensionContext context) {
-		finishTestItem(context, getExecutionStatus(context));
-	}
-
-	private void finishTestItem(ExtensionContext context, Status status) {
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setStatus(status.name());
-		finishTestItem(context, rq);
-	}
-
-	private void finishTestItem(ExtensionContext context, FinishTestItemRQ rq) {
-		Launch launch = getLaunch(context);
-		rq.setEndTime(Calendar.getInstance().getTime());
-		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.get(context), rq);
-		if (getReporter().getParameters().isCallbackReportingEnabled()) {
-			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
-					finishResponse));
-		}
-	}
-
-	private static Status getExecutionStatus(ExtensionContext context) {
+	private static Status getExecutionStatus(@NotNull final ExtensionContext context) {
 		Optional<Throwable> exception = context.getExecutionException();
 		if (!exception.isPresent()) {
 			return Status.PASSED;
 		} else {
 			sendStackTraceToRP(exception.get());
 			return Status.FAILED;
+		}
+	}
+
+	private void finishTestItem(@NotNull final ExtensionContext context) {
+		finishTestItem(context, getExecutionStatus(context));
+	}
+
+	private void finishTestItem(@NotNull final ExtensionContext context, @NotNull final Status status) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setStatus(status.name());
+		finishTestItem(context, rq);
+	}
+
+	private void finishTestItem(@NotNull final ExtensionContext context, @NotNull final FinishTestItemRQ rq) {
+		Launch launch = getLaunch(context);
+		if (Objects.isNull(rq.getEndTime())) {
+			rq.setEndTime(Calendar.getInstance().getTime());
+		}
+		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.get(context), rq);
+		if (getReporter().getParameters().isCallbackReportingEnabled()) {
+			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
+					finishResponse));
 		}
 	}
 

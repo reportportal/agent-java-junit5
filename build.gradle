@@ -44,10 +44,10 @@ processResources {
 
 dependencies {
     if (releaseMode) {
-        compile 'com.epam.reportportal:client-java:5.0.0-BETA-9'
+        compile 'com.epam.reportportal:client-java:5.0.0-RC-1'
         compile 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        compile 'com.github.reportportal:client-java:51aef16'
+        compile 'com.epam.reportportal:client-java:5.0.0-RC-1'
         compile 'com.github.reportportal:commons-model:5.0.0'
     }
 
@@ -55,6 +55,7 @@ dependencies {
     compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
 
+    testImplementation "org.aspectj:aspectjweaver:1.9.2"
     testImplementation 'org.junit.platform:junit-platform-runner:1.6.0'
     testImplementation 'org.junit.platform:junit-platform-launcher:1.6.0'
     testImplementation 'org.hamcrest:hamcrest:2.2'
@@ -65,7 +66,11 @@ test {
     outputs.upToDateWhen { return false }
     useJUnitPlatform()
     exclude("com/epam/reportportal/junit5/features/**")
-    maxParallelForks(1);
+    maxParallelForks(5) // it's forks - separate JVMs, should not interfere each other
+    doFirst {
+        def weaver = configurations.compile.find { it.name.contains("aspectjweaver") }
+        jvmArgs += "-javaagent:$weaver"
+    }
 }
 
 wrapper {

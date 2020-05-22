@@ -16,6 +16,7 @@
 
 package com.epam.reportportal.junit5;
 
+import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.aspect.StepAspect;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.extension.*;
 import rp.com.google.common.collect.Sets;
 
 import javax.validation.constraints.NotNull;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
@@ -385,13 +387,19 @@ public class ReportPortalExtension
 	}
 
 	private @NotNull List<ParameterResource> getParameters(@NotNull final Method method, final List<Object> arguments) {
-		final Parameter[] params = method.getParameters();
+		Parameter[] params = method.getParameters();
+		Annotation[][] parameterAnnotations = method.getParameterAnnotations();
 		return IntStream.range(0, arguments.size()).boxed().map(i -> {
 			ParameterResource res = new ParameterResource();
 			if (i >= params.length) {
 				res.setKey(Integer.toString(i + 1));
 			} else {
-				res.setKey(params[i].getType().getName());
+				String parameterName = Arrays.stream(parameterAnnotations[i])
+						.filter(a -> ParameterKey.class.equals(a.annotationType()))
+						.map(a -> ((ParameterKey) a).value())
+						.findFirst()
+						.orElseGet(() -> params[i].getType().getName());
+				res.setKey(parameterName);
 			}
 			res.setValue(ofNullable(arguments.get(i)).orElse("NULL").toString());
 			return res;

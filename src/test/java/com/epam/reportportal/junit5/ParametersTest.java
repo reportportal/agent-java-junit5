@@ -1,9 +1,6 @@
 package com.epam.reportportal.junit5;
 
-import com.epam.reportportal.junit5.features.parameters.CsvParametersTest;
-import com.epam.reportportal.junit5.features.parameters.EnumParametersTest;
-import com.epam.reportportal.junit5.features.parameters.NullParameterTest;
-import com.epam.reportportal.junit5.features.parameters.TwoParametersTest;
+import com.epam.reportportal.junit5.features.parameters.*;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -201,5 +198,33 @@ public class ParametersTest {
 		assertThat("First test parameter has correct value", testSteps.get(0).getParameters().get(0).getValue(), equalTo("NULL"));
 
 		assertThat("Second test parameter has correct value", testSteps.get(1).getParameters().get(0).getValue(), equalTo("one"));
+	}
+
+	@Test
+	public void verify_parameter_names_reported() {
+		TestUtils.runClasses(ParameterNamesTest.class);
+
+		ArgumentCaptor<StartTestItemRQ> captorStart = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(LAUNCH, times(3)).startTestItem(notNull(), captorStart.capture()); // Start a suite and two tests
+
+		List<StartTestItemRQ> testSteps = captorStart.getAllValues()
+				.stream()
+				.filter(e -> e.getType().equals(ItemType.STEP.name()))
+				.collect(Collectors.toList());
+
+		assertThat("There are two parameters for the first @Test methods", testSteps.get(0).getParameters(), hasSize(2));
+		assertThat("There are two parameters for the second @Test methods", testSteps.get(1).getParameters(), hasSize(2));
+
+		testSteps.forEach(step -> {
+			assertThat("Test first parameter has correct name",
+					step.getParameters().get(0).getKey(),
+					equalTo(ParameterNamesTest.FIRST_PARAMETER_NAME)
+			);
+
+			assertThat("Test second parameter has correct name",
+					step.getParameters().get(1).getKey(),
+					equalTo(ParameterNamesTest.SECOND_PARAMETER_NAME)
+			);
+		});
 	}
 }

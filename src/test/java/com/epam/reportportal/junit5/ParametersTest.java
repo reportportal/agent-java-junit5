@@ -227,4 +227,29 @@ public class ParametersTest {
 			);
 		});
 	}
+
+	@Test
+	public void verify_parameter_names_reported_when_not_all_of_them_set() {
+		TestUtils.runClasses(ParameterNamesNotAllNamedTest.class);
+
+		ArgumentCaptor<StartTestItemRQ> captorStart = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(LAUNCH, times(3)).startTestItem(notNull(), captorStart.capture()); // Start a suite and two tests
+
+		List<StartTestItemRQ> testSteps = captorStart.getAllValues()
+				.stream()
+				.filter(e -> e.getType().equals(ItemType.STEP.name()))
+				.collect(Collectors.toList());
+
+		assertThat("There are two parameters for the first @Test methods", testSteps.get(0).getParameters(), hasSize(2));
+		assertThat("There are two parameters for the second @Test methods", testSteps.get(1).getParameters(), hasSize(2));
+
+		testSteps.forEach(step -> {
+			assertThat("Test first parameter has correct name", step.getParameters().get(0).getKey(), equalTo("int"));
+
+			assertThat("Test second parameter has correct name",
+					step.getParameters().get(1).getKey(),
+					equalTo(ParameterNamesTest.SECOND_PARAMETER_NAME)
+			);
+		});
+	}
 }

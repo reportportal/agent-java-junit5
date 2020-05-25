@@ -391,16 +391,14 @@ public class ReportPortalExtension
 		Annotation[][] parameterAnnotations = method.getParameterAnnotations();
 		return IntStream.range(0, arguments.size()).boxed().map(i -> {
 			ParameterResource res = new ParameterResource();
-			if (i >= params.length) {
-				res.setKey(Integer.toString(i + 1));
-			} else {
-				String parameterName = Arrays.stream(parameterAnnotations[i])
-						.filter(a -> ParameterKey.class.equals(a.annotationType()))
-						.map(a -> ((ParameterKey) a).value())
-						.findFirst()
-						.orElseGet(() -> params[i].getType().getName());
-				res.setKey(parameterName);
-			}
+			String parameterName = i < params.length ?
+					Arrays.stream(parameterAnnotations[i])
+							.filter(a -> ParameterKey.class.equals(a.annotationType()))
+							.map(a -> ((ParameterKey) a).value())
+							.findFirst()
+							.orElseGet(() -> params[i].getType().getName()) :
+					arguments.get(i).getClass().getCanonicalName();
+			res.setKey(parameterName);
 			res.setValue(ofNullable(arguments.get(i)).orElse("NULL").toString());
 			return res;
 		}).collect(Collectors.toList());

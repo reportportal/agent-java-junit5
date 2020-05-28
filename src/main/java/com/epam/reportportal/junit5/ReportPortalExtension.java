@@ -16,6 +16,7 @@
 
 package com.epam.reportportal.junit5;
 
+import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.aspect.StepAspect;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.extension.*;
 import rp.com.google.common.collect.Sets;
 
 import javax.validation.constraints.NotNull;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
@@ -59,8 +61,8 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  * ReportPortal Extension sends the results of test execution to ReportPortal in RealTime
  */
 public class ReportPortalExtension
-		implements Extension, BeforeAllCallback, BeforeEachCallback, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
-				   TestWatcher, InvocationInterceptor {
+		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
+				   TestWatcher {
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
 	public static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
@@ -116,6 +118,16 @@ public class ReportPortalExtension
 	}
 
 	@Override
+	public void beforeAll(ExtensionContext context) {
+		startTestItem(context, SUITE);
+	}
+
+	@Override
+	public void beforeEach(ExtensionContext context) {
+		startTemplate(context);
+	}
+
+	@Override
 	public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext parentContext) throws Throwable {
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, parentContext, BEFORE_CLASS);
@@ -145,16 +157,6 @@ public class ReportPortalExtension
 				.orElseThrow(() -> new IllegalStateException("Unable to find parent test for @AfterEach method"));
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, context, AFTER_METHOD);
 		finishBeforeAfter(invocation, context, id);
-	}
-
-	@Override
-	public void beforeAll(ExtensionContext context) {
-		startTestItem(context, SUITE);
-	}
-
-	@Override
-	public void beforeEach(ExtensionContext context) {
-		startTemplate(context);
 	}
 
 	@Override
@@ -385,14 +387,18 @@ public class ReportPortalExtension
 	}
 
 	private @NotNull List<ParameterResource> getParameters(@NotNull final Method method, final List<Object> arguments) {
-		final Parameter[] params = method.getParameters();
+		Parameter[] params = method.getParameters();
+		Annotation[][] parameterAnnotations = method.getParameterAnnotations();
 		return IntStream.range(0, arguments.size()).boxed().map(i -> {
 			ParameterResource res = new ParameterResource();
-			if (i >= params.length) {
-				res.setKey(Integer.toString(i + 1));
-			} else {
-				res.setKey(params[i].getType().getName());
-			}
+			String parameterName = i < params.length ?
+					Arrays.stream(parameterAnnotations[i])
+							.filter(a -> ParameterKey.class.equals(a.annotationType()))
+							.map(a -> ((ParameterKey) a).value())
+							.findFirst()
+							.orElseGet(() -> params[i].getType().getName()) :
+					arguments.get(i).getClass().getCanonicalName();
+			res.setKey(parameterName);
 			res.setValue(ofNullable(arguments.get(i)).orElse("NULL").toString());
 			return res;
 		}).collect(Collectors.toList());

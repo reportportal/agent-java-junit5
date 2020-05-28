@@ -61,8 +61,8 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  * ReportPortal Extension sends the results of test execution to ReportPortal in RealTime
  */
 public class ReportPortalExtension
-		implements Extension, BeforeAllCallback, BeforeEachCallback, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
-				   TestWatcher, InvocationInterceptor {
+		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
+				   TestWatcher {
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
 	public static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
@@ -118,6 +118,16 @@ public class ReportPortalExtension
 	}
 
 	@Override
+	public void beforeAll(ExtensionContext context) {
+		startTestItem(context, SUITE);
+	}
+
+	@Override
+	public void beforeEach(ExtensionContext context) {
+		startTemplate(context);
+	}
+
+	@Override
 	public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext parentContext) throws Throwable {
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, parentContext, BEFORE_CLASS);
@@ -147,16 +157,6 @@ public class ReportPortalExtension
 				.orElseThrow(() -> new IllegalStateException("Unable to find parent test for @AfterEach method"));
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, context, AFTER_METHOD);
 		finishBeforeAfter(invocation, context, id);
-	}
-
-	@Override
-	public void beforeAll(ExtensionContext context) {
-		startTestItem(context, SUITE);
-	}
-
-	@Override
-	public void beforeEach(ExtensionContext context) {
-		startTemplate(context);
 	}
 
 	@Override

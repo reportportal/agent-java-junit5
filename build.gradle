@@ -44,10 +44,10 @@ processResources {
 
 dependencies {
     if (releaseMode) {
-        compile 'com.epam.reportportal:client-java:5.0.0-RC-2'
+        compile 'com.epam.reportportal:client-java:5.0.0'
         compile 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        compile 'com.epam.reportportal:client-java:5.0.0-RC-2'
+        compile 'com.epam.reportportal:client-java:5.0.0'
         compile 'com.github.reportportal:commons-model:5.0.0'
     }
 

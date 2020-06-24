@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id 'java'
-}
+apply plugin: 'java'
 
 project.ext.releaseMode = project.hasProperty('releaseMode')
 
@@ -33,7 +31,24 @@ repositories {
     jcenter()
     mavenCentral()
     mavenLocal()
-    releaseMode ? maven { url "http://dl.bintray.com/epam/reportportal" } : maven { url "https://jitpack.io" }
+    maven { url "http://dl.bintray.com/epam/reportportal" }
+    maven { url "https://jitpack.io" }
+}
+
+project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
+project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
+
+publishing {
+    repositories {
+        maven {
+            name = "JUnit5 GitHub Packages"
+            url = uri("https://maven.pkg.github.com/reportportal/agent-java-junit5")
+            credentials {
+                username = githubUserName
+                password = githubToken
+            }
+        }
+    }
 }
 
 processResources {
@@ -43,13 +58,8 @@ processResources {
 }
 
 dependencies {
-    if (releaseMode) {
-        compile 'com.epam.reportportal:client-java:5.0.1'
-        compile 'com.epam.reportportal:commons-model:5.0.0'
-    } else {
-        compile 'com.epam.reportportal:client-java:5.0.1'
-        compile 'com.github.reportportal:commons-model:5.0.0'
-    }
+    compile 'com.epam.reportportal:client-java:5.0.1'
+    compile 'com.epam.reportportal:commons-model:5.0.0'
 
     compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
     compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
@@ -77,4 +87,6 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
-afterReleaseBuild.dependsOn bintrayUpload
+def releaseDependencies = [bintrayUpload, publish]
+releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
+afterReleaseBuild.setDependsOn(releaseDependencies)

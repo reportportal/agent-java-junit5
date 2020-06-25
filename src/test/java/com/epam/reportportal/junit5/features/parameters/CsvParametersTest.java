@@ -10,7 +10,7 @@ public class CsvParametersTest {
 
 	@ParameterizedTest
 	@CsvSource({ "one", "two, three" })
-	public void testParameters(String param) throws InterruptedException {
+	public void testParameters(String param) {
 		System.out.println("Csv parameter test: " + param);
 	}
 }

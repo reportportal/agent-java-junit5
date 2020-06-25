@@ -16,6 +16,7 @@ import org.mockito.stubbing.Answer;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.epam.reportportal.junit5.ParametersTest.ParameterTestExtension.LAUNCH;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -251,5 +252,24 @@ public class ParametersTest {
 					equalTo(ParameterNamesTest.SECOND_PARAMETER_NAME)
 			);
 		});
+	}
+
+	@Test
+	public void verify_test_template_finish_in_case_of_failed_parameterized_test() {
+		TestUtils.runClasses(EnumParametersFailedTest.class);
+
+		verify(LAUNCH, times(1)).startTestItem(any()); // Start parent Suite
+		ArgumentCaptor<StartTestItemRQ> captorStart = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(LAUNCH, times(3)).startTestItem(notNull(), captorStart.capture()); // Start a suite and two tests
+
+		ArgumentCaptor<FinishTestItemRQ> captorFinish = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(LAUNCH, times(4)).finishTestItem(notNull(), captorFinish.capture()); // finish tests and suites
+
+		List<FinishTestItemRQ> finishMethods = captorFinish.getAllValues();
+
+		Stream.concat(finishMethods.subList(0, 1).stream(), finishMethods.subList(2, finishMethods.size()).stream())
+				.forEach(f -> assertThat(f.getStatus(), equalTo(Status.FAILED.name())));
+
+		assertThat(finishMethods.get(1).getStatus(), equalTo(Status.PASSED.name()));
 	}
 }

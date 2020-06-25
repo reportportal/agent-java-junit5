@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id 'java'
-}
+apply plugin: 'java'
 
 project.ext.releaseMode = project.hasProperty('releaseMode')
 
@@ -33,7 +31,24 @@ repositories {
     jcenter()
     mavenCentral()
     mavenLocal()
-    releaseMode ? maven { url "http://dl.bintray.com/epam/reportportal" } : maven { url "https://jitpack.io" }
+    maven { url "http://dl.bintray.com/epam/reportportal" }
+    maven { url "https://jitpack.io" }
+}
+
+project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
+project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
+
+publishing {
+    repositories {
+        maven {
+            name = "JUnit5 GitHub Packages"
+            url = uri("https://maven.pkg.github.com/reportportal/agent-java-junit5")
+            credentials {
+                username = githubUserName
+                password = githubToken
+            }
+        }
+    }
 }
 
 processResources {
@@ -43,21 +58,18 @@ processResources {
 }
 
 dependencies {
-    if (releaseMode) {
-        compile 'com.epam.reportportal:client-java:5.0.1'
-        compile 'com.epam.reportportal:commons-model:5.0.0'
-    } else {
-        compile 'com.epam.reportportal:client-java:5.0.1'
-        compile 'com.github.reportportal:commons-model:5.0.0'
+    implementation 'com.epam.reportportal:client-java:5.0.1'
+    implementation 'com.epam.reportportal:commons-model:5.0.0'
+
+    implementation "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
+
+    testImplementation ('org.junit.platform:junit-platform-runner:1.6.0') {
+        exclude module: 'junit'
     }
-
-    compileOnly("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
-    compile("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
-    compile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
-
-    testImplementation "org.aspectj:aspectjweaver:1.9.2"
-    testImplementation 'org.junit.platform:junit-platform-runner:1.6.0'
     testImplementation 'org.junit.platform:junit-platform-launcher:1.6.0'
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}"
+    testImplementation "org.aspectj:aspectjweaver:1.9.2"
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation 'org.mockito:mockito-core:3.2.4'
 }
@@ -68,7 +80,7 @@ test {
     exclude("com/epam/reportportal/junit5/features/**")
     maxParallelForks(5) // it's forks - separate JVMs, should not interfere each other
     doFirst {
-        def weaver = configurations.compile.find { it.name.contains("aspectjweaver") }
+        def weaver = configurations.runtimeClasspath.find { it.name.contains("aspectjweaver") }
         jvmArgs += "-javaagent:$weaver"
     }
 }
@@ -77,4 +89,6 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
-afterReleaseBuild.dependsOn bintrayUpload
+def releaseDependencies = [bintrayUpload, publish]
+releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
+afterReleaseBuild.setDependsOn(releaseDependencies)

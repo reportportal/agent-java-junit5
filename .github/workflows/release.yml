@@ -70,14 +70,16 @@ jobs:
       - name: Setup git credentials
         uses: oleksiyrudenko/gha-git-credentials@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          name: 'reportportal.io'
+          email: 'support@reportportal.io'
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Release with Gradle
         id: release
         run: |
           ./gradlew release -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{env.RELEASE_VERSION}} \
           -Prelease.newVersion=${{env.NEW_VERSION}} -PbintrayUser=${{secrets.BINTRAY_USER}} -PbintrayApiKey=${{secrets.BINTRAY_API_KEY}} \
-          -PgithubUserName=${{env.GH_USER_NAME}} -PgithubToken=${{secrets.GITHUB_TOKEN}}
+          -PgithubUserName=reportportal -PgithubToken=${{secrets.GH_TOKEN}}
 
       - name: Update README.md
         id: readmeUpdate

@@ -79,7 +79,7 @@ jobs:
         run: |
           ./gradlew release -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{env.RELEASE_VERSION}} \
           -Prelease.newVersion=${{env.NEW_VERSION}} -PbintrayUser=${{secrets.BINTRAY_USER}} -PbintrayApiKey=${{secrets.BINTRAY_API_KEY}} \
-          -PgithubUserName=${{env.GH_USER_NAME}} -PgithubToken=${{secrets.GITHUB_TOKEN}}
+          -PgithubUserName=reportportal -PgithubToken=${{secrets.GH_TOKEN}}
 
       - name: Update README.md
         id: readmeUpdate

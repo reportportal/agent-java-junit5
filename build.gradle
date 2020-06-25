@@ -63,7 +63,6 @@ dependencies {
 
     implementation "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
 
-    testImplementation "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
     testImplementation ('org.junit.platform:junit-platform-runner:1.6.0') {
         exclude module: 'junit'
     }
@@ -81,7 +80,7 @@ test {
     exclude("com/epam/reportportal/junit5/features/**")
     maxParallelForks(5) // it's forks - separate JVMs, should not interfere each other
     doFirst {
-        def weaver = configurations.compile.find { it.name.contains("aspectjweaver") }
+        def weaver = configurations.runtimeClasspath.find { it.name.contains("aspectjweaver") }
         jvmArgs += "-javaagent:$weaver"
     }
 }

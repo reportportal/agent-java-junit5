@@ -39,7 +39,7 @@ with fully qualified custom Extension class name in this file.
 <dependency>
    <groupId>com.epam.reportportal</groupId>
    <artifactId>agent-java-junit5</artifactId>
-   <version>$LATEST_VERSION</version>
+   <version>5.0.0-BETA-15</version>
 </dependency>
 ```
 
@@ -65,19 +65,19 @@ with fully qualified custom Extension class name in this file.
 
 ### Gradle
 
-```yml
+```groovy
 repositories {
     jcenter()
     mavenLocal()
     maven { url "http://dl.bintray.com/epam/reportportal" }
 }
 
-testCompile 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
+testCompile 'com.epam.reportportal:agent-java-junit5:5.0.0-BETA-15'
 ```
 
 #### Automatic Extension Registration (optional)
 
-```yml
+```groovy
 test {
     useJUnitPlatform()
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', true
@@ -133,7 +133,7 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>agent-java-junit5</artifactId>
-    <version>4.0.1</version>
+    <version>5.0.0-BETA-15</version>
 </dependency>
 ```
 > Latest version of the agent, could be found [here](https://bintray.com/epam/reportportal/agent-java-junit5)
@@ -154,7 +154,7 @@ If you prefer using **Logback** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-logback</artifactId>
-    <version>4.0.0</version>
+    <version>5.0.1</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://bintray.com/epam/reportportal/logger-java-logback)
@@ -175,7 +175,7 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-log4j</artifactId>
-    <version>4.0.1</version>
+    <version>5.0.1</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://bintray.com/epam/reportportal/logger-java-log4j)
@@ -185,13 +185,13 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>org.apache.logging.log4j</groupId>
     <artifactId>log4j-api</artifactId>
-    <version>2.10.0</version>
+    <version>2.11.2</version>
 </dependency>
 
 <dependency>
      <groupId>org.apache.logging.log4j</groupId>
      <artifactId>log4j-core</artifactId>
-     <version>2.10.0</version>
+     <version>2.11.2</version>
 </dependency>
 ```
 
@@ -350,25 +350,25 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>agent-java-junit5</artifactId>
-            <version>4.0.1</version>
+            <version>5.0.0-BETA-15</version>
         </dependency>
 
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>logger-java-log4j</artifactId>
-            <version>4.0.1</version>
+            <version>5.0.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>2.10.0</version>
+            <version>2.11.2</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.10.0</version>
+            <version>2.11.2</version>
         </dependency>
 
     </dependencies>
@@ -449,7 +449,7 @@ test {
 
 *Full `build.gradle` file example:*
 
-```gradle
+```groovy
 [build.gradle]
 apply plugin: 'java'
 sourceCompatibility = 1.8
@@ -463,10 +463,10 @@ repositories {
 }
 
 dependencies {
-    compile 'com.epam.reportportal:logger-java-log4j:4.0.1'
-    compile 'org.apache.logging.log4j:log4j-api:2.10.0'
-    compile 'org.apache.logging.log4j:log4j-core:2.10.0'
-    compile 'com.epam.reportportal:agent-java-junit5:4.0.1'
+    compile 'com.epam.reportportal:logger-java-log4j:5.0.1'
+    compile 'org.apache.logging.log4j:log4j-api:2.11.2'
+    compile 'org.apache.logging.log4j:log4j-core:2.11.2'
+    compile 'com.epam.reportportal:agent-java-junit5:5.0.0-BETA-15'
 }
 
 test {

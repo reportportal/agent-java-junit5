@@ -91,4 +91,4 @@ wrapper {
 
 def releaseDependencies = [bintrayUpload, publish]
 releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
-afterReleaseBuild.setDependsOn(releaseDependencies)
+//afterReleaseBuild.setDependsOn(releaseDependencies)

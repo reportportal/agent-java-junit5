@@ -36,8 +36,7 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.*;
@@ -70,7 +69,7 @@ public class TestCaseIdTest {
 		verify(launch, times(1)).startTestItem(notNull(), captor.capture()); // Start a test
 
 		StartTestItemRQ request = captor.getValue();
-		assertEquals(expected, request.getTestCaseId());
+		assertThat(request.getTestCaseId(), equalTo(expected));
 	}
 
 	@Test
@@ -89,13 +88,12 @@ public class TestCaseIdTest {
 
 		List<StartTestItemRQ> requests = captor.getAllValues();
 
-		assertTrue(requests.stream().anyMatch(it -> "suite".equalsIgnoreCase(it.getType())));
+		assertThat(requests.stream().map(e -> e.getType().toLowerCase()).collect(Collectors.toList()), hasItem("suite"));
 		List<String> actual = requests.stream()
 				.filter(it -> "step".equalsIgnoreCase(it.getType()))
 				.map(StartTestItemRQ::getTestCaseId)
 				.collect(Collectors.toList());
-		assertEquals(expected.size(), actual.size());
-		assertEquals(expected, actual);
+		assertThat(actual, equalTo(expected));
 	}
 
 	@Test
@@ -110,7 +108,7 @@ public class TestCaseIdTest {
 		verify(launch, times(1)).startTestItem(notNull(), captor.capture()); // Start a test
 
 		StartTestItemRQ request = captor.getValue();
-		assertEquals(TestCaseIdFromAnnotationTest.TEST_CASE_ID_VALUE, request.getTestCaseId());
+		assertThat(request.getTestCaseId(), equalTo(TestCaseIdFromAnnotationTest.TEST_CASE_ID_VALUE));
 	}
 
 	@Test
@@ -127,13 +125,12 @@ public class TestCaseIdTest {
 
 		List<StartTestItemRQ> requests = captor.getAllValues();
 
-		assertTrue(requests.stream().anyMatch(it -> "suite".equalsIgnoreCase(it.getType())));
+		assertThat(requests.stream().map(e -> e.getType().toLowerCase()).collect(Collectors.toList()), hasItem("suite"));
 		List<String> actual = requests.stream()
 				.filter(it -> "step".equalsIgnoreCase(it.getType()))
 				.map(StartTestItemRQ::getTestCaseId)
 				.collect(Collectors.toList());
-		assertEquals(expected.size(), actual.size());
-		assertEquals(expected, actual);
+		assertThat(actual, equalTo(expected));
 	}
 
 	@Test
@@ -163,10 +160,10 @@ public class TestCaseIdTest {
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(2)).startTestItem(notNull(), captor.capture()); // Start a test
 
-		assertTrue(captor.getAllValues()
-				.stream()
-				.map(StartTestItemRQ::getTestCaseId)
-				.allMatch(it -> it.equals(SingleDynamicAnnotatedTest.TEST_CASE_ID_VALUE)));
+		assertThat(
+				captor.getAllValues().stream().map(StartTestItemRQ::getTestCaseId).collect(Collectors.toList()),
+				hasItem(SingleDynamicAnnotatedTest.TEST_CASE_ID_VALUE)
+		);
 	}
 
 	public static class TestCaseIdExtension extends ReportPortalExtension {

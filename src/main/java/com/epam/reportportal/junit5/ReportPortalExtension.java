@@ -61,8 +61,8 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  * ReportPortal Extension sends the results of test execution to ReportPortal in RealTime
  */
 public class ReportPortalExtension
-		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback,
-				   TestWatcher {
+		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback, AfterEachCallback,
+				   AfterAllCallback, TestWatcher {
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
 	public static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
@@ -80,7 +80,7 @@ public class ReportPortalExtension
 	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
-	private final Map<String, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
+	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
 
 	ReportPortal getReporter() {
@@ -123,8 +123,24 @@ public class ReportPortalExtension
 	}
 
 	@Override
+	public void afterAll(ExtensionContext context) {
+		finishTemplates(context);
+		if (context.getStore(NAMESPACE).get(FAILED) == null) {
+			finishTestItem(context);
+		} else {
+			finishTestItem(context, FAILED);
+			context.getParent().ifPresent(p -> p.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
+		}
+	}
+
+	@Override
 	public void beforeEach(ExtensionContext context) {
 		startTemplate(context);
+	}
+
+	@Override
+	public void afterEach(ExtensionContext context) {
+
 	}
 
 	@Override
@@ -200,22 +216,6 @@ public class ReportPortalExtension
 			context.getParent().ifPresent(c -> c.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
 		}
 		finishTestItem(context, status);
-	}
-
-	@Override
-	public void afterEach(ExtensionContext context) {
-	}
-
-	@Override
-	public void afterAll(ExtensionContext context) {
-		if (context.getStore(NAMESPACE).get(FAILED) == null) {
-			finishTestTemplates(context);
-			finishTestItem(context);
-		} else {
-			finishTestTemplates(context, FAILED);
-			finishTestItem(context, FAILED);
-			context.getParent().ifPresent(p -> p.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
-		}
 	}
 
 	@Override
@@ -375,7 +375,7 @@ public class ReportPortalExtension
 				return item;
 			});
 			if (isTemplate) {
-				testTemplates.put(c.getUniqueId(), itemId);
+				testTemplates.put(c, itemId);
 			}
 			StepAspect.setParentId(itemId);
 			return itemId;
@@ -447,25 +447,33 @@ public class ReportPortalExtension
 		return new TestCaseIdEntry(caseId);
 	}
 
-	private void finishTestTemplates(final ExtensionContext context) {
-		finishTestTemplates(context, context.getStore(NAMESPACE).get(SKIPPED) != null ? SKIPPED : getExecutionStatus(context));
-	}
+	private void finishTemplates(final ExtensionContext parentContext) {
+		List<ExtensionContext> templates = testTemplates.keySet()
+				.stream()
+				.filter((c) -> c.getParent().map(myParent -> parentContext == myParent).orElse(false))
+				.collect(Collectors.toList());
 
-	private void finishTestTemplates(final ExtensionContext context, final Status status) {
-		getTestTemplateIds().forEach(id -> {
-			Launch launch = getLaunch(context);
-			FinishTestItemRQ rq = new FinishTestItemRQ();
-			rq.setStatus(status.name());
-			rq.setEndTime(Calendar.getInstance().getTime());
-			launch.finishTestItem(testTemplates.remove(id), rq);
+		templates.forEach(context -> {
+			Status status = context.getStore(NAMESPACE).get(FAILED) != null ?
+					FAILED :
+					context.getStore(NAMESPACE).get(SKIPPED) != null ? SKIPPED : getExecutionStatus(context);
+			if (status == SKIPPED) {
+				parentContext.getStore(NAMESPACE).put(SKIPPED, Boolean.TRUE);
+			}
+			if (status == FAILED) {
+				parentContext.getStore(NAMESPACE).put(FAILED, Boolean.TRUE);
+			}
+			finishTemplate(context, status);
 		});
 	}
 
-	private List<String> getTestTemplateIds() {
-		return testTemplates.keySet()
-				.stream()
-				.filter(stringMaybe -> stringMaybe.contains("/[test-template:") && !stringMaybe.contains("-invocation"))
-				.collect(Collectors.toList());
+	private void finishTemplate(final ExtensionContext context, final Status status) {
+		Launch launch = getLaunch(context);
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setStatus(status.name());
+		rq.setEndTime(Calendar.getInstance().getTime());
+		Maybe<String> templateId = testTemplates.remove(context);
+		launch.finishTestItem(templateId, rq);
 	}
 
 	private static Status getExecutionStatus(@NotNull final ExtensionContext context) {
@@ -493,7 +501,7 @@ public class ReportPortalExtension
 		if (Objects.isNull(rq.getEndTime())) {
 			rq.setEndTime(Calendar.getInstance().getTime());
 		}
-		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.get(context), rq);
+		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.remove(context), rq);
 		if (getReporter().getParameters().isCallbackReportingEnabled()) {
 			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
 					finishResponse));
@@ -544,10 +552,10 @@ public class ReportPortalExtension
 
 	protected static class TestItem {
 
-		private String name;
-		private String description;
-		private String uniqueId;
-		private Set<ItemAttributesRQ> attributes;
+		private final String name;
+		private final String description;
+		private final String uniqueId;
+		private final Set<ItemAttributesRQ> attributes;
 
 		String getName() {
 			return name;

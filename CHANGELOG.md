@@ -5,6 +5,8 @@
 - Release pipelines moved into github actions
 ### Changed
 - README.md updated with the latest artifact versions
+### Fixed
+- Test template finish logic to avoid parallel execution failures
 
 ## [4.0.0]
 ##### Released: XXX Dec 2018

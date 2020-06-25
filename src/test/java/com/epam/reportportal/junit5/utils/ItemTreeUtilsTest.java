@@ -18,7 +18,6 @@ package com.epam.reportportal.junit5.utils;
 
 import com.epam.reportportal.service.tree.TestItemTree;
 import io.reactivex.Maybe;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -26,6 +25,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.when;
 
 /**
@@ -57,48 +59,48 @@ class ItemTreeUtilsTest {
 	void createKeyFromString() {
 		TestItemTree.ItemTreeKey itemTreeKey = ItemTreeUtils.createItemTreeKey(NAME);
 
-		Assert.assertEquals(NAME, itemTreeKey.getName());
-		Assert.assertEquals(NAME.hashCode(), itemTreeKey.getHash());
+		assertThat(itemTreeKey.getName(), equalTo(NAME));
+		assertThat(itemTreeKey.getHash(), equalTo(NAME.hashCode()));
 	}
 
 	@Test
 	void createKeyFromStringAndHash() {
 		TestItemTree.ItemTreeKey itemTreeKey = ItemTreeUtils.createItemTreeKey(NAME, ANOTHER_HASH);
 
-		Assert.assertEquals(NAME, itemTreeKey.getName());
-		Assert.assertEquals(ANOTHER_HASH, itemTreeKey.getHash());
+		assertThat(itemTreeKey.getName(), equalTo(NAME));
+		assertThat(itemTreeKey.getHash(), equalTo(ANOTHER_HASH));
 	}
 
 	@Test
 	void createKeyFromTestInfo() {
 		TestItemTree.ItemTreeKey itemTreeKey = ItemTreeUtils.createItemTreeKey(testInfo);
 
-		Assert.assertEquals(NAME, itemTreeKey.getName());
-		Assert.assertEquals(NAME.hashCode(), itemTreeKey.getHash());
+		assertThat(itemTreeKey.getName(), equalTo(NAME));
+		assertThat(itemTreeKey.getHash(), equalTo(NAME.hashCode()));
 	}
 
 	@Test
 	void createKeyFromTestInfoAndHash() {
 		TestItemTree.ItemTreeKey itemTreeKey = ItemTreeUtils.createItemTreeKey(testInfo, ANOTHER_HASH);
 
-		Assert.assertEquals(NAME, itemTreeKey.getName());
-		Assert.assertEquals(ANOTHER_HASH, itemTreeKey.getHash());
+		assertThat(itemTreeKey.getName(), equalTo(NAME));
+		assertThat(itemTreeKey.getHash(), equalTo(ANOTHER_HASH));
 	}
 
 	@Test
 	void createKeyFromExtensionContext() {
 		TestItemTree.ItemTreeKey itemTreeKey = ItemTreeUtils.createItemTreeKey(extensionContext);
 
-		Assert.assertEquals(NAME, itemTreeKey.getName());
-		Assert.assertEquals(NAME.hashCode(), itemTreeKey.getHash());
+		assertThat(itemTreeKey.getName(), equalTo(NAME));
+		assertThat(itemTreeKey.getHash(), equalTo(NAME.hashCode()));
 	}
 
 	@Test
 	void createKeyFromExtensionContextAndHash() {
 		TestItemTree.ItemTreeKey itemTreeKey = ItemTreeUtils.createItemTreeKey(extensionContext, ANOTHER_HASH);
 
-		Assert.assertEquals(NAME, itemTreeKey.getName());
-		Assert.assertEquals(ANOTHER_HASH, itemTreeKey.getHash());
+		assertThat(itemTreeKey.getName(), equalTo(NAME));
+		assertThat(itemTreeKey.getHash(), equalTo(ANOTHER_HASH));
 	}
 
 	@Test
@@ -112,7 +114,8 @@ class ItemTreeUtilsTest {
 
 		TestItemTree.TestItemLeaf retrievedLeaf = ItemTreeUtils.retrieveLeaf(NAME, testItemTree);
 
-		Assert.assertEquals(itemId, retrievedLeaf.getItemId());
+		assertThat(retrievedLeaf.getItemId(), notNullValue());
+		assertThat(retrievedLeaf.getItemId(), equalTo(itemId));
 	}
 
 	@Test
@@ -125,7 +128,8 @@ class ItemTreeUtilsTest {
 
 		TestItemTree.TestItemLeaf retrievedLeaf = ItemTreeUtils.retrieveLeaf(testInfo, testItemTree);
 
-		Assert.assertEquals(itemId, retrievedLeaf.getItemId());
+		assertThat(retrievedLeaf.getItemId(), notNullValue());
+		assertThat(retrievedLeaf.getItemId(), equalTo(itemId));
 	}
 
 	public static Maybe<String> createIdMaybe(String id) {

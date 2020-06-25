@@ -28,7 +28,6 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.ArgumentCaptor;
@@ -40,6 +39,8 @@ import java.util.UUID;
 
 import static com.epam.reportportal.junit5.CallbackReportingTest.CallbackReportingExtension.*;
 import static com.epam.reportportal.junit5.util.TestUtils.createMaybe;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -127,10 +128,9 @@ public class CallbackReportingTest {
 		FinishTestItemRQ afterMethod = finishedItems.get(1);
 		FinishTestItemRQ finishMethodCallback = finishedItems.get(2);
 
-		Assert.assertEquals("PASSED", finishMethod.getStatus());
-		Assert.assertEquals("PASSED", afterMethod.getStatus());
-		Assert.assertEquals(ITEM_CALLBACK_FINISH_STATUS, finishMethodCallback.getStatus());
-
+		assertThat(finishMethod.getStatus(), equalTo("PASSED"));
+		assertThat(afterMethod.getStatus(), equalTo("PASSED"));
+		assertThat(finishMethodCallback.getStatus(), equalTo(ITEM_CALLBACK_FINISH_STATUS));
 	}
 
 	@Test
@@ -146,10 +146,9 @@ public class CallbackReportingTest {
 
 		SaveLogRQ log = logCaptor.getValue();
 
-		Assert.assertEquals(LOG_MESSAGE, log.getMessage());
-		Assert.assertEquals(ERROR_LOG_LEVEL, log.getLevel());
-		Assert.assertEquals(LOG_TIME, log.getLogTime());
-
+		assertThat(log.getMessage(), equalTo(LOG_MESSAGE));
+		assertThat(log.getLevel(), equalTo(ERROR_LOG_LEVEL));
+		assertThat(log.getLogTime(), equalTo(LOG_TIME));
 	}
 
 }

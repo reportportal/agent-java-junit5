@@ -1,6 +1,6 @@
 package com.epam.reportportal.junit5.util;
 
-import com.epam.reportportal.listeners.Statuses;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -77,12 +77,12 @@ public class Verifications {
 
 	public static void verify_items_positive_finish_statuses(String type, String testUuid,
 			Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls) {
-		verify_items_finish_statuses(type, Statuses.PASSED, testUuid, launchCalls);
+		verify_items_finish_statuses(type, ItemStatus.PASSED.name(), testUuid, launchCalls);
 	}
 
 	public static void verify_items_negative_finish_statuses(String type, String testUuid,
 			Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls) {
-		verify_items_finish_statuses(type, Statuses.FAILED, testUuid, launchCalls);
+		verify_items_finish_statuses(type, ItemStatus.FAILED.name(), testUuid, launchCalls);
 	}
 
 	public static void verify_correct_suite_start_responses(

@@ -1,5 +1,5 @@
 # agent-java-junit5
-[![Build Status](https://travis-ci.org/reportportal/agent-java-junit5.svg?branch=master)](https://travis-ci.org/reportportal/agent-java-junit5)
+![CI Build](https://github.com/reportportal/agent-java-junit5/workflows/CI%20Build/badge.svg?branch=develop)
 [ ![Download](https://api.bintray.com/packages/epam/reportportal/agent-java-junit5/images/download.svg) ](https://bintray.com/epam/reportportal/agent-java-junit5/_latestVersion)
 [![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)

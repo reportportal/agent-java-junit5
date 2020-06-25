@@ -37,13 +37,12 @@ repositories {
 
 project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
 project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
-project.ext.githubRepository = project.hasProperty('githubRepository') ? githubRepository : ""
 
 publishing {
     repositories {
         maven {
             name = "JUnit5 GitHub Packages"
-            url = uri("https://maven.pkg.github.com/$project.ext.githubRepository")
+            url = uri("https://maven.pkg.github.com/reportportal/agent-java-junit5")
             credentials {
                 username = githubUserName
                 password = githubToken
@@ -88,12 +87,6 @@ test {
 
 wrapper {
     gradleVersion = '5.4.1'
-}
-
-release {
-    git{
-        pushOptions = ["--repo=https://$project.ext.githubToken@github.com/$project.ext.githubRepository"]
-    }
 }
 
 def releaseDependencies = [bintrayUpload, publish]

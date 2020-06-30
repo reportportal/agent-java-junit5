@@ -58,7 +58,8 @@ processResources {
 }
 
 dependencies {
-    implementation 'com.epam.reportportal:client-java:5.0.1'
+    implementation 'com.epam.reportportal:client-java:5.0.2'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.epam.reportportal:commons-model:5.0.0'
 
     implementation "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
@@ -80,7 +81,7 @@ test {
     exclude("com/epam/reportportal/junit5/features/**")
     maxParallelForks(5) // it's forks - separate JVMs, should not interfere each other
     doFirst {
-        def weaver = configurations.runtimeClasspath.find { it.name.contains("aspectjweaver") }
+        def weaver = configurations.testRuntimeClasspath.find { it.name.contains("aspectjweaver") }
         jvmArgs += "-javaagent:$weaver"
     }
 }

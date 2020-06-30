@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.0-BETA-16]
 ### Changed
 - Bumping up client version to support new features
 - All `@NotNull` annotations replaced with `@Nonnull`

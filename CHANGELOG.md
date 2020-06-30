@@ -3,7 +3,7 @@
 ## [Unreleased]
 ### Changed
 - Bumping up client version to support new features
-- All @NotNull annotations replaced with @Nonnull
+- All `@NotNull` annotations replaced with `@Nonnull`
 - Parameters extraction logic moved into the client
 
 ## [5.0.0-BETA-15]

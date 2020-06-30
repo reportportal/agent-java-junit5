@@ -16,7 +16,6 @@
 
 package com.epam.reportportal.junit5;
 
-import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.aspect.StepAspect;
@@ -27,6 +26,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.AttributeParser;
+import com.epam.reportportal.utils.ParameterUtils;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -39,15 +39,12 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.*;
 import rp.com.google.common.collect.Sets;
 
-import javax.validation.constraints.NotNull;
-import java.lang.annotation.Annotation;
+import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.epam.reportportal.junit5.ItemType.*;
 import static com.epam.reportportal.junit5.Status.*;
@@ -318,8 +315,8 @@ public class ReportPortalExtension
 		return context.getTestMethod().map(it -> Objects.nonNull(it.getAnnotation(RepeatedTest.class))).orElse(false);
 	}
 
-	private void startTestItem(@NotNull final ExtensionContext context, @NotNull final List<Object> arguments,
-			@NotNull final ItemType itemType, final String description, final Date startTime) {
+	private void startTestItem(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
+			@Nonnull final ItemType itemType, final String description, final Date startTime) {
 		idMapping.computeIfAbsent(context, c -> {
 			boolean isTemplate = TEMPLATE == itemType;
 			ItemType type = isTemplate ? SUITE : itemType;
@@ -382,26 +379,14 @@ public class ReportPortalExtension
 		});
 	}
 
-	private @NotNull Set<ItemAttributesRQ> getAttributes(@NotNull final Method method) {
+	private @Nonnull
+	Set<ItemAttributesRQ> getAttributes(@Nonnull final Method method) {
 		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElseGet(Sets::newHashSet);
 	}
 
-	private @NotNull List<ParameterResource> getParameters(@NotNull final Method method, final List<Object> arguments) {
-		Parameter[] params = method.getParameters();
-		Annotation[][] parameterAnnotations = method.getParameterAnnotations();
-		return IntStream.range(0, arguments.size()).boxed().map(i -> {
-			ParameterResource res = new ParameterResource();
-			String parameterName = i < params.length ?
-					Arrays.stream(parameterAnnotations[i])
-							.filter(a -> ParameterKey.class.equals(a.annotationType()))
-							.map(a -> ((ParameterKey) a).value())
-							.findFirst()
-							.orElseGet(() -> params[i].getType().getName()) :
-					arguments.get(i).getClass().getCanonicalName();
-			res.setKey(parameterName);
-			res.setValue(ofNullable(arguments.get(i)).orElse("NULL").toString());
-			return res;
-		}).collect(Collectors.toList());
+	private @Nonnull
+	List<ParameterResource> getParameters(@Nonnull final Method method, final List<Object> arguments) {
+		return ParameterUtils.getParameters(method, arguments);
 	}
 
 	private Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
@@ -428,21 +413,28 @@ public class ReportPortalExtension
 		return itemId;
 	}
 
-	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull final String codeRef) {
+	private @Nonnull
+	TestCaseIdEntry getTestCaseId(@Nonnull final String codeRef) {
 		return new TestCaseIdEntry(codeRef);
 	}
 
-	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull final Method method, final String codeRef, final List<Object> arguments) {
+	private @Nonnull
+	TestCaseIdEntry getTestCaseId(@Nonnull final Method method, final String codeRef, final List<Object> arguments) {
 		TestCaseId caseId = method.getAnnotation(TestCaseId.class);
 		if (caseId != null) {
-			return caseId.parametrized() ?
-					TestCaseIdUtils.getParameterizedTestCaseId(method, arguments) :
-					new TestCaseIdEntry(caseId.value());
+			if (caseId.parametrized()) {
+				TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getParameterizedTestCaseId(method, arguments);
+				if (testCaseIdEntry != null) {
+					return testCaseIdEntry;
+				}
+			}
+			return new TestCaseIdEntry(caseId.value());
 		}
 		return getTestCaseId(codeRef, arguments);
 	}
 
-	private @NotNull TestCaseIdEntry getTestCaseId(@NotNull final String codeRef, @NotNull final List<Object> arguments) {
+	private @Nonnull
+	TestCaseIdEntry getTestCaseId(@Nonnull final String codeRef, @Nonnull final List<Object> arguments) {
 		String caseId = arguments.isEmpty() ? codeRef : codeRef + TRANSFORM_PARAMETERS.apply(arguments);
 		return new TestCaseIdEntry(caseId);
 	}
@@ -476,7 +468,7 @@ public class ReportPortalExtension
 		launch.finishTestItem(templateId, rq);
 	}
 
-	private static Status getExecutionStatus(@NotNull final ExtensionContext context) {
+	private static Status getExecutionStatus(@Nonnull final ExtensionContext context) {
 		Optional<Throwable> exception = context.getExecutionException();
 		if (!exception.isPresent()) {
 			return Status.PASSED;
@@ -486,17 +478,17 @@ public class ReportPortalExtension
 		}
 	}
 
-	private void finishTestItem(@NotNull final ExtensionContext context) {
+	private void finishTestItem(@Nonnull final ExtensionContext context) {
 		finishTestItem(context, getExecutionStatus(context));
 	}
 
-	private void finishTestItem(@NotNull final ExtensionContext context, @NotNull final Status status) {
+	private void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final Status status) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
 		finishTestItem(context, rq);
 	}
 
-	private void finishTestItem(@NotNull final ExtensionContext context, @NotNull final FinishTestItemRQ rq) {
+	private void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final FinishTestItemRQ rq) {
 		Launch launch = getLaunch(context);
 		if (Objects.isNull(rq.getEndTime())) {
 			rq.setEndTime(Calendar.getInstance().getTime());

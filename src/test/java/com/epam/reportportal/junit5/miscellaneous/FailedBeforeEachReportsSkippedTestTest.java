@@ -6,6 +6,7 @@ import com.epam.reportportal.junit5.features.skipped.BeforeEachFailedParametrize
 import com.epam.reportportal.junit5.features.skipped.BeforeEachFailedTest;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
@@ -46,12 +47,12 @@ public class FailedBeforeEachReportsSkippedTestTest {
 		ITEMS.clear();
 		LAUNCH = mock(Launch.class);
 		when(LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> {
-			Maybe<String> result = TestUtils.createMaybeUuid();
+			Maybe<String> result = CommonUtils.createMaybeUuid();
 			ITEMS.add(result.blockingGet());
 			return result;
 		});
 		when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> {
-			Maybe<String> result = TestUtils.createMaybeUuid();
+			Maybe<String> result = CommonUtils.createMaybeUuid();
 			ITEMS.add(result.blockingGet());
 			return result;
 		});

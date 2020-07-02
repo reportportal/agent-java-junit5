@@ -4,6 +4,7 @@ import com.epam.reportportal.junit5.features.coderef.SingleDynamicTest;
 import com.epam.reportportal.junit5.features.coderef.SingleTest;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,10 +36,10 @@ public class CodeReferenceTest {
 	@BeforeEach
 	public void setupMock() {
 		CodeReferenceTestExtension.LAUNCH = mock(Launch.class);
-		when(CodeReferenceTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		when(CodeReferenceTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 		when(CodeReferenceTestExtension.LAUNCH.startTestItem(any(),
 				any()
-		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		)).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 	}
 
 	@Test

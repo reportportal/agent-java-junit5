@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.epam.reportportal.junit5.CallbackReportingTest.CallbackReportingExtension.*;
-import static com.epam.reportportal.junit5.util.TestUtils.createMaybe;
+import static com.epam.reportportal.util.test.CommonUtils.createMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;

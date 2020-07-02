@@ -490,6 +490,7 @@ public class ReportPortalExtension
 
 	private void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final FinishTestItemRQ rq) {
 		Launch launch = getLaunch(context);
+		launch.getStepReporter().finishPreviousStep();
 		if (Objects.isNull(rq.getEndTime())) {
 			rq.setEndTime(Calendar.getInstance().getTime());
 		}

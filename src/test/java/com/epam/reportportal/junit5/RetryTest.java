@@ -19,6 +19,7 @@ package com.epam.reportportal.junit5;
 import com.epam.reportportal.junit5.features.retry.RetryThreeTimesTest;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.Assertions;
@@ -63,8 +64,8 @@ public class RetryTest {
 
 		static {
 			LAUNCH = mock(Launch.class);
-			when(LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
-			when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+			when(LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
+			when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 		}
 
 		@Override

@@ -270,6 +270,7 @@ public class ReportPortalExtension
 
 	private void finishBeforeAfter(ExtensionContext context, Maybe<String> id, Status status) {
 		Launch launch = getLaunch(context);
+		launch.getStepReporter().finishPreviousStep();
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());

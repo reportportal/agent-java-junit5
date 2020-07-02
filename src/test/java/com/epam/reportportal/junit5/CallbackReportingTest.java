@@ -23,6 +23,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.service.step.StepReporter;
 import com.epam.ta.reportportal.ws.model.EntryCreatedAsyncRS;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -70,6 +71,7 @@ public class CallbackReportingTest {
 
 		public CallbackReportingExtension() {
 			LAUNCH.set(mock(Launch.class));
+			when(LAUNCH.get().getStepReporter()).thenReturn(StepReporter.NOOP_STEP_REPORTER);
 			ROOT_ITEM_ID.set(createMaybe("Root item id"));
 			when(LAUNCH.get().startTestItem(any())).thenReturn(ROOT_ITEM_ID.get());
 

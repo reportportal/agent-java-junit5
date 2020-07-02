@@ -6,6 +6,7 @@ import com.epam.reportportal.junit5.features.skipped.BeforeEachFailedParametrize
 import com.epam.reportportal.junit5.features.skipped.BeforeEachFailedTest;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -46,6 +47,7 @@ public class FailedBeforeEachReportsSkippedTestTest {
 	public void setupMock() {
 		ITEMS.clear();
 		LAUNCH = mock(Launch.class);
+		when(LAUNCH.getStepReporter()).thenReturn(StepReporter.NOOP_STEP_REPORTER);
 		when(LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> {
 			Maybe<String> result = CommonUtils.createMaybeUuid();
 			ITEMS.add(result.blockingGet());
@@ -90,6 +92,7 @@ public class FailedBeforeEachReportsSkippedTestTest {
 	public void agent_should_report_skipped_parametrized_tests_in_case_of_failed_before_each() {
 		TestUtils.runClasses(BeforeEachFailedParametrizedTest.class);
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(6,
+				1,
 				LAUNCH
 		);
 		verifyNoMoreInteractions(LAUNCH);

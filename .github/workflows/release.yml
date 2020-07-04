@@ -27,7 +27,6 @@ env:
   README_FILE: README.md
   README_TEMPLATE_FILE: README_TEMPLATE.md
   README_VERSION_PLACEHOLDER: $LATEST_VERSION
-  VERSION_EXTRACT_PATTERN: (?<=\.)[0-9]+(?=-)(?!(?:[^-]*-)*(?:ALPHA|BETA|RC))|(?<=-ALPHA-)[0-9]+(?=-)|(?<=-BETA-)[0-9]+(?=-)|(?<=-RC-)[0-9]+(?=-)
 
 jobs:
   release:
@@ -89,7 +88,7 @@ jobs:
 
       - name: Read changelog Entry
         id: readChangelogEntry
-        uses: mindsers/changelog-reader-action@v1.1.0
+        uses: mindsers/changelog-reader-action@v1.2.0
         with:
           version: ${{ env.RELEASE_VERSION }}
           path: ./${{ env.CHANGE_LOG_FILE }}

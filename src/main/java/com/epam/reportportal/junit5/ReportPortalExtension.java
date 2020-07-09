@@ -74,7 +74,10 @@ public class ReportPortalExtension
 		SKIPPED_NOT_ISSUE.setStatus(SKIPPED.name());
 	}
 
-	private static final String TEST_TEMPLATE_EXTENSION_CONTEXT = "org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext";
+	private static final Function<List<Object>, String> TRANSFORM_PARAMETERS = it -> "[" + it.stream()
+			.map(parameter -> Objects.isNull(parameter) ? "NULL" : parameter.toString())
+			.collect(Collectors.joining(",")) + "]";
+
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
@@ -132,7 +135,7 @@ public class ReportPortalExtension
 
 	@Override
 	public void beforeEach(ExtensionContext context) {
-		startTemplate(context);
+		context.getParent().ifPresent(this::startTemplate);
 	}
 
 	@Override
@@ -182,12 +185,26 @@ public class ReportPortalExtension
 	@Override
 	public <T> T interceptTestFactoryMethod(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext extensionContext) throws Throwable {
-		startTestItem(extensionContext, invocationContext.getArguments(), STEP);
+		startTestItem(extensionContext, invocationContext.getArguments(), SUITE);
 		return invocation.proceed();
 	}
 
 	@Override
 	public void interceptDynamicTest(Invocation<Void> invocation, ExtensionContext extensionContext) throws Throwable {
+		Optional<ExtensionContext> parent = extensionContext.getParent();
+		if (parent.map(p -> !idMapping.containsKey(p)).orElse(false)) {
+			List<ExtensionContext> parents = new ArrayList<>();
+			parents.add(parent.get());
+			while ((parent = parents.get(parents.size() - 1).getParent()).isPresent()) {
+				ExtensionContext p = parent.get();
+				if (idMapping.containsKey(p)) {
+					break;
+				}
+				parents.add(p);
+			}
+			Collections.reverse(parents);
+			parents.forEach(this::startTemplate);
+		}
 		startTestItem(extensionContext, STEP);
 		try {
 			invocation.proceed();
@@ -208,6 +225,7 @@ public class ReportPortalExtension
 
 	@Override
 	public void afterTestExecution(ExtensionContext context) {
+		finishTemplates(context);
 		Status status = getExecutionStatus(context);
 		if (FAILED.equals(status)) {
 			context.getParent().ifPresent(c -> c.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
@@ -235,10 +253,6 @@ public class ReportPortalExtension
 	@Override
 	public void testFailed(ExtensionContext context, Throwable throwable) {
 	}
-
-	private static final Function<List<Object>, String> TRANSFORM_PARAMETERS = it -> "[" + it.stream()
-			.map(parameter -> Objects.isNull(parameter) ? "NULL" : parameter.toString())
-			.collect(Collectors.joining(",")) + "]";
 
 	private void finishBeforeTestSkip(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext context, Maybe<String> id) throws Throwable {
@@ -278,11 +292,9 @@ public class ReportPortalExtension
 	}
 
 	private void startTemplate(ExtensionContext context) {
-		context.getParent().ifPresent(parent -> {
-			if (TEST_TEMPLATE_EXTENSION_CONTEXT.equals(parent.getClass().getCanonicalName()) && !idMapping.containsKey(parent)) {
-				startTestItem(parent, TEMPLATE);
-			}
-		});
+		if (!idMapping.containsKey(context)) {
+			startTestItem(context, TEMPLATE);
+		}
 	}
 
 	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
@@ -302,10 +314,14 @@ public class ReportPortalExtension
 	}
 
 	private String getCodeRef(ExtensionContext context, String currentCodeRef) {
-		return context.getTestMethod().map(m -> appendSuffixIfNotEmpty(getCodeRef(m), currentCodeRef)).orElseGet(() -> {
-			String newCodeRef = appendSuffixIfNotEmpty(context.getDisplayName(), currentCodeRef);
-			return context.getParent().map(c -> getCodeRef(c, newCodeRef)).orElse(newCodeRef);
-		});
+		return context.getTestMethod()
+				.map(m -> appendSuffixIfNotEmpty(getCodeRef(m), currentCodeRef))
+				.orElseGet(() -> context.getTestClass()
+						.map(c -> appendSuffixIfNotEmpty(c.getCanonicalName(), currentCodeRef))
+						.orElseGet(() -> {
+							String newCodeRef = appendSuffixIfNotEmpty(context.getDisplayName(), currentCodeRef);
+							return context.getParent().map(c -> getCodeRef(c, newCodeRef)).orElse(newCodeRef);
+						}));
 	}
 
 	private Optional<Method> getTestMethod(ExtensionContext context) {
@@ -336,24 +352,16 @@ public class ReportPortalExtension
 			rq.setUniqueId(testItem.getUniqueId());
 			rq.setType(type.name());
 			rq.setRetry(retry);
-			if (SUITE.equals(type)) {
-				c.getTestClass().map(Class::getCanonicalName).ifPresent(codeRef -> {
-					rq.setCodeRef(codeRef);
-					TestCaseIdEntry testCaseIdEntry = getTestCaseId(codeRef);
-					rq.setTestCaseId(testCaseIdEntry.getId());
-				});
-			} else {
-				String codeRef = getCodeRef(c, "");
-				rq.setCodeRef(codeRef);
-				Optional<Method> testMethod = getTestMethod(c);
-				TestCaseIdEntry caseId = testMethod.map(m -> {
-					rq.setAttributes(getAttributes(m));
-					rq.setParameters(getParameters(m, arguments));
-					return getTestCaseId(m, codeRef, arguments);
-				}).orElseGet(() -> getTestCaseId(codeRef, arguments));
+			String codeRef = getCodeRef(c, "");
+			rq.setCodeRef(codeRef);
+			Optional<Method> testMethod = getTestMethod(c);
+			TestCaseIdEntry caseId = testMethod.map(m -> {
+				rq.setAttributes(getAttributes(m));
+				rq.setParameters(getParameters(m, arguments));
+				return getTestCaseId(m, codeRef, arguments);
+			}).orElseGet(() -> getTestCaseId(codeRef, arguments));
 
-				rq.setTestCaseId(caseId.getId());
-			}
+			rq.setTestCaseId(caseId.getId());
 			ofNullable(testItem.getAttributes()).ifPresent(attributes -> ofNullable(rq.getAttributes()).orElseGet(() -> {
 				rq.setAttributes(Sets.newHashSet());
 				return rq.getAttributes();
@@ -441,11 +449,19 @@ public class ReportPortalExtension
 	}
 
 	private void finishTemplates(final ExtensionContext parentContext) {
-		List<ExtensionContext> templates = testTemplates.keySet()
+		final Collection<ExtensionContext> parents = new HashSet<>();
+		parents.add(parentContext);
+		List<ExtensionContext> templates = new ArrayList<>();
+		Collection<ExtensionContext> children;
+		while (!(children = testTemplates.keySet()
 				.stream()
-				.filter((c) -> c.getParent().map(myParent -> parentContext == myParent).orElse(false))
-				.collect(Collectors.toList());
-
+				.filter((c) -> c.getParent().map(parents::contains).orElse(false))
+				.collect(Collectors.toSet())).isEmpty()) {
+			templates.addAll(children);
+			parents.clear();
+			parents.addAll(children);
+		}
+		Collections.reverse(templates);
 		templates.forEach(context -> {
 			Status status = context.getStore(NAMESPACE).get(FAILED) != null ?
 					FAILED :
@@ -467,6 +483,7 @@ public class ReportPortalExtension
 		rq.setEndTime(Calendar.getInstance().getTime());
 		Maybe<String> templateId = testTemplates.remove(context);
 		launch.finishTestItem(templateId, rq);
+		idMapping.remove(context);
 	}
 
 	private static Status getExecutionStatus(@Nonnull final ExtensionContext context) {
@@ -495,7 +512,8 @@ public class ReportPortalExtension
 		if (Objects.isNull(rq.getEndTime())) {
 			rq.setEndTime(Calendar.getInstance().getTime());
 		}
-		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(idMapping.remove(context), rq);
+		Maybe<String> id = idMapping.remove(context);
+		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(id, rq);
 		if (getReporter().getParameters().isCallbackReportingEnabled()) {
 			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
 					finishResponse));

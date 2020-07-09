@@ -1,6 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+## Added
+- Manual nested step finishing on a parent test item finish
+- Support of dynamic nested tests of arbitrary depth 
+
+### Removed
+- Explicit extension registration in the package
 
 ## [5.0.0-BETA-16]
 ### Changed

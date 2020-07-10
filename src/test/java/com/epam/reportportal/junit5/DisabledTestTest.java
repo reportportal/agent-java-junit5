@@ -111,8 +111,8 @@ public class DisabledTestTest {
 
 		List<StartTestItemRQ> steps = captorStart.getAllValues();
 		assertThat("There two StartTestItem request", steps, hasSize(2));
-		assertThat("StartTestItem request for enabled test has proper Description field",
-				steps.get(1).getDescription(),
+		assertThat("StartTestItem request for enabled test has proper Name field",
+				steps.get(1).getName(),
 				equalTo(OneDisabledOneEnabledTest.DISPLAY_NAME)
 		);
 

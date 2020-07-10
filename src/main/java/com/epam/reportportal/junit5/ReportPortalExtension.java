@@ -35,8 +35,12 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.DisplayNameGeneration;
+import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.extension.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rp.com.google.common.collect.Sets;
 
 import javax.annotation.Nonnull;
@@ -60,6 +64,8 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public class ReportPortalExtension
 		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback, AfterEachCallback,
 				   AfterAllCallback, TestWatcher {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortalExtension.class);
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
 	public static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
@@ -95,16 +101,7 @@ public class ReportPortalExtension
 		return launchMap.computeIfAbsent(getLaunchId(context), id -> {
 			ReportPortal rp = getReporter();
 			ListenerParameters params = rp.getParameters();
-			StartLaunchRQ rq = new StartLaunchRQ();
-			rq.setMode(params.getLaunchRunningMode());
-			rq.setDescription(params.getDescription());
-			rq.setName(params.getLaunchName());
-			Set<ItemAttributesRQ> attributes = Sets.newHashSet(params.getAttributes());
-			attributes.addAll(collectSystemAttributes(params.getSkippedAnIssue()));
-			rq.setAttributes(attributes);
-			rq.setStartTime(Calendar.getInstance().getTime());
-			rq.setRerun(params.isRerun());
-			rq.setRerunOf(StringUtils.isEmpty(params.getRerunOf()) ? null : params.getRerunOf());
+			StartLaunchRQ rq = buildStartLaunchRq(params);
 
 			Launch launch = rp.newLaunch(rq);
 			StepAspect.addLaunch(id, launch);
@@ -147,7 +144,7 @@ public class ReportPortalExtension
 	public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext parentContext) throws Throwable {
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, parentContext, BEFORE_CLASS);
-		finishBeforeAfter(invocation, parentContext, id);
+		finishBeforeAll(invocation, invocationContext, parentContext, id);
 	}
 
 	@Override
@@ -156,7 +153,7 @@ public class ReportPortalExtension
 		ExtensionContext parentContext = context.getParent()
 				.orElseThrow(() -> new IllegalStateException("Unable to find parent test for @BeforeEach method"));
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, context, BEFORE_METHOD);
-		finishBeforeTestSkip(invocation, invocationContext, context, id);
+		finishBeforeEach(invocation, invocationContext, context, id);
 	}
 
 	@Override
@@ -236,8 +233,8 @@ public class ReportPortalExtension
 	@Override
 	public void testDisabled(ExtensionContext context, Optional<String> reason) {
 		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
-			String description = reason.orElse(context.getDisplayName());
-			startTestItem(context, Collections.emptyList(), STEP, description, null);
+			String description = reason.orElse(createStepDescription(context));
+			startTestItem(context, Collections.emptyList(), STEP, description, Calendar.getInstance().getTime());
 			finishTestItem(context, SKIPPED);
 		}
 	}
@@ -254,7 +251,18 @@ public class ReportPortalExtension
 	public void testFailed(ExtensionContext context, Throwable throwable) {
 	}
 
-	private void finishBeforeTestSkip(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+	private void finishBeforeAll(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+			ExtensionContext context, Maybe<String> id) throws Throwable {
+		Date startTime = Calendar.getInstance().getTime();
+		try {
+			finishBeforeAfter(invocation, context, id);
+		} catch (Throwable throwable) {
+			reportSkippedClassTests(invocationContext, context, startTime);
+			throw throwable;
+		}
+	}
+
+	private void finishBeforeEach(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext context, Maybe<String> id) throws Throwable {
 		Date startTime = Calendar.getInstance().getTime();
 		try {
@@ -265,7 +273,8 @@ public class ReportPortalExtension
 				// to fix item ordering when @AfterEach starts in the same millisecond as skipped test
 				skipStartTime = new Date(skipStartTime.getTime() - 1);
 			}
-			startTestItem(context, invocationContext.getArguments(), STEP, null, skipStartTime);
+			startTestItem(context, invocationContext.getArguments(), STEP, createStepDescription(context), skipStartTime);
+			createSkippedSteps(context, throwable);
 			finishTestItem(context, SKIPPED_NOT_ISSUE); // an issue relates to @BeforeEach method in this case
 			throw throwable;
 		}
@@ -285,10 +294,7 @@ public class ReportPortalExtension
 	private void finishBeforeAfter(ExtensionContext context, Maybe<String> id, Status status) {
 		Launch launch = getLaunch(context);
 		launch.getStepReporter().finishPreviousStep();
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setStatus(status.name());
-		rq.setEndTime(Calendar.getInstance().getTime());
-		launch.finishTestItem(id, rq);
+		launch.finishTestItem(id, buildFinishTestItemRq(context, status));
 	}
 
 	private void startTemplate(ExtensionContext context) {
@@ -297,23 +303,23 @@ public class ReportPortalExtension
 		}
 	}
 
-	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
-		startTestItem(context, arguments, type, null, null);
-	}
-
 	private void startTestItem(ExtensionContext context, ItemType type) {
-		startTestItem(context, Collections.emptyList(), type, null, null);
+		startTestItem(context, Collections.emptyList(), type);
 	}
 
-	private String getCodeRef(Method method) {
+	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
+		startTestItem(context, arguments, type, createStepDescription(context), Calendar.getInstance().getTime());
+	}
+
+	private String getCodeRef(@Nonnull final Method method) {
 		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
 	}
 
-	private static String appendSuffixIfNotEmpty(String str, String suffix) {
+	private static String appendSuffixIfNotEmpty(final String str, @Nonnull final String suffix) {
 		return str + (suffix.isEmpty() ? "" : "$" + suffix);
 	}
 
-	private String getCodeRef(ExtensionContext context, String currentCodeRef) {
+	private String getCodeRef(@Nonnull final ExtensionContext context, @Nonnull final String currentCodeRef) {
 		return context.getTestMethod()
 				.map(m -> appendSuffixIfNotEmpty(getCodeRef(m), currentCodeRef))
 				.orElseGet(() -> context.getTestClass()
@@ -324,59 +330,24 @@ public class ReportPortalExtension
 						}));
 	}
 
-	private Optional<Method> getTestMethod(ExtensionContext context) {
-		return ofNullable(context.getTestMethod().orElseGet(() -> context.getParent().flatMap(this::getTestMethod).orElse(null)));
-	}
-
-	private static boolean isRetry(ExtensionContext context) {
-		return context.getTestMethod().map(it -> Objects.nonNull(it.getAnnotation(RepeatedTest.class))).orElse(false);
-	}
-
 	private void startTestItem(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
-			@Nonnull final ItemType itemType, final String description, final Date startTime) {
+			@Nonnull final ItemType itemType, @Nonnull final String description, @Nonnull final Date startTime) {
 		idMapping.computeIfAbsent(context, c -> {
 			boolean isTemplate = TEMPLATE == itemType;
 			ItemType type = isTemplate ? SUITE : itemType;
-			boolean retry = isRetry(c);
 
-			TestItem testItem = getTestItem(c, retry);
+			StartTestItemRQ rq = buildStartStepRq(c, arguments, type, description, startTime);
 			Launch launch = getLaunch(c);
-			StartTestItemRQ rq = new StartTestItemRQ();
-			if (startTime == null) {
-				rq.setStartTime(Calendar.getInstance().getTime());
-			} else {
-				rq.setStartTime(startTime);
-			}
-			rq.setName(testItem.getName());
-			rq.setDescription(null != description ? description : testItem.getDescription());
-			rq.setUniqueId(testItem.getUniqueId());
-			rq.setType(type.name());
-			rq.setRetry(retry);
-			String codeRef = getCodeRef(c, "");
-			rq.setCodeRef(codeRef);
-			Optional<Method> testMethod = getTestMethod(c);
-			TestCaseIdEntry caseId = testMethod.map(m -> {
-				rq.setAttributes(getAttributes(m));
-				rq.setParameters(getParameters(m, arguments));
-				return getTestCaseId(m, codeRef, arguments);
-			}).orElseGet(() -> getTestCaseId(codeRef, arguments));
-
-			rq.setTestCaseId(caseId.getId());
-			ofNullable(testItem.getAttributes()).ifPresent(attributes -> ofNullable(rq.getAttributes()).orElseGet(() -> {
-				rq.setAttributes(Sets.newHashSet());
-				return rq.getAttributes();
-			}).addAll(attributes));
-
 			Maybe<String> itemId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
 				Maybe<String> item = launch.startTestItem(parentTest, rq);
 				if (getReporter().getParameters().isCallbackReportingEnabled()) {
-					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(parentTest, item, 0));
+					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), createTestItemLeaf(parentTest, item, 0));
 				}
 				return item;
 			}).orElseGet(() -> {
 				Maybe<String> item = launch.startTestItem(rq);
 				if (getReporter().getParameters().isCallbackReportingEnabled()) {
-					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(testItem.getName()), createTestItemLeaf(item, 0));
+					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), createTestItemLeaf(item, 0));
 				}
 				return item;
 			});
@@ -400,23 +371,7 @@ public class ReportPortalExtension
 
 	private Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
 		Launch launch = getLaunch(context);
-		StartTestItemRQ rq = new StartTestItemRQ();
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setName(method.getName() + "()");
-		rq.setDescription(method.getName());
-		String uniqueId = parentContext.getUniqueId() + "/[method:" + method.getName() + "()]";
-		rq.setUniqueId(uniqueId);
-		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream()
-				.map(tag -> new ItemAttributesRQ(null, tag))
-				.collect(Collectors.toSet())));
-		rq.setType(itemType.name());
-		rq.setRetry(false);
-		String codeRef = method.getDeclaringClass().getCanonicalName() + "." + method.getName();
-		rq.setCodeRef(codeRef);
-		TestCaseIdEntry testCaseIdEntry = ofNullable(method.getAnnotation(TestCaseId.class)).map(TestCaseId::value)
-				.map(TestCaseIdEntry::new)
-				.orElseGet(() -> getTestCaseId(codeRef));
-		rq.setTestCaseId(testCaseIdEntry.getId());
+		StartTestItemRQ rq = buildStartConfigurationRq(method, parentContext, context, itemType);
 		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentContext), rq);
 		StepAspect.setParentId(itemId);
 		return itemId;
@@ -478,11 +433,8 @@ public class ReportPortalExtension
 
 	private void finishTemplate(final ExtensionContext context, final Status status) {
 		Launch launch = getLaunch(context);
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setStatus(status.name());
-		rq.setEndTime(Calendar.getInstance().getTime());
 		Maybe<String> templateId = testTemplates.remove(context);
-		launch.finishTestItem(templateId, rq);
+		launch.finishTestItem(templateId, buildFinishTestItemRq(context, status));
 		idMapping.remove(context);
 	}
 
@@ -501,23 +453,212 @@ public class ReportPortalExtension
 	}
 
 	private void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final Status status) {
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setStatus(status.name());
-		finishTestItem(context, rq);
+		finishTestItem(context, buildFinishTestItemRq(context, status));
 	}
 
 	private void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final FinishTestItemRQ rq) {
 		Launch launch = getLaunch(context);
 		launch.getStepReporter().finishPreviousStep();
-		if (Objects.isNull(rq.getEndTime())) {
-			rq.setEndTime(Calendar.getInstance().getTime());
-		}
 		Maybe<String> id = idMapping.remove(context);
 		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(id, rq);
 		if (getReporter().getParameters().isCallbackReportingEnabled()) {
 			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
 					finishResponse));
 		}
+	}
+
+	private Optional<Method> getTestMethod(ExtensionContext context) {
+		return ofNullable(context.getTestMethod().orElseGet(() -> context.getParent().flatMap(this::getTestMethod).orElse(null)));
+	}
+
+	/**
+	 * Extension point to customize test step creation event/request
+	 *
+	 * @param context     JUnit's test context
+	 * @param arguments   a test arguments list
+	 * @param itemType    a test method item type
+	 * @param description a test method description
+	 * @param startTime   a start time of the test
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartStepRq(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
+			@Nonnull final ItemType itemType, @Nonnull final String description, @Nonnull final Date startTime) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setStartTime(startTime);
+		rq.setName(createStepName(context));
+		rq.setDescription(description);
+		rq.setUniqueId(context.getUniqueId());
+		rq.setType(itemType.name());
+		String codeRef = getCodeRef(context, "");
+		rq.setCodeRef(codeRef);
+		rq.setAttributes(context.getTags().stream().map(it -> new ItemAttributesRQ(null, it)).collect(Collectors.toSet()));
+
+		Optional<Method> testMethod = getTestMethod(context);
+		TestCaseIdEntry caseId = testMethod.map(m -> {
+			rq.getAttributes().addAll(getAttributes(m));
+			rq.setParameters(getParameters(m, arguments));
+			return getTestCaseId(m, codeRef, arguments);
+		}).orElseGet(() -> getTestCaseId(codeRef, arguments));
+		rq.setTestCaseId(caseId.getId());
+		return rq;
+	}
+
+	/**
+	 * Extension point to customize beforeXXX creation event/request
+	 *
+	 * @param method        JUnit's test method reference
+	 * @param parentContext JUnit's context of a parent item
+	 * @param context       JUnit's test context
+	 * @param itemType      a type of the item to build
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartConfigurationRq(Method method, ExtensionContext parentContext, ExtensionContext context,
+			ItemType itemType) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setStartTime(Calendar.getInstance().getTime());
+		Optional<Class<?>> testClass = context.getTestClass();
+		if (testClass.isPresent()) {
+			rq.setName(createConfigurationName(testClass.get(), method));
+			rq.setDescription(createConfigurationDescription(testClass.get(), method));
+		} else {
+			rq.setName(createConfigurationName(method.getDeclaringClass(), method));
+			rq.setDescription(createConfigurationDescription(method.getDeclaringClass(), method));
+		}
+		String uniqueId = parentContext.getUniqueId() + "/[method:" + method.getName() + "()]";
+		rq.setUniqueId(uniqueId);
+		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream()
+				.map(tag -> new ItemAttributesRQ(null, tag))
+				.collect(Collectors.toSet())));
+		rq.setType(itemType.name());
+		rq.setRetry(false);
+		String codeRef = method.getDeclaringClass().getCanonicalName() + "." + method.getName();
+		rq.setCodeRef(codeRef);
+		TestCaseIdEntry testCaseIdEntry = ofNullable(method.getAnnotation(TestCaseId.class)).map(TestCaseId::value)
+				.map(TestCaseIdEntry::new)
+				.orElseGet(() -> getTestCaseId(codeRef));
+		rq.setTestCaseId(testCaseIdEntry.getId());
+		return rq;
+	}
+
+	/**
+	 * Extension point to customize skipped test insides
+	 *
+	 * @param context JUnit's test context
+	 * @param cause   an error thrown by skip culprit
+	 */
+	@SuppressWarnings("unused")
+	protected void createSkippedSteps(ExtensionContext context, Throwable cause) {
+	}
+
+	/**
+	 * Extension point to customize a test item result on it's finish
+	 *
+	 * @param context JUnit's test context
+	 * @param status  a test item execution result
+	 * @return Request to ReportPortal
+	 */
+	@SuppressWarnings("unused")
+	protected FinishTestItemRQ buildFinishTestItemRq(ExtensionContext context, Status status) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setStatus(status.name());
+		rq.setEndTime(Calendar.getInstance().getTime());
+		return rq;
+	}
+
+	/**
+	 * Extension point to customize launch creation event/request
+	 *
+	 * @param parameters Launch Configuration parameters
+	 * @return Request to ReportPortal
+	 */
+	@SuppressWarnings("unused")
+	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
+		StartLaunchRQ rq = new StartLaunchRQ();
+		rq.setMode(parameters.getLaunchRunningMode());
+		rq.setDescription(parameters.getDescription());
+		rq.setName(parameters.getLaunchName());
+		Set<ItemAttributesRQ> attributes = Sets.newHashSet(parameters.getAttributes());
+		attributes.addAll(collectSystemAttributes(parameters.getSkippedAnIssue()));
+		rq.setAttributes(attributes);
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setRerun(parameters.isRerun());
+		rq.setRerunOf(StringUtils.isEmpty(parameters.getRerunOf()) ? null : parameters.getRerunOf());
+		return rq;
+	}
+
+	/**
+	 * Extension point to customize test step name
+	 *
+	 * @param context JUnit's test context
+	 * @return Test/Step Name being sent to ReportPortal
+	 */
+	@SuppressWarnings("unused")
+	protected String createStepName(ExtensionContext context) {
+		String name = context.getDisplayName();
+		return name.length() > 1024 ? name.substring(0, 1024) + "..." : name;
+	}
+
+	/**
+	 * Extension point to customize beforeXXX step name
+	 *
+	 * @param testClass JUnit's test class, by which the name will be calculated
+	 * @param method    JUnit's test method reference
+	 * @return Test/Step Name being sent to ReportPortal
+	 */
+	protected String createConfigurationName(Class<?> testClass, Method method) {
+		DisplayName displayName = method.getDeclaredAnnotation(DisplayName.class);
+		if (displayName != null) {
+			return displayName.value();
+		}
+		DisplayNameGeneration displayNameGenerator = method.getDeclaredAnnotation(DisplayNameGeneration.class);
+		if(displayNameGenerator == null) {
+			displayNameGenerator = testClass.getDeclaredAnnotation(DisplayNameGeneration.class);
+		}
+		if (displayNameGenerator != null) {
+			Class<? extends DisplayNameGenerator> generatorClass = displayNameGenerator.value();
+			try {
+				DisplayNameGenerator generator = generatorClass.getConstructor().newInstance();
+				return generator.generateDisplayNameForMethod(testClass, method);
+			} catch (Exception e) {
+				LOGGER.error("Unable instantiate a display name generator. Name generation skipped.", e);
+			}
+		}
+		return method.getName() + "()";
+	}
+
+	/**
+	 * Extension point to customize test step description
+	 *
+	 * @param context JUnit's test context
+	 * @return Test/Step Description being sent to ReportPortal
+	 */
+	@SuppressWarnings("unused")
+	protected String createStepDescription(ExtensionContext context) {
+		return "";
+	}
+
+	/**
+	 * Extension point to customize beforeXXX step description
+	 *
+	 * @param testClass JUnit's test class, by which the name will be calculated
+	 * @param method    JUnit's test method reference
+	 * @return Test/Step Description being sent to ReportPortal
+	 */
+	@SuppressWarnings("unused")
+	protected String createConfigurationDescription(Class<?> testClass, Method method) {
+		return "";
+	}
+
+	/**
+	 * Extension point to customize test steps skipped in case of a <code>@BeforeAll</code> method failed.
+	 *
+	 * @param invocationContext JUnit's <code>@BeforeAll</code> invocation context
+	 * @param context           JUnit's test context
+	 * @param eventTime         <code>@BeforeAll</code> start time
+	 */
+	@SuppressWarnings("unused")
+	protected void reportSkippedClassTests(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context,
+			Date eventTime) {
 	}
 
 	private static Thread getShutdownHook(final Launch launch) {
@@ -542,54 +683,5 @@ public class ReportPortalExtension
 			rq.setLogTime(Calendar.getInstance().getTime());
 			return rq;
 		});
-	}
-
-	protected TestItem getTestItem(ExtensionContext context, boolean isRetry) {
-		String name;
-		String uniqueId;
-		Optional<ExtensionContext> parent = context.getParent();
-		if (isRetry && parent.isPresent()) {
-			ExtensionContext parentContext = parent.get();
-			name = parentContext.getDisplayName();
-			uniqueId = parentContext.getUniqueId();
-		} else {
-			name = context.getDisplayName();
-			uniqueId = context.getUniqueId();
-		}
-		name = name.length() > 1024 ? name.substring(0, 1024) + "..." : name;
-		String description = context.getDisplayName();
-		Set<String> tags = context.getTags();
-		return new TestItem(name, description, uniqueId, tags);
-	}
-
-	protected static class TestItem {
-
-		private final String name;
-		private final String description;
-		private final String uniqueId;
-		private final Set<ItemAttributesRQ> attributes;
-
-		String getName() {
-			return name;
-		}
-
-		String getDescription() {
-			return description;
-		}
-
-		Set<ItemAttributesRQ> getAttributes() {
-			return attributes;
-		}
-
-		public TestItem(String name, String description, String uniqueId, Set<String> tags) {
-			this.name = name;
-			this.description = description;
-			this.uniqueId = uniqueId;
-			this.attributes = tags.stream().map(it -> new ItemAttributesRQ(null, it)).collect(Collectors.toSet());
-		}
-
-		public String getUniqueId() {
-			return uniqueId;
-		}
 	}
 }

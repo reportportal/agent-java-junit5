@@ -154,7 +154,7 @@ If you prefer using **Logback** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-logback</artifactId>
-    <version>5.0.1</version>
+    <version>5.0.2</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://bintray.com/epam/reportportal/logger-java-logback)
@@ -175,7 +175,7 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-log4j</artifactId>
-    <version>5.0.1</version>
+    <version>5.0.2</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://bintray.com/epam/reportportal/logger-java-log4j)
@@ -294,8 +294,49 @@ rp.enable = true
 > More details on `reportportal.properties` file could be found [here](http://reportportal.io/docs/JVM-based-clients-configuration)
 
 #### 5.2 - Make Report Portal agent invoked by the tests
+There are two options how you can enable ReportPortal extension in your tests:
+- By specifying `@ExtendWith` annotation
+- By service location
 
-Now we need to link Report Portal agent with our tests, and there are multiple ways for doing that:
+##### Register ReportPortal extension with annotation
+Each test marked with `@ExtendWith(ReportPortalExtension.class)` will be reporter to ReportPortal.
+This is an inheritable annotation, that means you can put it on a superclass and all child classes will
+also use a specified extension.
+
+For example:  
+```java
+import com.epam.reportportal.junit5.ReportPortalExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
+@ExtendWith(ReportPortalExtension.class)
+public class EnumParametersTest {
+
+	public enum TestParams {
+		ONE,
+		TWO
+	}
+
+	@ParameterizedTest
+	@EnumSource(TestParams.class)
+	public void testParameters(TestParams param) {
+		System.out.println("Test: " + param.name());
+	}
+
+}
+```
+
+##### Register ReportPortal extension through service location
+For those who implement their own custom extensions we decided to remove `/META-INF/services` file from our project.
+To use our standard non-custom extension you need to add this file into your project by yourself.
+To do that create a file named `org.junit.jupiter.api.extension.Extension` in `src/test/resources/META-INF/services` folder
+with the following content:
+```text
+com.epam.reportportal.junit5.ReportPortalExtension
+```
+
+As a final step you need to tell JUnit to register our Report Portal agent, and there are multiple ways for doing that:
 
 * method 1 - via Maven Surefire/Failsafe plugin (maven only)
 * method 2 - via JVM system property
@@ -356,7 +397,7 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>logger-java-log4j</artifactId>
-            <version>5.0.1</version>
+            <version>5.0.2</version>
         </dependency>
 
         <dependency>
@@ -463,7 +504,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.epam.reportportal:logger-java-log4j:5.0.1'
+    compile 'com.epam.reportportal:logger-java-log4j:5.0.2'
     compile 'org.apache.logging.log4j:log4j-api:2.11.2'
     compile 'org.apache.logging.log4j:log4j-core:2.11.2'
     compile 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'

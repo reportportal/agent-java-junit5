@@ -293,7 +293,7 @@ rp.enable = true
 
 > More details on `reportportal.properties` file could be found [here](http://reportportal.io/docs/JVM-based-clients-configuration)
 
-#### 5.2 - Make Report Portal agent invoked by the tests
+#### 5.2 - Register Report Portal agent in JUnit 5
 There are two options how you can enable ReportPortal extension in your tests:
 - By specifying `@ExtendWith` annotation
 - By service location

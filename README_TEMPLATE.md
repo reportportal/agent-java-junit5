@@ -343,7 +343,7 @@ As a final step you need to tell JUnit to register our Report Portal agent, and 
 * method 3 - via `junit-platform.properties` file
 * method 4 - via Gradle (gradle only)
 
-#### Method 1 - using Maven Surefire/Failsafe plugin (maven only)
+###### Method 1 - using Maven Surefire/Failsafe plugin (maven only)
 
 Add a `build` section and Maven Surefire plugin with the following configuration section to `pom.xml`
 
@@ -439,7 +439,7 @@ Now the Report Portal agent is linked to your tests and when you run the tests w
 
 To have test results to be sent to Report Portal when executed from IDE (without maven), follow the steps below
 
-#### Method 2 - using JVM system property  
+###### Method 2 - using JVM system property  
 
 Another way to link test runs with Report Portal is to add JVM system property to the run arguments for test runs  
 Here is the example of adding run arguments with IntelliJ IDEA  
@@ -456,7 +456,7 @@ Enter the name of the run, select classes and/or methods to be executed in this 
 
 When you are done adding local run configuration, simply go to *Run* -> *Run <test_run_name>* and that test run results should be sent to Report Portal
 
-#### Method 3 - using `junit-platform.properties` file
+###### Method 3 - using `junit-platform.properties` file
 
 There is another option of linking Report Portal with your JUnit 5 tests
 
@@ -472,7 +472,7 @@ junit.jupiter.extensions.autodetection.enabled=true
 
 With this approach, the test report will be generated and sent to Report Portal in any type of test run, whether it was via maven, gradle or via IDE
 
-#### Method 4 - using Gradle test task (Gradle only)
+###### Method 4 - using Gradle test task (Gradle only)
 
 Starting from gradle version `4.6` it provides native support for JUnit 5 tests via `useJUnitPlatform()`, more details [here](https://junit.org/junit5/docs/current/user-guide/#running-tests-build)
 

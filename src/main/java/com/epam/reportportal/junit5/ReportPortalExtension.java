@@ -150,8 +150,7 @@ public class ReportPortalExtension
 	@Override
 	public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext context) throws Throwable {
-		ExtensionContext parentContext = context.getParent()
-				.orElseThrow(() -> new IllegalStateException("Unable to find parent test for @BeforeEach method"));
+		ExtensionContext parentContext = context.getParent().orElse(context.getRoot());
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, context, BEFORE_METHOD);
 		finishBeforeEach(invocation, invocationContext, context, id);
 	}
@@ -166,8 +165,7 @@ public class ReportPortalExtension
 	@Override
 	public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext context) throws Throwable {
-		ExtensionContext parentContext = context.getParent()
-				.orElseThrow(() -> new IllegalStateException("Unable to find parent test for @AfterEach method"));
+		ExtensionContext parentContext = context.getParent().orElse(context.getRoot());
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, context, AFTER_METHOD);
 		finishBeforeAfter(invocation, context, id);
 	}
@@ -268,14 +266,7 @@ public class ReportPortalExtension
 		try {
 			finishBeforeAfter(invocation, context, id);
 		} catch (Throwable throwable) {
-			Date skipStartTime = Calendar.getInstance().getTime();
-			if (skipStartTime.after(startTime)) {
-				// to fix item ordering when @AfterEach starts in the same millisecond as skipped test
-				skipStartTime = new Date(skipStartTime.getTime() - 1);
-			}
-			startTestItem(context, invocationContext.getArguments(), STEP, createStepDescription(context), skipStartTime);
-			createSkippedSteps(context, throwable);
-			finishTestItem(context, SKIPPED_NOT_ISSUE); // an issue relates to @BeforeEach method in this case
+			reportSkippedStep(invocationContext, context, throwable, startTime);
 			throw throwable;
 		}
 	}
@@ -611,7 +602,7 @@ public class ReportPortalExtension
 			return displayName.value();
 		}
 		DisplayNameGeneration displayNameGenerator = method.getDeclaredAnnotation(DisplayNameGeneration.class);
-		if(displayNameGenerator == null) {
+		if (displayNameGenerator == null) {
 			displayNameGenerator = testClass.getDeclaredAnnotation(DisplayNameGeneration.class);
 		}
 		if (displayNameGenerator != null) {
@@ -647,6 +638,26 @@ public class ReportPortalExtension
 	@SuppressWarnings("unused")
 	protected String createConfigurationDescription(Class<?> testClass, Method method) {
 		return "";
+	}
+
+	/**
+	 * Extension point to customize test steps skipped in case of a <code>@BeforeEach</code> method failed.
+	 *
+	 * @param invocationContext JUnit's <code>@BeforeAll</code> invocation context
+	 * @param context           JUnit's test context
+	 * @param eventTime         <code>@BeforeAll</code> start time
+	 */
+	@SuppressWarnings("unused")
+	protected void reportSkippedStep(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context, Throwable throwable,
+			Date eventTime) {
+		Date skipStartTime = Calendar.getInstance().getTime();
+		if (skipStartTime.after(eventTime)) {
+			// to fix item ordering when @AfterEach starts in the same millisecond as skipped test
+			skipStartTime = new Date(skipStartTime.getTime() - 1);
+		}
+		startTestItem(context, invocationContext.getArguments(), STEP, createStepDescription(context), skipStartTime);
+		createSkippedSteps(context, throwable);
+		finishTestItem(context, SKIPPED_NOT_ISSUE); // an issue relates to @BeforeEach method in this case
 	}
 
 	/**

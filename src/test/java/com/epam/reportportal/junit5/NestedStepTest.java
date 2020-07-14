@@ -74,12 +74,12 @@ public class NestedStepTest {
 		}
 
 		@Override
-		ReportPortal getReporter() {
+		protected ReportPortal getReporter() {
 			return REPORT_PORTAL.get();
 		}
 
 		@Override
-		String getLaunchId(ExtensionContext context) {
+		protected String getLaunchId(ExtensionContext context) {
 			return LAUNCH_ID.get();
 		}
 	}

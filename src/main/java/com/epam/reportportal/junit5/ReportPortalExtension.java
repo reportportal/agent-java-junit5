@@ -89,11 +89,11 @@ public class ReportPortalExtension
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
 
-	ReportPortal getReporter() {
+	protected ReportPortal getReporter() {
 		return REPORT_PORTAL;
 	}
 
-	String getLaunchId(ExtensionContext context) {
+	protected String getLaunchId(ExtensionContext context) {
 		return context.getRoot().getUniqueId();
 	}
 
@@ -116,6 +116,7 @@ public class ReportPortalExtension
 
 	@Override
 	public void beforeAll(ExtensionContext context) {
+		getLaunch(context); // Trigger launch start
 		startTestItem(context, SUITE);
 	}
 
@@ -562,7 +563,6 @@ public class ReportPortalExtension
 	 * @param parameters Launch Configuration parameters
 	 * @return Request to ReportPortal
 	 */
-	@SuppressWarnings("unused")
 	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
 		StartLaunchRQ rq = new StartLaunchRQ();
 		rq.setMode(parameters.getLaunchRunningMode());

@@ -22,16 +22,10 @@
         <appender-ref ref="RP"/>
     </logger>
 
-    <logger name="com.epam.reportportal.service.Launch" level="OFF"/>
-    <logger name="com.epam.reportportal.utils.SubscriptionUtils" level="OFF"/>
-
-
-
     <!-- By default, the level of the root level is set to DEBUG -->
     <root level="DEBUG">
         <appender-ref ref="RP"/>
         <appender-ref ref="STDOUT"/>
     </root>
-
 
 </configuration>

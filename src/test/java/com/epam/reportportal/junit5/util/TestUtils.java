@@ -36,6 +36,16 @@ public class TestUtils {
 	private TestUtils() {
 	}
 
+	public static ListenerParameters standardParameters() {
+		ListenerParameters result = new ListenerParameters();
+		result.setClientJoin(false);
+		result.setBatchLogsSize(1);
+		result.setLaunchName("My-test-launch-" + CommonUtils.generateUniqueId());
+		result.setProjectName("unit-test");
+		result.setEnable(true);
+		return result;
+	}
+
 	public static void runClasses(final Class<?>... testClasses) {
 		runClasses(null, testClasses);
 	}

@@ -3,11 +3,9 @@ package com.epam.reportportal.junit5.bugs;
 import com.epam.reportportal.junit5.ReportPortalExtension;
 import com.epam.reportportal.junit5.features.bug.IncorrectStartTime;
 import com.epam.reportportal.junit5.util.TestUtils;
-import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +41,7 @@ public class LaunchStartTimeTest {
 	public void setupMock() {
 		client = mock(ReportPortalClient.class);
 		TestUtils.mockLaunch(client, launchUuid, suitedUuid, testMethodUuid);
-		TestExtension.REPORT_PORTAL = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		TestExtension.REPORT_PORTAL = ReportPortal.create(client, TestUtils.standardParameters());
 	}
 
 	@Test

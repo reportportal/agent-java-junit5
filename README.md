@@ -39,7 +39,7 @@ with fully qualified custom Extension class name in this file.
 <dependency>
    <groupId>com.epam.reportportal</groupId>
    <artifactId>agent-java-junit5</artifactId>
-   <version>5.0.0-BETA-16</version>
+   <version>5.0.0-RC-1</version>
 </dependency>
 ```
 
@@ -72,7 +72,7 @@ repositories {
     maven { url "http://dl.bintray.com/epam/reportportal" }
 }
 
-testCompile 'com.epam.reportportal:agent-java-junit5:5.0.0-BETA-16'
+testCompile 'com.epam.reportportal:agent-java-junit5:5.0.0-RC-1'
 ```
 
 #### Automatic Extension Registration (optional)
@@ -133,7 +133,7 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>agent-java-junit5</artifactId>
-    <version>5.0.0-BETA-16</version>
+    <version>5.0.0-RC-1</version>
 </dependency>
 ```
 > Latest version of the agent, could be found [here](https://bintray.com/epam/reportportal/agent-java-junit5)
@@ -154,7 +154,7 @@ If you prefer using **Logback** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-logback</artifactId>
-    <version>5.0.1</version>
+    <version>5.0.2</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://bintray.com/epam/reportportal/logger-java-logback)
@@ -175,7 +175,7 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-log4j</artifactId>
-    <version>5.0.1</version>
+    <version>5.0.2</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://bintray.com/epam/reportportal/logger-java-log4j)
@@ -293,16 +293,57 @@ rp.enable = true
 
 > More details on `reportportal.properties` file could be found [here](http://reportportal.io/docs/JVM-based-clients-configuration)
 
-#### 5.2 - Make Report Portal agent invoked by the tests
+#### 5.2 - Register Report Portal agent in JUnit 5
+There are two options how you can enable ReportPortal extension in your tests:
+- By specifying `@ExtendWith` annotation
+- By service location
 
-Now we need to link Report Portal agent with our tests, and there are multiple ways for doing that:
+##### Register ReportPortal extension with annotation
+Each test marked with `@ExtendWith(ReportPortalExtension.class)` will be reporter to ReportPortal.
+This is an inheritable annotation, that means you can put it on a superclass and all child classes will
+also use a specified extension.
+
+For example:  
+```java
+import com.epam.reportportal.junit5.ReportPortalExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
+@ExtendWith(ReportPortalExtension.class)
+public class EnumParametersTest {
+
+	public enum TestParams {
+		ONE,
+		TWO
+	}
+
+	@ParameterizedTest
+	@EnumSource(TestParams.class)
+	public void testParameters(TestParams param) {
+		System.out.println("Test: " + param.name());
+	}
+
+}
+```
+
+##### Register ReportPortal extension through service location
+For those who implement their own custom extensions we decided to remove `/META-INF/services` file from our project.
+To use our standard non-custom extension you need to add this file into your project by yourself.
+To do that create a file named `org.junit.jupiter.api.extension.Extension` in `src/test/resources/META-INF/services` folder
+with the following content:
+```text
+com.epam.reportportal.junit5.ReportPortalExtension
+```
+
+As a final step you need to tell JUnit to register our Report Portal agent, and there are multiple ways for doing that:
 
 * method 1 - via Maven Surefire/Failsafe plugin (maven only)
 * method 2 - via JVM system property
 * method 3 - via `junit-platform.properties` file
 * method 4 - via Gradle (gradle only)
 
-#### Method 1 - using Maven Surefire/Failsafe plugin (maven only)
+###### Method 1 - using Maven Surefire/Failsafe plugin (maven only)
 
 Add a `build` section and Maven Surefire plugin with the following configuration section to `pom.xml`
 
@@ -350,13 +391,13 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>agent-java-junit5</artifactId>
-            <version>5.0.0-BETA-16</version>
+            <version>5.0.0-RC-1</version>
         </dependency>
 
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>logger-java-log4j</artifactId>
-            <version>5.0.1</version>
+            <version>5.0.2</version>
         </dependency>
 
         <dependency>
@@ -398,7 +439,7 @@ Now the Report Portal agent is linked to your tests and when you run the tests w
 
 To have test results to be sent to Report Portal when executed from IDE (without maven), follow the steps below
 
-#### Method 2 - using JVM system property  
+###### Method 2 - using JVM system property  
 
 Another way to link test runs with Report Portal is to add JVM system property to the run arguments for test runs  
 Here is the example of adding run arguments with IntelliJ IDEA  
@@ -415,7 +456,7 @@ Enter the name of the run, select classes and/or methods to be executed in this 
 
 When you are done adding local run configuration, simply go to *Run* -> *Run <test_run_name>* and that test run results should be sent to Report Portal
 
-#### Method 3 - using `junit-platform.properties` file
+###### Method 3 - using `junit-platform.properties` file
 
 There is another option of linking Report Portal with your JUnit 5 tests
 
@@ -431,7 +472,7 @@ junit.jupiter.extensions.autodetection.enabled=true
 
 With this approach, the test report will be generated and sent to Report Portal in any type of test run, whether it was via maven, gradle or via IDE
 
-#### Method 4 - using Gradle test task (Gradle only)
+###### Method 4 - using Gradle test task (Gradle only)
 
 Starting from gradle version `4.6` it provides native support for JUnit 5 tests via `useJUnitPlatform()`, more details [here](https://junit.org/junit5/docs/current/user-guide/#running-tests-build)
 
@@ -463,10 +504,10 @@ repositories {
 }
 
 dependencies {
-    compile 'com.epam.reportportal:logger-java-log4j:5.0.1'
+    compile 'com.epam.reportportal:logger-java-log4j:5.0.2'
     compile 'org.apache.logging.log4j:log4j-api:2.11.2'
     compile 'org.apache.logging.log4j:log4j-core:2.11.2'
-    compile 'com.epam.reportportal:agent-java-junit5:5.0.0-BETA-16'
+    compile 'com.epam.reportportal:agent-java-junit5:5.0.0-RC-1'
 }
 
 test {

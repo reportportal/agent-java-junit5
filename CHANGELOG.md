@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.0-RC-1]
 ## Added
 - Manual nested step finishing on a parent test item finish
 - Support of dynamic nested tests of arbitrary depth

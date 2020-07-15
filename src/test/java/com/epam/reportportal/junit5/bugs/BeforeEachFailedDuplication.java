@@ -5,6 +5,8 @@ import com.epam.reportportal.junit5.ReportPortalExtension;
 import com.epam.reportportal.junit5.features.bug.BeforeEachFailedDuplicate;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.step.StepReporter;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
@@ -52,15 +54,16 @@ public class BeforeEachFailedDuplication {
 	public void setupMock() {
 		ITEMS.clear();
 		LAUNCH = mock(Launch.class);
+		when(LAUNCH.getStepReporter()).thenReturn(StepReporter.NOOP_STEP_REPORTER);
 		when(LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> {
 			StartTestItemRQ rq = invocation.getArgument(0);
-			Maybe<String> result = TestUtils.createMaybeUuid();
+			Maybe<String> result = CommonUtils.createMaybeUuid();
 			ITEMS.put(rq, result.blockingGet());
 			return result;
 		});
 		when(LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> {
 			StartTestItemRQ rq = invocation.getArgument(1);
-			Maybe<String> result = TestUtils.createMaybeUuid();
+			Maybe<String> result = CommonUtils.createMaybeUuid();
 			ITEMS.put(rq, result.blockingGet());
 			return result;
 		});
@@ -70,6 +73,7 @@ public class BeforeEachFailedDuplication {
 	public void verify_test_item_order_in_parallel_run_with_two_tests_before_methods_and_parameters() {
 		TestUtils.runClasses(BeforeEachFailedDuplicate.class);
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(17,
+				2,
 				LAUNCH
 		);
 		verifyNoMoreInteractions(LAUNCH);

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.epam.reportportal.junit5.NestedStepTest.NestedStepExtension.*;
+import static com.epam.reportportal.util.test.CommonUtils.createMaybe;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -48,28 +49,21 @@ public class NestedStepTest {
 		static final ThreadLocal<ListenerParameters> LISTENER_PARAMETERS = new ThreadLocal<>();
 		static final ThreadLocal<ReportPortal> REPORT_PORTAL = new ThreadLocal<>();
 
-		public static Maybe<String> createIdMaybe(String id) {
-			return Maybe.create(emitter -> {
-				emitter.onSuccess(id);
-				emitter.onComplete();
-			});
-		}
-
 		public NestedStepExtension() {
 			LAUNCH.set(mock(Launch.class));
-			Maybe<String> rootItemId = createIdMaybe("Root item id");
+			Maybe<String> rootItemId = createMaybe("Root item id");
 			when(LAUNCH.get().startTestItem(any())).thenReturn(rootItemId);
 
-			Maybe<String> launchId = createIdMaybe("Launch " + UUID.randomUUID().toString());
+			Maybe<String> launchId = createMaybe("Launch " + UUID.randomUUID().toString());
 			LAUNCH_ID.set(launchId.blockingGet());
 
-			TEST_METHOD_ID.set(createIdMaybe("Test method id"));
+			TEST_METHOD_ID.set(createMaybe("Test method id"));
 			when(LAUNCH.get().startTestItem(eq(rootItemId), any())).thenReturn(TEST_METHOD_ID.get());
 
-			NESTED_STEP_ID.set(createIdMaybe("Nested step id"));
+			NESTED_STEP_ID.set(createMaybe("Nested step id"));
 			when(LAUNCH.get().startTestItem(eq(TEST_METHOD_ID.get()), any())).thenReturn(NESTED_STEP_ID.get());
 
-			INNER_NESTED_STEP_ID.set(createIdMaybe("Inner nested step id"));
+			INNER_NESTED_STEP_ID.set(createMaybe("Inner nested step id"));
 			when(LAUNCH.get().startTestItem(eq(NESTED_STEP_ID.get()), any())).thenReturn(INNER_NESTED_STEP_ID.get());
 
 			REPORT_PORTAL.set(mock(ReportPortal.class));
@@ -80,12 +74,12 @@ public class NestedStepTest {
 		}
 
 		@Override
-		ReportPortal getReporter() {
+		protected ReportPortal getReporter() {
 			return REPORT_PORTAL.get();
 		}
 
 		@Override
-		String getLaunchId(ExtensionContext context) {
+		protected String getLaunchId(ExtensionContext context) {
 			return LAUNCH_ID.get();
 		}
 	}

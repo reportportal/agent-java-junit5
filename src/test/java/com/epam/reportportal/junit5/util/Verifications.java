@@ -26,9 +26,14 @@ public class Verifications {
 	private Verifications() {
 	}
 
-	@SuppressWarnings("unchecked")
 	public static Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> verify_call_number_and_capture_arguments(
 			int itemNum, Launch launch) {
+		return verify_call_number_and_capture_arguments(itemNum, 0, launch);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> verify_call_number_and_capture_arguments(
+			int itemNum, int templateNum, Launch launch) {
 		ArgumentCaptor<Maybe<String>> parentItemIdCaptor = ArgumentCaptor.forClass(Maybe.class);
 		ArgumentCaptor<StartTestItemRQ> startItemCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<Maybe<String>> finishItemId = ArgumentCaptor.forClass(Maybe.class);
@@ -36,6 +41,7 @@ public class Verifications {
 		verify(launch, times(1)).startTestItem(startItemCaptor.capture());
 		verify(launch, times(itemNum - 1)).startTestItem(parentItemIdCaptor.capture(), startItemCaptor.capture());
 		verify(launch, times(itemNum)).finishTestItem(finishItemId.capture(), finishItemCaptor.capture());
+		verify(launch, times(itemNum - templateNum)).getStepReporter();
 		verifyNoMoreInteractions(launch);
 
 		List<String> startParentItemIds = parentItemIdCaptor.getAllValues()

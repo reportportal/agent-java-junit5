@@ -23,6 +23,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.service.step.StepReporter;
 import com.epam.ta.reportportal.ws.model.EntryCreatedAsyncRS;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -38,7 +39,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.epam.reportportal.junit5.CallbackReportingTest.CallbackReportingExtension.*;
-import static com.epam.reportportal.junit5.util.TestUtils.createMaybe;
+import static com.epam.reportportal.util.test.CommonUtils.createMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,6 +71,7 @@ public class CallbackReportingTest {
 
 		public CallbackReportingExtension() {
 			LAUNCH.set(mock(Launch.class));
+			when(LAUNCH.get().getStepReporter()).thenReturn(StepReporter.NOOP_STEP_REPORTER);
 			ROOT_ITEM_ID.set(createMaybe("Root item id"));
 			when(LAUNCH.get().startTestItem(any())).thenReturn(ROOT_ITEM_ID.get());
 
@@ -102,12 +104,12 @@ public class CallbackReportingTest {
 		}
 
 		@Override
-		ReportPortal getReporter() {
+		protected ReportPortal getReporter() {
 			return REPORT_PORTAL.get();
 		}
 
 		@Override
-		String getLaunchId(ExtensionContext context) {
+		protected String getLaunchId(ExtensionContext context) {
 			return LAUNCH_ID.get();
 		}
 	}

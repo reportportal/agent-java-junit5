@@ -5,6 +5,8 @@ import com.epam.reportportal.junit5.features.disabled.OneDisabledTest;
 import com.epam.reportportal.junit5.features.disabled.OneDisabledTestWithReason;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.step.StepReporter;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
@@ -41,10 +43,11 @@ public class DisabledTestTest {
 	@BeforeEach
 	public void setupMock() {
 		DisabledTestExtension.LAUNCH = mock(Launch.class);
-		when(DisabledTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		when(DisabledTestExtension.LAUNCH.getStepReporter()).thenReturn(StepReporter.NOOP_STEP_REPORTER);
+		when(DisabledTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 		when(DisabledTestExtension.LAUNCH.startTestItem(any(),
 				any()
-		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		)).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 
 	}
 
@@ -108,8 +111,8 @@ public class DisabledTestTest {
 
 		List<StartTestItemRQ> steps = captorStart.getAllValues();
 		assertThat("There two StartTestItem request", steps, hasSize(2));
-		assertThat("StartTestItem request for enabled test has proper Description field",
-				steps.get(1).getDescription(),
+		assertThat("StartTestItem request for enabled test has proper Name field",
+				steps.get(1).getName(),
 				equalTo(OneDisabledOneEnabledTest.DISPLAY_NAME)
 		);
 

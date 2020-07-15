@@ -19,6 +19,7 @@ package com.epam.reportportal.junit5;
 import com.epam.reportportal.junit5.features.testcaseid.*;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,10 +51,10 @@ public class TestCaseIdTest {
 	@BeforeEach
 	public void setupMock() {
 		TestCaseIdExtension.LAUNCH = mock(Launch.class);
-		when(TestCaseIdExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		when(TestCaseIdExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 		when(TestCaseIdExtension.LAUNCH.startTestItem(any(),
 				any()
-		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		)).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 	}
 
 	@Test
@@ -160,8 +161,7 @@ public class TestCaseIdTest {
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(2)).startTestItem(notNull(), captor.capture()); // Start a test
 
-		assertThat(
-				captor.getAllValues().stream().map(StartTestItemRQ::getTestCaseId).collect(Collectors.toList()),
+		assertThat(captor.getAllValues().stream().map(StartTestItemRQ::getTestCaseId).collect(Collectors.toList()),
 				hasItem(SingleDynamicAnnotatedTest.TEST_CASE_ID_VALUE)
 		);
 	}

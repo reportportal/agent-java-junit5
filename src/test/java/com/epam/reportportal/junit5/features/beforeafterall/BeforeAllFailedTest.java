@@ -17,5 +17,4 @@ public class BeforeAllFailedTest {
 	public void testBeforeAllFailed() {
 		System.out.println("Test: " + CLASS_ID);
 	}
-
 }

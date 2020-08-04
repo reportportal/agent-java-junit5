@@ -39,7 +39,7 @@ with fully qualified custom Extension class name in this file.
 <dependency>
    <groupId>com.epam.reportportal</groupId>
    <artifactId>agent-java-junit5</artifactId>
-   <version>5.0.0-RC-1</version>
+   <version>5.0.0</version>
 </dependency>
 ```
 
@@ -72,7 +72,7 @@ repositories {
     maven { url "http://dl.bintray.com/epam/reportportal" }
 }
 
-testCompile 'com.epam.reportportal:agent-java-junit5:5.0.0-RC-1'
+testCompile 'com.epam.reportportal:agent-java-junit5:5.0.0'
 ```
 
 #### Automatic Extension Registration (optional)
@@ -133,7 +133,7 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>agent-java-junit5</artifactId>
-    <version>5.0.0-RC-1</version>
+    <version>5.0.0</version>
 </dependency>
 ```
 > Latest version of the agent, could be found [here](https://bintray.com/epam/reportportal/agent-java-junit5)
@@ -391,7 +391,7 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>agent-java-junit5</artifactId>
-            <version>5.0.0-RC-1</version>
+            <version>5.0.0</version>
         </dependency>
 
         <dependency>
@@ -507,7 +507,7 @@ dependencies {
     compile 'com.epam.reportportal:logger-java-log4j:5.0.2'
     compile 'org.apache.logging.log4j:log4j-api:2.11.2'
     compile 'org.apache.logging.log4j:log4j-core:2.11.2'
-    compile 'com.epam.reportportal:agent-java-junit5:5.0.0-RC-1'
+    compile 'com.epam.reportportal:agent-java-junit5:5.0.0'
 }
 
 test {

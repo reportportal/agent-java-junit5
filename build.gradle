@@ -16,7 +16,6 @@
 apply plugin: 'java'
 
 project.ext.releaseMode = project.hasProperty('releaseMode')
-
 def branch = releaseMode ? '5.0.0' : 'develop'
 apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
 

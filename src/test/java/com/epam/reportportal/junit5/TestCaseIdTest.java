@@ -116,7 +116,7 @@ public class TestCaseIdTest {
 	void testCaseIdFromParametrizedTestWithAnnotationTest() {
 		TestUtils.runClasses(TestCaseIdFromParametrizedAnnotationTest.class);
 
-		ArrayList<String> expected = Lists.newArrayList("[one]", "[two]");
+		ArrayList<String> expected = Lists.newArrayList("one", "two");
 
 		Launch launch = TestCaseIdExtension.LAUNCH;
 		verify(launch, times(1)).startTestItem(any()); // Start parent Suite

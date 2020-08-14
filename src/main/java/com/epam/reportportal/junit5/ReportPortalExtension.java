@@ -47,7 +47,6 @@ import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.junit5.ItemType.*;
@@ -79,10 +78,6 @@ public class ReportPortalExtension
 		SKIPPED_NOT_ISSUE.setIssue(issue);
 		SKIPPED_NOT_ISSUE.setStatus(SKIPPED.name());
 	}
-
-	private static final Function<List<Object>, String> TRANSFORM_PARAMETERS = it -> "[" + it.stream()
-			.map(parameter -> Objects.isNull(parameter) ? "NULL" : parameter.toString())
-			.collect(Collectors.joining(",")) + "]";
 
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
@@ -311,6 +306,7 @@ public class ReportPortalExtension
 		return str + (suffix.isEmpty() ? "" : "$" + suffix);
 	}
 
+	@Nonnull
 	private String getCodeRef(@Nonnull final ExtensionContext context, @Nonnull final String currentCodeRef) {
 		return context.getTestMethod()
 				.map(m -> appendSuffixIfNotEmpty(getCodeRef(m), currentCodeRef))
@@ -369,30 +365,13 @@ public class ReportPortalExtension
 		return itemId;
 	}
 
-	private @Nonnull
-	TestCaseIdEntry getTestCaseId(@Nonnull final String codeRef) {
-		return new TestCaseIdEntry(codeRef);
-	}
-
-	private @Nonnull
-	TestCaseIdEntry getTestCaseId(@Nonnull final Method method, final String codeRef, final List<Object> arguments) {
+	private TestCaseIdEntry getTestCaseId(@Nonnull final Method method, @Nonnull final String codeRef, @Nonnull final List<Object> arguments) {
 		TestCaseId caseId = method.getAnnotation(TestCaseId.class);
-		if (caseId != null) {
-			if (caseId.parametrized()) {
-				TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getParameterizedTestCaseId(method, arguments);
-				if (testCaseIdEntry != null) {
-					return testCaseIdEntry;
-				}
-			}
-			return new TestCaseIdEntry(caseId.value());
+		TestCaseIdEntry id = TestCaseIdUtils.getTestCaseId(caseId, method, codeRef, arguments);
+		if (id == null) {
+			return null;
 		}
-		return getTestCaseId(codeRef, arguments);
-	}
-
-	private @Nonnull
-	TestCaseIdEntry getTestCaseId(@Nonnull final String codeRef, @Nonnull final List<Object> arguments) {
-		String caseId = arguments.isEmpty() ? codeRef : codeRef + TRANSFORM_PARAMETERS.apply(arguments);
-		return new TestCaseIdEntry(caseId);
+		return id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
 	}
 
 	private void finishTemplates(final ExtensionContext parentContext) {
@@ -490,7 +469,7 @@ public class ReportPortalExtension
 			rq.getAttributes().addAll(getAttributes(m));
 			rq.setParameters(getParameters(m, arguments));
 			return getTestCaseId(m, codeRef, arguments);
-		}).orElseGet(() -> getTestCaseId(codeRef, arguments));
+		}).orElseGet(() -> TestCaseIdUtils.getTestCaseId(codeRef, arguments));
 		rq.setTestCaseId(caseId.getId());
 		return rq;
 	}
@@ -527,7 +506,7 @@ public class ReportPortalExtension
 		rq.setCodeRef(codeRef);
 		TestCaseIdEntry testCaseIdEntry = ofNullable(method.getAnnotation(TestCaseId.class)).map(TestCaseId::value)
 				.map(TestCaseIdEntry::new)
-				.orElseGet(() -> getTestCaseId(codeRef));
+				.orElseGet(() -> TestCaseIdUtils.getTestCaseId(codeRef, Collections.emptyList()));
 		rq.setTestCaseId(testCaseIdEntry.getId());
 		return rq;
 	}

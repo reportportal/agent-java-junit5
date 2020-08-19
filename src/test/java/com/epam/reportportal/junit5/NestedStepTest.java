@@ -5,25 +5,26 @@ import com.epam.reportportal.junit5.features.nested.NestedStepFeaturePassedTest;
 import com.epam.reportportal.junit5.features.nested.NestedStepMultiLevelTest;
 import com.epam.reportportal.junit5.features.nested.NestedStepWithBeforeEachTest;
 import com.epam.reportportal.junit5.util.TestUtils;
-import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import io.reactivex.Maybe;
-import org.junit.jupiter.api.BeforeEach;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.ArgumentCaptor;
-import org.mockito.MockitoAnnotations;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static com.epam.reportportal.junit5.NestedStepTest.NestedStepExtension.*;
-import static com.epam.reportportal.util.test.CommonUtils.createMaybe;
+import static com.epam.reportportal.junit5.NestedStepTest.TestExtension.*;
+import static com.epam.reportportal.util.test.CommonUtils.namedId;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -32,61 +33,42 @@ import static org.mockito.Mockito.*;
 public class NestedStepTest {
 
 	public static final String PARAM = "test param";
-
 	public static final String NESTED_STEP_NAME_TEMPLATE = "I am nested step with parameter - '{param}'";
-
 	public static final String METHOD_WITH_INNER_METHOD_NAME_TEMPLATE = "I am method with inner method";
 	public static final String INNER_METHOD_NAME_TEMPLATE = "I am - {method}";
 
-	public static class NestedStepExtension extends ReportPortalExtension {
+	public static class TestExtension extends ReportPortalExtension {
+		static final ThreadLocal<ReportPortalClient> CLIENT = new ThreadLocal<>();
 
-		static final ThreadLocal<Maybe<String>> TEST_METHOD_ID = new ThreadLocal<>();
-		static final ThreadLocal<Maybe<String>> NESTED_STEP_ID = new ThreadLocal<>();
-		static final ThreadLocal<Maybe<String>> INNER_NESTED_STEP_ID = new ThreadLocal<>();
+		static final String TEST_CLASS_ID = namedId("class");
+		static final String TEST_METHOD_ID = namedId("test");
+		static final List<String> STEP_ID_LIST = Stream.generate(() -> namedId("step")).limit(2).collect(Collectors.toList());
+		static final List<Pair<String, String>> TEST_STEP_ID_ORDER = Arrays.asList(Pair.of(TEST_METHOD_ID, STEP_ID_LIST.get(0)),
+				Pair.of(STEP_ID_LIST.get(0), STEP_ID_LIST.get(1))
+		);
 
-		static final ThreadLocal<Launch> LAUNCH = new ThreadLocal<>();
-		final static ThreadLocal<String> LAUNCH_ID = new ThreadLocal<>();
-		static final ThreadLocal<ListenerParameters> LISTENER_PARAMETERS = new ThreadLocal<>();
-		static final ThreadLocal<ReportPortal> REPORT_PORTAL = new ThreadLocal<>();
+		private final ReportPortal rp;
+		private final String id;
 
-		public NestedStepExtension() {
-			LAUNCH.set(mock(Launch.class));
-			Maybe<String> rootItemId = createMaybe("Root item id");
-			when(LAUNCH.get().startTestItem(any())).thenReturn(rootItemId);
-
-			Maybe<String> launchId = createMaybe("Launch " + UUID.randomUUID().toString());
-			LAUNCH_ID.set(launchId.blockingGet());
-
-			TEST_METHOD_ID.set(createMaybe("Test method id"));
-			when(LAUNCH.get().startTestItem(eq(rootItemId), any())).thenReturn(TEST_METHOD_ID.get());
-
-			NESTED_STEP_ID.set(createMaybe("Nested step id"));
-			when(LAUNCH.get().startTestItem(eq(TEST_METHOD_ID.get()), any())).thenReturn(NESTED_STEP_ID.get());
-
-			INNER_NESTED_STEP_ID.set(createMaybe("Inner nested step id"));
-			when(LAUNCH.get().startTestItem(eq(NESTED_STEP_ID.get()), any())).thenReturn(INNER_NESTED_STEP_ID.get());
-
-			REPORT_PORTAL.set(mock(ReportPortal.class));
-			when(REPORT_PORTAL.get().newLaunch(any())).thenReturn(LAUNCH.get());
-
-			LISTENER_PARAMETERS.set(mock(ListenerParameters.class));
-			when(REPORT_PORTAL.get().getParameters()).thenReturn(LISTENER_PARAMETERS.get());
+		public TestExtension() {
+			ReportPortalClient myClient = mock(ReportPortalClient.class);
+			id = String.valueOf(myClient.hashCode());
+			CLIENT.set(myClient);
+			TestUtils.mockLaunch(myClient, "launchUuid", TEST_CLASS_ID, TEST_METHOD_ID);
+			TestUtils.mockNestedSteps(myClient, TEST_STEP_ID_ORDER);
+			lenient().when(myClient.log(any(MultiPartRequest.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
+			rp = ReportPortal.create(myClient, TestUtils.standardParameters());
 		}
 
 		@Override
 		protected ReportPortal getReporter() {
-			return REPORT_PORTAL.get();
+			return rp;
 		}
 
 		@Override
 		protected String getLaunchId(ExtensionContext context) {
-			return LAUNCH_ID.get();
+			return id;
 		}
-	}
-
-	@BeforeEach
-	public void init() {
-		MockitoAnnotations.initMocks(this);
 	}
 
 	@Test
@@ -96,8 +78,8 @@ public class NestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(LAUNCH.get(), times(1)).startTestItem(eq(TEST_METHOD_ID.get()), nestedStepCaptor.capture());
-		verify(LAUNCH.get(), times(1)).finishTestItem(eq(NESTED_STEP_ID.get()), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
 
 		StartTestItemRQ startTestItemRQ = nestedStepCaptor.getValue();
 
@@ -117,8 +99,8 @@ public class NestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(LAUNCH.get(), times(1)).startTestItem(eq(TEST_METHOD_ID.get()), nestedStepCaptor.capture());
-		verify(LAUNCH.get(), times(1)).finishTestItem(eq(NESTED_STEP_ID.get()), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
 
 		StartTestItemRQ startTestItemRQ = nestedStepCaptor.getValue();
 
@@ -143,8 +125,8 @@ public class NestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(LAUNCH.get(), times(1)).startTestItem(eq(TEST_METHOD_ID.get()), nestedStepCaptor.capture());
-		verify(LAUNCH.get(), times(1)).finishTestItem(eq(NESTED_STEP_ID.get()), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
 
 		StartTestItemRQ startTestItemRQ = nestedStepCaptor.getValue();
 
@@ -165,10 +147,10 @@ public class NestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(LAUNCH.get(), times(1)).startTestItem(eq(TEST_METHOD_ID.get()), nestedStepCaptor.capture());
-		verify(LAUNCH.get(), times(1)).finishTestItem(eq(NESTED_STEP_ID.get()), finishNestedCaptor.capture());
-		verify(LAUNCH.get(), times(1)).startTestItem(eq(NESTED_STEP_ID.get()), nestedStepCaptor.capture());
-		verify(LAUNCH.get(), times(1)).finishTestItem(eq(INNER_NESTED_STEP_ID.get()), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(STEP_ID_LIST.get(0)), nestedStepCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(1)), finishNestedCaptor.capture());
 
 		List<StartTestItemRQ> nestedSteps = nestedStepCaptor.getAllValues();
 

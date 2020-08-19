@@ -11,10 +11,9 @@ import static com.epam.reportportal.junit5.NestedStepTest.PARAM;
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-@ExtendWith(NestedStepTest.NestedStepExtension.class)
+@ExtendWith(NestedStepTest.TestExtension.class)
 public class NestedStepFeaturePassedTest {
-
-	@Test()
+	@Test
 	public void test() {
 		method(PARAM);
 	}

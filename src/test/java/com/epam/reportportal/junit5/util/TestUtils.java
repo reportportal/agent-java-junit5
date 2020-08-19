@@ -3,9 +3,7 @@ package com.epam.reportportal.junit5.util;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -68,42 +66,6 @@ public class TestUtils {
 		return result;
 	}
 
-	public static void mockLaunch(Launch launch, StepReporter reporter, Maybe<String> launchUuid, Maybe<String> suiteUuid,
-			Maybe<String> testClassUuid, Collection<Maybe<String>> testMethodUuidList) {
-		mockLaunch(
-				launch,
-				new ListenerParameters(PropertiesLoader.load()),
-				reporter,
-				launchUuid,
-				suiteUuid,
-				testClassUuid,
-				testMethodUuidList
-		);
-	}
-
-	@SuppressWarnings("unchecked")
-	public static void mockLaunch(Launch launch, ListenerParameters parameters, StepReporter reporter, Maybe<String> launchUuid,
-			Maybe<String> suiteUuid, Maybe<String> testClassUuid, Collection<Maybe<String>> testMethodUuidList) {
-		when(launch.getParameters()).thenReturn(parameters);
-		when(launch.getStepReporter()).thenReturn(reporter);
-
-		when(launch.start()).thenReturn(launchUuid);
-		when(launch.startTestItem(any())).thenReturn(suiteUuid);
-		when(launch.startTestItem(same(suiteUuid), any())).thenReturn(testClassUuid);
-
-		Iterator<Maybe<String>> methodIterator = testMethodUuidList.iterator();
-		Maybe<String> first = methodIterator.next();
-		List<Maybe<String>> methodMaybes = new ArrayList<>();
-		methodIterator.forEachRemaining(methodMaybes::add);
-		Maybe<String>[] other = methodMaybes.toArray(new Maybe[0]);
-		when(launch.startTestItem(same(testClassUuid), any())).thenReturn(first, other);
-
-		new HashSet<>(testMethodUuidList).forEach(methodUuidMaybe -> when(launch.finishTestItem(same(methodUuidMaybe), any())).thenReturn(
-				createMaybe(new OperationCompletionRS())));
-		when(launch.finishTestItem(same(testClassUuid), any())).thenReturn(createMaybe(new OperationCompletionRS()));
-		when(launch.finishTestItem(same(suiteUuid), any())).thenReturn(createMaybe(new OperationCompletionRS()));
-	}
-
 	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid, String testMethodUuid) {
 		mockLaunch(client, launchUuid, testClassUuid, Collections.singleton(testMethodUuid));
 	}
@@ -153,7 +115,7 @@ public class TestUtils {
 
 			Maybe<ItemCreatedRS> first = responses.get(0);
 			Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
-			when(client.startTestItem(eq(k), any())).thenReturn(first, other);
+			when(client.startTestItem(same(k), any())).thenReturn(first, other);
 		});
 		parentNestedPairs.forEach(p -> when(client.finishTestItem(
 				same(p.getValue()),

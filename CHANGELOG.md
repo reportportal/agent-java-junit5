@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.2]
 - Test Case ID generation improved
 - Client version updated
 

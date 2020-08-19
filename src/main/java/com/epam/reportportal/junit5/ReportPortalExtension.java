@@ -99,7 +99,6 @@ public class ReportPortalExtension
 			StartLaunchRQ rq = buildStartLaunchRq(params);
 
 			Launch launch = rp.newLaunch(rq);
-			StepAspect.addLaunch(id, launch);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(launch));
 			Maybe<String> launchIdResponse = launch.start();
 			if (params.isCallbackReportingEnabled()) {
@@ -342,7 +341,7 @@ public class ReportPortalExtension
 			if (isTemplate) {
 				testTemplates.put(c, itemId);
 			}
-			StepAspect.setParentId(itemId);
+			StepAspect.setParentId(launch, itemId);
 			return itemId;
 		});
 	}
@@ -361,7 +360,7 @@ public class ReportPortalExtension
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = buildStartConfigurationRq(method, parentContext, context, itemType);
 		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentContext), rq);
-		StepAspect.setParentId(itemId);
+		StepAspect.setParentId(launch, itemId);
 		return itemId;
 	}
 

@@ -17,8 +17,7 @@ import java.util.Date;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class LaunchStartTimeTest {
 
@@ -27,7 +26,7 @@ public class LaunchStartTimeTest {
 	private final String testMethodUuid = CommonUtils.namedId("test");
 
 	public static class TestExtension extends ReportPortalExtension {
-		static ReportPortal REPORT_PORTAL;
+		static volatile ReportPortal REPORT_PORTAL;
 
 		@Override
 		protected ReportPortal getReporter() {
@@ -49,13 +48,13 @@ public class LaunchStartTimeTest {
 		TestUtils.runClasses(IncorrectStartTime.class);
 
 		ArgumentCaptor<StartLaunchRQ> startLaunchCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
-		verify(client).startLaunch(startLaunchCaptor.capture());
+		verify(client, timeout(1000).times(1)).startLaunch(startLaunchCaptor.capture());
 
 		ArgumentCaptor<StartTestItemRQ> startSuiteCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client).startTestItem(startSuiteCaptor.capture());
+		verify(client, timeout(1000).times(1)).startTestItem(startSuiteCaptor.capture());
 
 		ArgumentCaptor<StartTestItemRQ> startTestCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client).startTestItem(any(), startTestCaptor.capture());
+		verify(client, timeout(1000).times(1)).startTestItem(any(), startTestCaptor.capture());
 
 		Date launchStart = startLaunchCaptor.getValue().getStartTime();
 		Date suiteStart = startSuiteCaptor.getValue().getStartTime();

@@ -11,7 +11,7 @@ import static com.epam.reportportal.junit5.NestedStepTest.METHOD_WITH_INNER_METH
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-@ExtendWith(NestedStepTest.NestedStepExtension.class)
+@ExtendWith(NestedStepTest.TestExtension.class)
 public class NestedStepMultiLevelTest {
 
 	@Test

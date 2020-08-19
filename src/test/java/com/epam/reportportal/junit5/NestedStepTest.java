@@ -78,8 +78,8 @@ public class NestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(CLIENT.get(), times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
-		verify(CLIENT.get(), times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
 
 		StartTestItemRQ startTestItemRQ = nestedStepCaptor.getValue();
 
@@ -99,8 +99,8 @@ public class NestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(CLIENT.get(), times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
-		verify(CLIENT.get(), times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
 
 		StartTestItemRQ startTestItemRQ = nestedStepCaptor.getValue();
 
@@ -125,8 +125,8 @@ public class NestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(CLIENT.get(), times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
-		verify(CLIENT.get(), times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
 
 		StartTestItemRQ startTestItemRQ = nestedStepCaptor.getValue();
 
@@ -147,10 +147,10 @@ public class NestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(CLIENT.get(), times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
-		verify(CLIENT.get(), times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
-		verify(CLIENT.get(), times(1)).startTestItem(same(STEP_ID_LIST.get(0)), nestedStepCaptor.capture());
-		verify(CLIENT.get(), times(1)).finishTestItem(same(STEP_ID_LIST.get(1)), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(STEP_ID_LIST.get(0)), nestedStepCaptor.capture());
+		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(1)), finishNestedCaptor.capture());
 
 		List<StartTestItemRQ> nestedSteps = nestedStepCaptor.getAllValues();
 

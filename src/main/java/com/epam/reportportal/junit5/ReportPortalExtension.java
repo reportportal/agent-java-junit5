@@ -623,6 +623,7 @@ public class ReportPortalExtension
 	 *
 	 * @param invocationContext JUnit's <code>@BeforeAll</code> invocation context
 	 * @param context           JUnit's test context
+	 * @param throwable			An exception which caused the skip
 	 * @param eventTime         <code>@BeforeAll</code> start time
 	 */
 	@SuppressWarnings("unused")

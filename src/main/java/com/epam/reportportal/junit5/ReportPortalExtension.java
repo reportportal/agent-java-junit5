@@ -341,7 +341,7 @@ public class ReportPortalExtension
 			if (isTemplate) {
 				testTemplates.put(c, itemId);
 			}
-			StepAspect.setParentId(launch, itemId);
+			StepAspect.setParentId(itemId);
 			return itemId;
 		});
 	}
@@ -360,7 +360,7 @@ public class ReportPortalExtension
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = buildStartConfigurationRq(method, parentContext, context, itemType);
 		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentContext), rq);
-		StepAspect.setParentId(launch, itemId);
+		StepAspect.setParentId(itemId);
 		return itemId;
 	}
 

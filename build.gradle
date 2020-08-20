@@ -95,7 +95,6 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
-//def releaseDependencies = [bintrayUpload, publish]
-def releaseDependencies = [bintrayUpload]
+def releaseDependencies = [bintrayUpload, publish]
 releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
 afterReleaseBuild.setDependsOn(releaseDependencies)

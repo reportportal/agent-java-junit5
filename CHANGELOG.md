@@ -18,18 +18,15 @@
 - Explicit extension registration in the package
 
 ## [5.0.0-BETA-16]
+### Added
+- Release pipelines moved into github actions
+### Fixed
+- Test template finish logic to avoid parallel execution failures
 ### Changed
+- README.md updated with the latest artifact versions
 - Bumping up client version to support new features
 - All `@NotNull` annotations replaced with `@Nonnull`
 - Parameters extraction logic moved into the client
-
-## [5.0.0-BETA-15]
-### Added
-- Release pipelines moved into github actions
-### Changed
-- README.md updated with the latest artifact versions
-### Fixed
-- Test template finish logic to avoid parallel execution failures
 
 ## [4.0.0]
 ##### Released: XXX Dec 2018

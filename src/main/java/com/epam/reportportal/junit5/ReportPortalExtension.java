@@ -18,7 +18,6 @@ package com.epam.reportportal.junit5;
 
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchImpl;
@@ -341,7 +340,6 @@ public class ReportPortalExtension
 			if (isTemplate) {
 				testTemplates.put(c, itemId);
 			}
-			StepAspect.setParentId(itemId);
 			return itemId;
 		});
 	}
@@ -359,9 +357,7 @@ public class ReportPortalExtension
 	private Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = buildStartConfigurationRq(method, parentContext, context, itemType);
-		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentContext), rq);
-		StepAspect.setParentId(itemId);
-		return itemId;
+		return launch.startTestItem(idMapping.get(parentContext), rq);
 	}
 
 	private TestCaseIdEntry getTestCaseId(@Nonnull final Method method, @Nonnull final String codeRef, @Nonnull final List<Object> arguments) {
@@ -561,7 +557,6 @@ public class ReportPortalExtension
 	 * @param context JUnit's test context
 	 * @return Test/Step Name being sent to ReportPortal
 	 */
-	@SuppressWarnings("unused")
 	protected String createStepName(ExtensionContext context) {
 		String name = context.getDisplayName();
 		return name.length() > 1024 ? name.substring(0, 1024) + "..." : name;
@@ -626,7 +621,6 @@ public class ReportPortalExtension
 	 * @param throwable			An exception which caused the skip
 	 * @param eventTime         <code>@BeforeAll</code> start time
 	 */
-	@SuppressWarnings("unused")
 	protected void reportSkippedStep(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context, Throwable throwable,
 			Date eventTime) {
 		Date skipStartTime = Calendar.getInstance().getTime();

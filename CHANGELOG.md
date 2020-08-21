@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- StepAspect now handled inside client
 
 ## [5.0.2]
 - Test Case ID generation improved

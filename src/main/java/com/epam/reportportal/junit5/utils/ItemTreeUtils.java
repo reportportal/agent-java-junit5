@@ -71,6 +71,6 @@ public class ItemTreeUtils {
 
 	private static String getTestItemName(ExtensionContext context) {
 		String name = context.getDisplayName();
-		return name.length() > 1024 ? name.substring(0, 1024) + "..." : name;
+		return name.length() > 1024 ? name.substring(0, 1021) + "..." : name;
 	}
 }

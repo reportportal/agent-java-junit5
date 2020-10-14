@@ -6,7 +6,8 @@
 - StepAspect now handled inside client
 - Item name truncation in ItemTreeUtils class was removed as pointless
 - Item name truncation corrected for ReportPortalExtension class
-- `junit-jupiter-api` dependency now marked as `api` (compile-time dependency) 
+- `junit-jupiter-api` dependency now marked as `api` (it's now compile-time dependency)
+- Many of methods were marked as `protected` to ease extension development (Issue #71)  
 
 ## [5.0.2]
 ### Changed 

@@ -52,11 +52,11 @@ public class ItemTreeUtils {
 	}
 
 	public static TestItemTree.ItemTreeKey createItemTreeKey(ExtensionContext extensionContext) {
-		return TestItemTree.ItemTreeKey.of(getTestItemName(extensionContext));
+		return TestItemTree.ItemTreeKey.of(extensionContext.getDisplayName());
 	}
 
 	public static TestItemTree.ItemTreeKey createItemTreeKey(ExtensionContext extensionContext, int hash) {
-		return TestItemTree.ItemTreeKey.of(getTestItemName(extensionContext), hash);
+		return TestItemTree.ItemTreeKey.of(extensionContext.getDisplayName(), hash);
 	}
 
 	@Nullable
@@ -67,10 +67,5 @@ public class ItemTreeUtils {
 	@Nullable
 	public static TestItemTree.TestItemLeaf retrieveLeaf(TestInfo testInfo, TestItemTree testItemTree) {
 		return retrieveLeaf(testInfo.getDisplayName(), testItemTree);
-	}
-
-	private static String getTestItemName(ExtensionContext context) {
-		String name = context.getDisplayName();
-		return name.length() > 1024 ? name.substring(0, 1021) + "..." : name;
 	}
 }

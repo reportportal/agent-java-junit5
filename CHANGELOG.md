@@ -1,9 +1,10 @@
 # Changelog
 
 ## [Unreleased]
-### Changed
-- StepAspect now handled inside client
+### Changed 
 - Client version updated
+- StepAspect now handled inside client
+- Item name truncation in ItemTreeUtils class was removed as pointless
 
 ## [5.0.2]
 - Test Case ID generation improved

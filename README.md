@@ -50,7 +50,7 @@ Extend *ReportPortalExtension*, override *buildStartStepRq()* or other methods (
     <plugins>
         <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>2.22.0</version>
+            <version>3.0.0-M5</version>
             <configuration>
                 <properties>
                     <configurationParameters>
@@ -352,7 +352,7 @@ Add a `build` section and Maven Surefire plugin with the following configuration
     <plugins>
         <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>2.22.0</version>
+            <version>3.0.0-M5</version>
             <configuration>
                 <properties>
                     <configurationParameters>
@@ -397,7 +397,7 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>logger-java-log4j</artifactId>
-            <version>5.0.2</version>
+            <version>5.0.3</version>
         </dependency>
 
         <dependency>
@@ -418,7 +418,7 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.0</version>
+                <version>3.0.0-M5</version>
                 <configuration>
                     <properties>
                         <configurationParameters>
@@ -504,7 +504,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.epam.reportportal:logger-java-log4j:5.0.2'
+    compile 'com.epam.reportportal:logger-java-log4j:5.0.3'
     compile 'org.apache.logging.log4j:log4j-api:2.11.2'
     compile 'org.apache.logging.log4j:log4j-core:2.11.2'
     compile 'com.epam.reportportal:agent-java-junit5:5.0.2'

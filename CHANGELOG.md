@@ -8,10 +8,6 @@
 - Item name truncation corrected for ReportPortalExtension class
 - `junit-jupiter-api` dependency now marked as `api` (compile-time dependency) 
 
-## Added
-- `junit-jupiter-engine` as 'implementation' (runtime dependency) to simplify setup for users
-
-
 ## [5.0.2]
 ### Changed 
 - Test Case ID generation improved

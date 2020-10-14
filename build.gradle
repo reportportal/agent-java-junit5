@@ -60,8 +60,9 @@ dependencies {
     api 'com.epam.reportportal:client-java:5.0.11'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
-
-    implementation "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
+    api "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
+    // the next dependency is not used straightly in code but left here to simplify setup for users
+    implementation "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
@@ -69,7 +70,6 @@ dependencies {
         exclude module: 'junit'
     }
     testImplementation 'org.junit.platform:junit-platform-launcher:1.6.0'
-    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}"
     testImplementation "org.aspectj:aspectjweaver:1.9.2"
     testImplementation 'org.hamcrest:hamcrest:2.2'

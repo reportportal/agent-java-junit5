@@ -154,7 +154,7 @@ If you prefer using **Logback** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-logback</artifactId>
-    <version>5.0.2</version>
+    <version>5.0.3</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://bintray.com/epam/reportportal/logger-java-logback)
@@ -175,7 +175,7 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-log4j</artifactId>
-    <version>5.0.2</version>
+    <version>5.0.3</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://bintray.com/epam/reportportal/logger-java-log4j)

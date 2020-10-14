@@ -23,8 +23,8 @@ com.epam.reportportal.junit5.ReportPortalExtension
 
 If you desire to configure test *name*, *description* and *tags*:
 
-Extend *ReportPortalExtension*, override *getTestItem()* and replace *com.epam.reportportal.junit5.ReportPortalExtension*
-with fully qualified custom Extension class name in this file.
+Extend *ReportPortalExtension*, override *buildStartStepRq()* or other methods (see javadoc comments) and replace 
+*com.epam.reportportal.junit5.ReportPortalExtension* with fully qualified custom Extension class name in this file.
 
 ### Maven
 

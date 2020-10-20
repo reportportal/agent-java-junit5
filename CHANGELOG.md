@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.3]
 ### Changed 
 - Client version updated
 - StepAspect now handled inside client

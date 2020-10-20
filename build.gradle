@@ -57,11 +57,10 @@ processResources {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.0.6'
+    api 'com.epam.reportportal:client-java:5.0.12'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
-
-    implementation "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
+    api "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
@@ -95,7 +94,6 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
-//def releaseDependencies = [bintrayUpload, publish]
-def releaseDependencies = [bintrayUpload]
+def releaseDependencies = [bintrayUpload, publish]
 releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
 afterReleaseBuild.setDependsOn(releaseDependencies)

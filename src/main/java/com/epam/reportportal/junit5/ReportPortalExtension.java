@@ -16,9 +16,10 @@
 
 package com.epam.reportportal.junit5;
 
+import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.aspect.StepAspect;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchImpl;
@@ -35,9 +36,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.DisplayNameGeneration;
-import org.junit.jupiter.api.DisplayNameGenerator;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +49,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.junit5.ItemType.*;
-import static com.epam.reportportal.junit5.Status.*;
 import static com.epam.reportportal.junit5.SystemAttributesFetcher.collectSystemAttributes;
 import static com.epam.reportportal.junit5.utils.ItemTreeUtils.createItemTreeKey;
+import static com.epam.reportportal.listeners.ItemStatus.*;
 import static com.epam.reportportal.service.tree.TestItemTree.createTestItemLeaf;
 import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
@@ -84,14 +83,29 @@ public class ReportPortalExtension
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
 
+	/**
+	 * @return ReportPortal client instance
+	 */
 	protected ReportPortal getReporter() {
 		return REPORT_PORTAL;
 	}
 
+	/**
+	 * Returns a current launch unique ID
+	 *
+	 * @param context JUnit's launch context
+	 * @return ID of the launch
+	 */
 	protected String getLaunchId(ExtensionContext context) {
 		return context.getRoot().getUniqueId();
 	}
 
+	/**
+	 * Returns a current launch instance, starts new if no such instance
+	 *
+	 * @param context JUnit's launch context
+	 * @return represents current launch
+	 */
 	protected Launch getLaunch(ExtensionContext context) {
 		return launchMap.computeIfAbsent(getLaunchId(context), id -> {
 			ReportPortal rp = getReporter();
@@ -216,7 +230,7 @@ public class ReportPortalExtension
 	@Override
 	public void afterTestExecution(ExtensionContext context) {
 		finishTemplates(context);
-		Status status = getExecutionStatus(context);
+		ItemStatus status = getExecutionStatus(context);
 		if (FAILED.equals(status)) {
 			context.getParent().ifPresent(c -> c.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
 		}
@@ -244,7 +258,17 @@ public class ReportPortalExtension
 	public void testFailed(ExtensionContext context, Throwable throwable) {
 	}
 
-	private void finishBeforeAll(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+	/**
+	 * Finishes a method marked with {@link BeforeAll} annotation, calls {@link ReportPortalExtension#reportSkippedClassTests} method in
+	 * case of failures
+	 *
+	 * @param invocation        the invocation that is being intercepted
+	 * @param invocationContext the context of the invocation that is being intercepted
+	 * @param context           JUnit's test context
+	 * @param id                an ID of the method to finish
+	 * @throws Throwable in case of failures
+	 */
+	protected void finishBeforeAll(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext context, Maybe<String> id) throws Throwable {
 		Date startTime = Calendar.getInstance().getTime();
 		try {
@@ -255,7 +279,17 @@ public class ReportPortalExtension
 		}
 	}
 
-	private void finishBeforeEach(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+	/**
+	 * Finishes a method marked with {@link BeforeEach} annotation, calls {@link ReportPortalExtension#reportSkippedStep} method in case of
+	 * failures
+	 *
+	 * @param invocation        the invocation that is being intercepted
+	 * @param invocationContext the context of the invocation that is being intercepted
+	 * @param context           JUnit's test context
+	 * @param id                an ID of the method to finish
+	 * @throws Throwable in case of failures
+	 */
+	protected void finishBeforeEach(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext context, Maybe<String> id) throws Throwable {
 		Date startTime = Calendar.getInstance().getTime();
 		try {
@@ -267,57 +301,66 @@ public class ReportPortalExtension
 	}
 
 	private void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, Maybe<String> id) throws Throwable {
+		ItemStatus status = PASSED;
 		try {
 			invocation.proceed();
-			finishBeforeAfter(context, id, PASSED);
 		} catch (Throwable throwable) {
+			status = FAILED;
 			sendStackTraceToRP(throwable);
-			finishBeforeAfter(context, id, FAILED);
 			throw throwable;
+		} finally {
+			finishBeforeAfter(context, id, status);
 		}
 	}
 
-	private void finishBeforeAfter(ExtensionContext context, Maybe<String> id, Status status) {
+	private void finishBeforeAfter(ExtensionContext context, Maybe<String> id, ItemStatus status) {
 		Launch launch = getLaunch(context);
 		launch.getStepReporter().finishPreviousStep();
 		launch.finishTestItem(id, buildFinishTestItemRq(context, status));
 	}
 
-	private void startTemplate(ExtensionContext context) {
-		if (!idMapping.containsKey(context)) {
-			startTestItem(context, TEMPLATE);
+	/**
+	 * Starts a test template (basically a test class)
+	 *
+	 * @param parentContext JUnit's test context of a parent entity
+	 */
+	protected void startTemplate(ExtensionContext parentContext) {
+		if (!idMapping.containsKey(parentContext)) {
+			startTestItem(parentContext, TEMPLATE);
 		}
 	}
 
-	private void startTestItem(ExtensionContext context, ItemType type) {
+	/**
+	 * Starts a test item of arbitrary type
+	 *
+	 * @param context JUnit's test context
+	 * @param type    a type of the item
+	 */
+	protected void startTestItem(ExtensionContext context, ItemType type) {
 		startTestItem(context, Collections.emptyList(), type);
 	}
 
-	private void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
+	/**
+	 * Starts a test item of arbitrary type
+	 *
+	 * @param context   JUnit's test context
+	 * @param arguments a list of test parameters
+	 * @param type      a type of the item
+	 */
+	protected void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
 		startTestItem(context, arguments, type, createStepDescription(context), Calendar.getInstance().getTime());
 	}
 
-	private String getCodeRef(@Nonnull final Method method) {
-		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
-	}
-
-	private static String appendSuffixIfNotEmpty(final String str, @Nonnull final String suffix) {
-		return str + (suffix.isEmpty() ? "" : "$" + suffix);
-	}
-
-	@Nonnull
-	private String getCodeRef(@Nonnull final ExtensionContext context, @Nonnull final String currentCodeRef) {
-		return context.getTestMethod()
-				.map(m -> appendSuffixIfNotEmpty(getCodeRef(m), currentCodeRef))
-				.orElseGet(() -> context.getTestClass()
-						.map(c -> appendSuffixIfNotEmpty(c.getCanonicalName(), currentCodeRef))
-						.orElseGet(() -> {
-							String newCodeRef = appendSuffixIfNotEmpty(context.getDisplayName(), currentCodeRef);
-							return context.getParent().map(c -> getCodeRef(c, newCodeRef)).orElse(newCodeRef);
-						}));
-	}
-
-	private void startTestItem(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
+	/**
+	 * Starts a test item of arbitrary type
+	 *
+	 * @param context     JUnit's test context
+	 * @param arguments   a list of test parameters
+	 * @param itemType    a type of the item
+	 * @param description the test description
+	 * @param startTime   the test start time
+	 */
+	protected void startTestItem(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
 			@Nonnull final ItemType itemType, @Nonnull final String description, @Nonnull final Date startTime) {
 		idMapping.computeIfAbsent(context, c -> {
 			boolean isTemplate = TEMPLATE == itemType;
@@ -341,39 +384,44 @@ public class ReportPortalExtension
 			if (isTemplate) {
 				testTemplates.put(c, itemId);
 			}
-			StepAspect.setParentId(itemId);
 			return itemId;
 		});
 	}
 
-	private @Nonnull
-	Set<ItemAttributesRQ> getAttributes(@Nonnull final Method method) {
-		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElseGet(Sets::newHashSet);
-	}
-
-	private @Nonnull
-	List<ParameterResource> getParameters(@Nonnull final Method method, final List<Object> arguments) {
-		return ParameterUtils.getParameters(method, arguments);
-	}
-
-	private Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
+	/**
+	 * Starts the following methods: <code>@BeforeEach</code>, <code>@AfterEach</code>, <code>@BeforeAll</code> or <code>@AfterAll</code>
+	 *
+	 * @param method        a method reference
+	 * @param parentContext JUnit's test context of a parent item
+	 * @param context       JUnit's test context of a method to start
+	 * @param itemType      a method's item type (to display on RP)
+	 * @return an ID of the method
+	 */
+	protected Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = buildStartConfigurationRq(method, parentContext, context, itemType);
-		Maybe<String> itemId = launch.startTestItem(idMapping.get(parentContext), rq);
-		StepAspect.setParentId(itemId);
-		return itemId;
+		return launch.startTestItem(idMapping.get(parentContext), rq);
 	}
 
-	private TestCaseIdEntry getTestCaseId(@Nonnull final Method method, @Nonnull final String codeRef, @Nonnull final List<Object> arguments) {
-		TestCaseId caseId = method.getAnnotation(TestCaseId.class);
-		TestCaseIdEntry id = TestCaseIdUtils.getTestCaseId(caseId, method, codeRef, arguments);
-		if (id == null) {
-			return null;
-		}
-		return id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
+	/**
+	 * Finish a test template execution (basically a test class) with a specific status, builds a finish request based on the status
+	 *
+	 * @param context JUnit's test context
+	 * @param status  an {@link ItemStatus}
+	 */
+	protected void finishTemplate(final ExtensionContext context, final ItemStatus status) {
+		Launch launch = getLaunch(context);
+		Maybe<String> templateId = testTemplates.remove(context);
+		launch.finishTestItem(templateId, buildFinishTestItemRq(context, status));
+		idMapping.remove(context);
 	}
 
-	private void finishTemplates(final ExtensionContext parentContext) {
+	/**
+	 * Finish all test templates execution (basically a test class) within a specific context
+	 *
+	 * @param parentContext JUnit's test context
+	 */
+	protected void finishTemplates(final ExtensionContext parentContext) {
 		final Collection<ExtensionContext> parents = new HashSet<>();
 		parents.add(parentContext);
 		List<ExtensionContext> templates = new ArrayList<>();
@@ -388,45 +436,58 @@ public class ReportPortalExtension
 		}
 		Collections.reverse(templates);
 		templates.forEach(context -> {
-			Status status = context.getStore(NAMESPACE).get(FAILED) != null ?
+			ItemStatus status = context.getStore(NAMESPACE).get(FAILED) != null ?
 					FAILED :
 					context.getStore(NAMESPACE).get(SKIPPED) != null ? SKIPPED : getExecutionStatus(context);
-			if (status == SKIPPED) {
-				parentContext.getStore(NAMESPACE).put(SKIPPED, Boolean.TRUE);
-			}
-			if (status == FAILED) {
-				parentContext.getStore(NAMESPACE).put(FAILED, Boolean.TRUE);
+			if (status == FAILED || status == SKIPPED) {
+				parentContext.getStore(NAMESPACE).put(status, Boolean.TRUE);
 			}
 			finishTemplate(context, status);
 		});
 	}
 
-	private void finishTemplate(final ExtensionContext context, final Status status) {
-		Launch launch = getLaunch(context);
-		Maybe<String> templateId = testTemplates.remove(context);
-		launch.finishTestItem(templateId, buildFinishTestItemRq(context, status));
-		idMapping.remove(context);
-	}
-
-	private static Status getExecutionStatus(@Nonnull final ExtensionContext context) {
+	/**
+	 * Returns a status of a test based on whether or not it contains an execution exception
+	 *
+	 * @param context JUnit's test context
+	 * @return an {@link ItemStatus}
+	 */
+	protected ItemStatus getExecutionStatus(@Nonnull final ExtensionContext context) {
 		Optional<Throwable> exception = context.getExecutionException();
 		if (!exception.isPresent()) {
-			return Status.PASSED;
+			return ItemStatus.PASSED;
 		} else {
 			sendStackTraceToRP(exception.get());
-			return Status.FAILED;
+			return ItemStatus.FAILED;
 		}
 	}
 
-	private void finishTestItem(@Nonnull final ExtensionContext context) {
+	/**
+	 * Finishes a test item in RP, calculates the item status and builds a finish request based on the status
+	 *
+	 * @param context JUnit's test context
+	 */
+	protected void finishTestItem(@Nonnull final ExtensionContext context) {
 		finishTestItem(context, getExecutionStatus(context));
 	}
 
-	private void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final Status status) {
+	/**
+	 * Finishes a test item in RP with a specific status, builds a finish request based on the status
+	 *
+	 * @param context JUnit's test context
+	 * @param status  a test execution status
+	 */
+	protected void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final ItemStatus status) {
 		finishTestItem(context, buildFinishTestItemRq(context, status));
 	}
 
-	private void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final FinishTestItemRQ rq) {
+	/**
+	 * Finishes a test item in RP with a custom request
+	 *
+	 * @param context JUnit's test context
+	 * @param rq      a test item finish request
+	 */
+	protected void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final FinishTestItemRQ rq) {
 		Launch launch = getLaunch(context);
 		launch.getStepReporter().finishPreviousStep();
 		Maybe<String> id = idMapping.remove(context);
@@ -437,8 +498,87 @@ public class ReportPortalExtension
 		}
 	}
 
-	private Optional<Method> getTestMethod(ExtensionContext context) {
+	/**
+	 * Calculates a test case ID based on code reference and
+	 *
+	 * @param method    a test method reference
+	 * @param codeRef   a code reference which will be used for the calculation
+	 * @param arguments a list of test arguments
+	 * @return a test case ID
+	 */
+	protected TestCaseIdEntry getTestCaseId(@Nonnull final Method method, @Nonnull final String codeRef,
+			@Nonnull final List<Object> arguments) {
+		TestCaseId caseId = method.getAnnotation(TestCaseId.class);
+		TestCaseIdEntry id = TestCaseIdUtils.getTestCaseId(caseId, method, codeRef, arguments);
+		if (id == null) {
+			return null;
+		}
+		return id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
+	}
+
+	private static String getCodeRef(@Nonnull final Method method) {
+		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
+	}
+
+	private static String appendSuffixIfNotEmpty(final String str, @Nonnull final String suffix) {
+		return str + (suffix.isEmpty() ? "" : "$" + suffix);
+	}
+
+	@Nonnull
+	private String getCodeRef(@Nonnull final ExtensionContext context, @Nonnull final String currentCodeRef) {
+		return context.getTestMethod()
+				.map(m -> appendSuffixIfNotEmpty(getCodeRef(m), currentCodeRef))
+				.orElseGet(() -> context.getTestClass()
+						.map(c -> appendSuffixIfNotEmpty(c.getCanonicalName(), currentCodeRef))
+						.orElseGet(() -> {
+							String newCodeRef = appendSuffixIfNotEmpty(context.getDisplayName(), currentCodeRef);
+							return context.getParent().map(c -> getCodeRef(c, newCodeRef)).orElse(newCodeRef);
+						}));
+	}
+
+	/**
+	 * Returns a code reference of a test (static or dynamic). For dynamic tests appends each depth level where level names are display
+	 * names separated by `$` symbol
+	 *
+	 * @param context JUnit's test context
+	 * @return a code reference string
+	 */
+	@Nonnull
+	protected String getCodeRef(@Nonnull final ExtensionContext context) {
+		return getCodeRef(context, "");
+	}
+
+	/**
+	 * Recursively returns the first real test method found in test hierarchy
+	 *
+	 * @param context JUnit's test context
+	 * @return an {@link Optional} of a {@link Method}
+	 */
+	protected Optional<Method> getTestMethod(ExtensionContext context) {
 		return ofNullable(context.getTestMethod().orElseGet(() -> context.getParent().flatMap(this::getTestMethod).orElse(null)));
+	}
+
+	/**
+	 * Extract and returns static attributes of a test method (set with {@link Attributes} annotation)
+	 *
+	 * @param method a test method reference
+	 * @return a set of attributes
+	 */
+	protected @Nonnull
+	Set<ItemAttributesRQ> getAttributes(@Nonnull final Method method) {
+		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElseGet(Sets::newHashSet);
+	}
+
+	/**
+	 * Extracts and returns a test parameters, respects {@link ParameterKey} annotation
+	 *
+	 * @param method    a test method reference
+	 * @param arguments a list of parameter values
+	 * @return a list of parameters
+	 */
+	protected @Nonnull
+	List<ParameterResource> getParameters(@Nonnull final Method method, final List<Object> arguments) {
+		return ParameterUtils.getParameters(method, arguments);
 	}
 
 	/**
@@ -459,7 +599,7 @@ public class ReportPortalExtension
 		rq.setDescription(description);
 		rq.setUniqueId(context.getUniqueId());
 		rq.setType(itemType.name());
-		String codeRef = getCodeRef(context, "");
+		String codeRef = getCodeRef(context);
 		rq.setCodeRef(codeRef);
 		rq.setAttributes(context.getTags().stream().map(it -> new ItemAttributesRQ(null, it)).collect(Collectors.toSet()));
 
@@ -469,7 +609,7 @@ public class ReportPortalExtension
 			rq.setParameters(getParameters(m, arguments));
 			return getTestCaseId(m, codeRef, arguments);
 		}).orElseGet(() -> TestCaseIdUtils.getTestCaseId(codeRef, arguments));
-		rq.setTestCaseId(caseId.getId());
+		rq.setTestCaseId(ofNullable(caseId).map(TestCaseIdEntry::getId).orElse(null));
 		return rq;
 	}
 
@@ -503,10 +643,10 @@ public class ReportPortalExtension
 		rq.setRetry(false);
 		String codeRef = method.getDeclaringClass().getCanonicalName() + "." + method.getName();
 		rq.setCodeRef(codeRef);
-		TestCaseIdEntry testCaseIdEntry = ofNullable(method.getAnnotation(TestCaseId.class)).map(TestCaseId::value)
+		TestCaseIdEntry caseId = ofNullable(method.getAnnotation(TestCaseId.class)).map(TestCaseId::value)
 				.map(TestCaseIdEntry::new)
 				.orElseGet(() -> TestCaseIdUtils.getTestCaseId(codeRef, Collections.emptyList()));
-		rq.setTestCaseId(testCaseIdEntry.getId());
+		rq.setTestCaseId(ofNullable(caseId).map(TestCaseIdEntry::getId).orElse(null));
 		return rq;
 	}
 
@@ -526,9 +666,22 @@ public class ReportPortalExtension
 	 * @param context JUnit's test context
 	 * @param status  a test item execution result
 	 * @return Request to ReportPortal
+	 * @deprecated use {@link ReportPortalExtension#buildFinishTestItemRq(ExtensionContext, ItemStatus)}
+	 */
+	@Deprecated
+	protected FinishTestItemRQ buildFinishTestItemRq(ExtensionContext context, Status status) {
+		return buildFinishTestItemRq(context, ItemStatus.valueOf(status.name()));
+	}
+
+	/**
+	 * Extension point to customize a test item result on it's finish
+	 *
+	 * @param context JUnit's test context
+	 * @param status  a test item execution result
+	 * @return Request to ReportPortal
 	 */
 	@SuppressWarnings("unused")
-	protected FinishTestItemRQ buildFinishTestItemRq(ExtensionContext context, Status status) {
+	protected FinishTestItemRQ buildFinishTestItemRq(ExtensionContext context, ItemStatus status) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
@@ -561,10 +714,9 @@ public class ReportPortalExtension
 	 * @param context JUnit's test context
 	 * @return Test/Step Name being sent to ReportPortal
 	 */
-	@SuppressWarnings("unused")
 	protected String createStepName(ExtensionContext context) {
 		String name = context.getDisplayName();
-		return name.length() > 1024 ? name.substring(0, 1024) + "..." : name;
+		return name.length() > 1024 ? name.substring(0, 1021) + "..." : name;
 	}
 
 	/**
@@ -623,10 +775,9 @@ public class ReportPortalExtension
 	 *
 	 * @param invocationContext JUnit's <code>@BeforeAll</code> invocation context
 	 * @param context           JUnit's test context
-	 * @param throwable			An exception which caused the skip
+	 * @param throwable         An exception which caused the skip
 	 * @param eventTime         <code>@BeforeAll</code> start time
 	 */
-	@SuppressWarnings("unused")
 	protected void reportSkippedStep(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context, Throwable throwable,
 			Date eventTime) {
 		Date skipStartTime = Calendar.getInstance().getTime();
@@ -659,7 +810,12 @@ public class ReportPortalExtension
 		});
 	}
 
-	private static void sendStackTraceToRP(final Throwable cause) {
+	/**
+	 * Formats and reports a {@link Throwable} to Report Portal
+	 *
+	 * @param cause a {@link Throwable}
+	 */
+	protected void sendStackTraceToRP(final Throwable cause) {
 		ReportPortal.emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);

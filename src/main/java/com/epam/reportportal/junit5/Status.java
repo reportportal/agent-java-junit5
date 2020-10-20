@@ -17,8 +17,14 @@
 
 package com.epam.reportportal.junit5;
 
+/**
+ * Represents an enumeration of a test item execution statuses
+ *
+ * @deprecated use {@link com.epam.reportportal.listeners.ItemStatus}
+ */
+@Deprecated
 public enum Status {
 	PASSED,
 	FAILED,
-	SKIPPED;
+	SKIPPED
 }

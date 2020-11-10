@@ -371,13 +371,13 @@ public class ReportPortalExtension
 			Maybe<String> itemId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
 				Maybe<String> item = launch.startTestItem(parentTest, rq);
 				if (getReporter().getParameters().isCallbackReportingEnabled()) {
-					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), createTestItemLeaf(parentTest, item, 0));
+					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), createTestItemLeaf(parentTest, item));
 				}
 				return item;
 			}).orElseGet(() -> {
 				Maybe<String> item = launch.startTestItem(rq);
 				if (getReporter().getParameters().isCallbackReportingEnabled()) {
-					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), createTestItemLeaf(item, 0));
+					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), createTestItemLeaf(item));
 				}
 				return item;
 			});
@@ -776,7 +776,7 @@ public class ReportPortalExtension
 	 * @param invocationContext JUnit's <code>@BeforeAll</code> invocation context
 	 * @param context           JUnit's test context
 	 * @param throwable         An exception which caused the skip
-	 * @param eventTime         <code>@BeforeAll</code> start time
+	 * @param eventTime         <code>@BeforeEach</code> start time
 	 */
 	protected void reportSkippedStep(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context, Throwable throwable,
 			Date eventTime) {

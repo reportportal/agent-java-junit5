@@ -499,7 +499,7 @@ public class ReportPortalExtension
 	}
 
 	/**
-	 * Calculates a test case ID based on code reference and
+	 * Calculates a test case ID based on code reference and parameters
 	 *
 	 * @param method    a test method reference
 	 * @param codeRef   a code reference which will be used for the calculation

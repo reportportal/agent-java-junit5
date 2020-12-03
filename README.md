@@ -293,7 +293,7 @@ rp.project = my_test_project
 rp.enable = true
 ```
 
-> More details on `reportportal.properties` file could be found [here](http://reportportal.io/docs/JVM-based-clients-configuration)
+> More details on `reportportal.properties` file could be found [here](https://github.com/reportportal/client-java)
 
 #### 5.2 - Register Report Portal agent in JUnit 5
 There are two options how you can enable ReportPortal extension in your tests:

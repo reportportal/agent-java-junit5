@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 ### Changed 
-- Client version updated on [5.0.17](https://github.com/reportportal/client-java/releases/tag/5.0.17)
+- Client version updated on [5.0.18](https://github.com/reportportal/client-java/releases/tag/5.0.18)
+### Fixed
+- A try to fix issue #81: the agent is not creating launches
 
 ## [5.0.3]
 ### Changed 

@@ -36,7 +36,7 @@ public class JunitNestedTestTest {
 		static Launch LAUNCH;
 
 		@Override
-		protected Launch getLaunch(ExtensionContext context) {
+		protected Launch getLaunch() {
 			return LAUNCH;
 		}
 	}

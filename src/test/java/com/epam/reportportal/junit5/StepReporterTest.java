@@ -79,7 +79,7 @@ public class StepReporterTest {
 		}
 
 		@Override
-		protected Launch getLaunch(ExtensionContext context) {
+		protected Launch getLaunch() {
 			return launch.get();
 		}
 	}

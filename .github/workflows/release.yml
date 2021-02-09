@@ -27,6 +27,7 @@ on:
 
 env:
   VERSION_FILE: gradle.properties
+  VERSION_EXTRACT_PATTERN: '(?<=version=).+'
   GH_USER_NAME: github.actor
   CHANGE_LOG_FILE: CHANGELOG.md
   CHANGE_LOG_TMP_FILE: CHANGELOG_updated.md
@@ -42,11 +43,11 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Generate versions
-        uses: HardNorth/github-version-generate@v1.0.1
+        uses: HardNorth/github-version-generate@v1.1.0
         with:
           version-source: file
           version-file: gradle.properties
-          version-file-extraction-pattern: '(?<=version=).+'
+          version-file-extraction-pattern: ${{ env.VERSION_EXTRACT_PATTERN }}
 
       - name: Set up JDK 1.8
         uses: actions/setup-java@v1
@@ -57,7 +58,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Setup git credentials
-        uses: oleksiyrudenko/gha-git-credentials@v1
+        uses: oleksiyrudenko/gha-git-credentials@v2
         with:
           name: 'reportportal.io'
           email: 'support@reportportal.io'

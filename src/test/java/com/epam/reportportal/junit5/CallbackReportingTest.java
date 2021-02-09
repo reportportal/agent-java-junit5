@@ -107,11 +107,6 @@ public class CallbackReportingTest {
 		protected ReportPortal getReporter() {
 			return REPORT_PORTAL.get();
 		}
-
-		@Override
-		protected String getLaunchId(ExtensionContext context) {
-			return LAUNCH_ID.get();
-		}
 	}
 
 	@Test

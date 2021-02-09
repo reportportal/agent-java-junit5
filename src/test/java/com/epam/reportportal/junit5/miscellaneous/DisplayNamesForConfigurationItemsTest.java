@@ -38,7 +38,7 @@ public class DisplayNamesForConfigurationItemsTest {
 		static Launch LAUNCH;
 
 		@Override
-		protected Launch getLaunch(ExtensionContext context) {
+		protected Launch getLaunch() {
 			return LAUNCH;
 		}
 	}

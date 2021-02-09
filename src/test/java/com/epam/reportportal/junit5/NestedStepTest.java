@@ -64,11 +64,6 @@ public class NestedStepTest {
 		protected ReportPortal getReporter() {
 			return rp;
 		}
-
-		@Override
-		protected String getLaunchId(ExtensionContext context) {
-			return id;
-		}
 	}
 
 	@Test

@@ -3,6 +3,7 @@
 [ ![Download](https://api.bintray.com/packages/epam/reportportal/agent-java-junit5/images/download.svg) ](https://bintray.com/epam/reportportal/agent-java-junit5/_latestVersion)
 [![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
+[![UserVoice](https://img.shields.io/badge/uservoice-vote%20ideas-orange.svg?style=flat)](https://rpp.uservoice.com/forums/247117-report-portal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 ---
 # ReportPortal [JUnit5](https://junit.org/junit5/) Integration
@@ -40,7 +41,7 @@ Extend *ReportPortalExtension*, override *buildStartStepRq()* or other methods (
 <dependency>
    <groupId>com.epam.reportportal</groupId>
    <artifactId>agent-java-junit5</artifactId>
-   <version>5.0.3</version>
+   <version>5.0.4</version>
 </dependency>
 ```
 
@@ -73,7 +74,7 @@ repositories {
     maven { url "http://dl.bintray.com/epam/reportportal" }
 }
 
-testCompile 'com.epam.reportportal:agent-java-junit5:5.0.3'
+testCompile 'com.epam.reportportal:agent-java-junit5:5.0.4'
 ```
 
 #### Automatic Extension Registration (optional)
@@ -134,7 +135,7 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>agent-java-junit5</artifactId>
-    <version>5.0.3</version>
+    <version>5.0.4</version>
 </dependency>
 ```
 > Latest version of the agent, could be found [here](https://bintray.com/epam/reportportal/agent-java-junit5)
@@ -392,7 +393,7 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>agent-java-junit5</artifactId>
-            <version>5.0.3</version>
+            <version>5.0.4</version>
         </dependency>
 
         <dependency>
@@ -508,7 +509,7 @@ dependencies {
     compile 'com.epam.reportportal:logger-java-log4j:5.0.3'
     compile 'org.apache.logging.log4j:log4j-api:2.11.2'
     compile 'org.apache.logging.log4j:log4j-core:2.11.2'
-    compile 'com.epam.reportportal:agent-java-junit5:5.0.3'
+    compile 'com.epam.reportportal:agent-java-junit5:5.0.4'
 }
 
 test {

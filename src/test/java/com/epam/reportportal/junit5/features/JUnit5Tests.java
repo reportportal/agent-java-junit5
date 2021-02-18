@@ -4,8 +4,8 @@ import com.epam.reportportal.service.ReportPortal;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
-import rp.com.google.common.io.Files;
-import rp.com.google.common.io.Resources;
+import com.google.common.io.Files;
+import com.google.common.io.Resources;
 
 import java.io.File;
 import java.io.IOException;

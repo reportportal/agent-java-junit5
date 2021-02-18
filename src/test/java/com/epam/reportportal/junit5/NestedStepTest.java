@@ -5,16 +5,15 @@ import com.epam.reportportal.junit5.features.nested.NestedStepFeaturePassedTest;
 import com.epam.reportportal.junit5.features.nested.NestedStepMultiLevelTest;
 import com.epam.reportportal.junit5.features.nested.NestedStepWithBeforeEachTest;
 import com.epam.reportportal.junit5.util.TestUtils;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import okhttp3.MultipartBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
@@ -56,7 +55,7 @@ public class NestedStepTest {
 			CLIENT.set(myClient);
 			TestUtils.mockLaunch(myClient, "launchUuid", TEST_CLASS_ID, TEST_METHOD_ID);
 			TestUtils.mockNestedSteps(myClient, TEST_STEP_ID_ORDER);
-			lenient().when(myClient.log(any(MultiPartRequest.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
+			lenient().when(myClient.log(any(MultipartBody.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
 			rp = ReportPortal.create(myClient, TestUtils.standardParameters());
 		}
 

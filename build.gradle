@@ -56,19 +56,21 @@ processResources {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.0.18'
+    api 'com.epam.reportportal:client-java:5.1.0-ALPHA-1'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
-    api "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
+    api "org.junit.jupiter:junit-jupiter-api:${project.junit5_version}"
+
+    implementation 'org.slf4j:slf4j-api:1.7.25'
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
-    testImplementation ('org.junit.platform:junit-platform-runner:1.6.0') {
+    testImplementation ("org.junit.platform:junit-platform-runner:${project.junit5_runner_version}") {
         exclude module: 'junit'
     }
-    testImplementation 'org.junit.platform:junit-platform-launcher:1.6.0'
-    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}"
+    testImplementation "org.junit.platform:junit-platform-launcher:${project.junit5_runner_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${project.junit5_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${project.junit5_version}"
     testImplementation "org.aspectj:aspectjweaver:1.9.2"
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation 'org.mockito:mockito-core:3.2.4'
@@ -92,6 +94,12 @@ test {
 
 wrapper {
     gradleVersion = '5.4.1'
+}
+
+release {
+    git {
+        requireBranch = 'retrofit'
+    }
 }
 
 def releaseDependencies = [bintrayUpload, publish]

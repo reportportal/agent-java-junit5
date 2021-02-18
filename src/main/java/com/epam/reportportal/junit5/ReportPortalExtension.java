@@ -74,6 +74,10 @@ public class ReportPortalExtension
 		SKIPPED_NOT_ISSUE.setStatus(SKIPPED.name());
 	}
 
+	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
+	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
+	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
+
 	private final MemoizingSupplier<Launch> launch = new MemoizingSupplier<>(() -> {
 		ReportPortal rp = getReporter();
 		ListenerParameters params = rp.getParameters();
@@ -88,9 +92,25 @@ public class ReportPortalExtension
 		return launch;
 	});
 
-	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
-	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
-	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
+	/**
+	 * Extension point to customize launch creation event/request
+	 *
+	 * @param parameters Launch Configuration parameters
+	 * @return Request to ReportPortal
+	 */
+	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
+		StartLaunchRQ rq = new StartLaunchRQ();
+		rq.setMode(parameters.getLaunchRunningMode());
+		rq.setDescription(parameters.getDescription());
+		rq.setName(parameters.getLaunchName());
+		Set<ItemAttributesRQ> attributes = new HashSet<>(parameters.getAttributes());
+		attributes.addAll(collectSystemAttributes(parameters.getSkippedAnIssue()));
+		rq.setAttributes(attributes);
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setRerun(parameters.isRerun());
+		rq.setRerunOf(StringUtils.isEmpty(parameters.getRerunOf()) ? null : parameters.getRerunOf());
+		return rq;
+	}
 
 	/**
 	 * Finishes current launch for the extension instance
@@ -709,26 +729,6 @@ public class ReportPortalExtension
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
-		return rq;
-	}
-
-	/**
-	 * Extension point to customize launch creation event/request
-	 *
-	 * @param parameters Launch Configuration parameters
-	 * @return Request to ReportPortal
-	 */
-	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
-		StartLaunchRQ rq = new StartLaunchRQ();
-		rq.setMode(parameters.getLaunchRunningMode());
-		rq.setDescription(parameters.getDescription());
-		rq.setName(parameters.getLaunchName());
-		Set<ItemAttributesRQ> attributes = parameters.getAttributes();
-		attributes.addAll(collectSystemAttributes(parameters.getSkippedAnIssue()));
-		rq.setAttributes(attributes);
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setRerun(parameters.isRerun());
-		rq.setRerunOf(StringUtils.isEmpty(parameters.getRerunOf()) ? null : parameters.getRerunOf());
 		return rq;
 	}
 

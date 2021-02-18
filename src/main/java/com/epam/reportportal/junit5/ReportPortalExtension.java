@@ -710,19 +710,6 @@ public class ReportPortalExtension
 	 * @param context JUnit's test context
 	 * @param status  a test item execution result
 	 * @return Request to ReportPortal
-	 * @deprecated use {@link ReportPortalExtension#buildFinishTestItemRq(ExtensionContext, ItemStatus)}
-	 */
-	@Deprecated
-	protected FinishTestItemRQ buildFinishTestItemRq(ExtensionContext context, Status status) {
-		return buildFinishTestItemRq(context, ItemStatus.valueOf(status.name()));
-	}
-
-	/**
-	 * Extension point to customize a test item result on it's finish
-	 *
-	 * @param context JUnit's test context
-	 * @param status  a test item execution result
-	 * @return Request to ReportPortal
 	 */
 	@SuppressWarnings("unused")
 	protected FinishTestItemRQ buildFinishTestItemRq(ExtensionContext context, ItemStatus status) {

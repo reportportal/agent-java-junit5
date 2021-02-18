@@ -1,12 +1,10 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.1.0-ALPHA-3]
 ### Fixed
 - A crash on Launch start due to attribute modification
 ### Changed
-- Client version updated on [5.1.0-ALPHA-2](https://github.com/reportportal/client-java/releases/tag/5.1.0-ALPHA-2)
+- Client version updated on [5.1.0-ALPHA-3](https://github.com/reportportal/client-java/releases/tag/5.1.0-ALPHA-3)
 - Deprecated code was removed
 
 ## [5.0.4]

@@ -4,6 +4,7 @@ import com.epam.reportportal.junit5.features.disabled.OneDisabledOneEnabledTest;
 import com.epam.reportportal.junit5.features.disabled.OneDisabledTest;
 import com.epam.reportportal.junit5.features.disabled.OneDisabledTestWithReason;
 import com.epam.reportportal.junit5.util.TestUtils;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.util.test.CommonUtils;
@@ -76,7 +77,7 @@ public class DisabledTestTest {
 		assertThat("There are only finish test and finish suite requests", finishes, hasSize(2));
 
 		FinishTestItemRQ finishStep = finishes.get(0);
-		assertThat("Finish item has skipped status", finishStep.getStatus(), equalTo(Status.SKIPPED.name()));
+		assertThat("Finish item has skipped status", finishStep.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 	}
 
 	@Test
@@ -120,10 +121,10 @@ public class DisabledTestTest {
 		assertThat("There are two finish tests and a finish suite requests", finishes, hasSize(3));
 
 		FinishTestItemRQ finishStep = finishes.get(0);
-		assertThat("Disabled test has skipped status", finishStep.getStatus(), equalTo(Status.SKIPPED.name()));
+		assertThat("Disabled test has skipped status", finishStep.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 
 		finishStep = finishes.get(1);
-		assertThat("Enabled has passed status", finishStep.getStatus(), equalTo(Status.PASSED.name()));
+		assertThat("Enabled has passed status", finishStep.getStatus(), equalTo(ItemStatus.PASSED.name()));
 	}
 
 	@AfterAll

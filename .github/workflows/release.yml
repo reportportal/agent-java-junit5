@@ -110,4 +110,4 @@ jobs:
           release_name: Release ${{ env.RELEASE_VERSION }}
           body: ${{ steps.readChangelogEntry.outputs.log_entry }}
           draft: false
-          prerelease: false
+          prerelease: true

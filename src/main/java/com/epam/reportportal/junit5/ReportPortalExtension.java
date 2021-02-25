@@ -184,6 +184,10 @@ public class ReportPortalExtension
 			finishTestItem(context, FAILED);
 			context.getParent().ifPresent(p -> p.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
 		}
+
+		if(context == context.getRoot()) {
+			LOGGER.info("The very last test finished!");
+		}
 	}
 
 	@Override

@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Launch finish hook registration moved into a separate protected method
 
 ## [5.1.0-ALPHA-7]
 ### Changed

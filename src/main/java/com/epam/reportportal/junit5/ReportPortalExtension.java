@@ -84,7 +84,7 @@ public class ReportPortalExtension
 		StartLaunchRQ rq = buildStartLaunchRq(params);
 
 		Launch launch = rp.newLaunch(rq);
-		Runtime.getRuntime().addShutdownHook(getShutdownHook(this));
+		registerLaunchFinishHook();
 		Maybe<String> launchIdResponse = launch.start();
 		if (params.isCallbackReportingEnabled()) {
 			TEST_ITEM_TREE.setLaunchId(launchIdResponse);
@@ -122,8 +122,11 @@ public class ReportPortalExtension
 		launch.reset();
 	}
 
-	private static Thread getShutdownHook(final ReportPortalExtension extension) {
-		return new Thread(extension::finish);
+	/**
+	 * Adds a launch finish call on shutdown
+	 */
+	protected void registerLaunchFinishHook() {
+		Runtime.getRuntime().addShutdownHook(new Thread(this::finish));
 	}
 
 	/**

@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.0-BETA-1]
 ### Fixed
 - A crash on Launch start due to attribute modification
 ### Changed

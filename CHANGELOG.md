@@ -1,14 +1,14 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.1.0-BETA-1]
 ### Fixed
 - A crash on Launch start due to attribute modification
 ### Changed
 - Launch finish hook registration moved into a separate protected method
 - Client version updated on [5.1.0-BETA-1](https://github.com/reportportal/client-java/releases/tag/5.1.0-BETA-1)
 - Deprecated code was removed
+- JUnit 5 version updated on 5.6.3
+- Implicit Guava dependency removed
 
 ## [5.0.4]
 ### Changed 

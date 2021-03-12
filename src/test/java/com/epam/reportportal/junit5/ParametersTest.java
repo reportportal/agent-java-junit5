@@ -35,7 +35,7 @@ public class ParametersTest {
 		static Launch LAUNCH;
 
 		@Override
-		protected Launch getLaunch() {
+		protected Launch getLaunch(ExtensionContext context) {
 			return LAUNCH;
 		}
 	}

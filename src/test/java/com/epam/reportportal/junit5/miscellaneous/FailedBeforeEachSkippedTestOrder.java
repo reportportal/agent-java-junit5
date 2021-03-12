@@ -26,7 +26,7 @@ public class FailedBeforeEachSkippedTestOrder {
 		static Launch LAUNCH;
 
 		@Override
-		protected Launch getLaunch() {
+		protected Launch getLaunch(ExtensionContext context) {
 			return LAUNCH;
 		}
 	}

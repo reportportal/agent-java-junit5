@@ -1,8 +1,6 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.1.0-BETA-3]
 ### Changed
 - Revert fix for issue #81 since it doesn't fix it
 

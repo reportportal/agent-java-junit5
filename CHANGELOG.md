@@ -4,7 +4,7 @@
 
 ## [5.0.5]
 ### Changed
-- Revert fix for issue #81 since it doesn't fix it
+- Revert fix for issue #81 since it doesn't fix it and rises a new issue #83
 
 ## [5.0.4]
 ### Changed 

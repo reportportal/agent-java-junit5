@@ -100,6 +100,26 @@ public class ReportPortalExtension
 	}
 
 	/**
+	 * Extension point to customize launch creation event/request
+	 *
+	 * @param parameters Launch Configuration parameters
+	 * @return Request to ReportPortal
+	 */
+	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
+		StartLaunchRQ rq = new StartLaunchRQ();
+		rq.setMode(parameters.getLaunchRunningMode());
+		rq.setDescription(parameters.getDescription());
+		rq.setName(parameters.getLaunchName());
+		Set<ItemAttributesRQ> attributes = new HashSet<>(parameters.getAttributes());
+		attributes.addAll(collectSystemAttributes(parameters.getSkippedAnIssue()));
+		rq.setAttributes(attributes);
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setRerun(parameters.isRerun());
+		rq.setRerunOf(StringUtils.isEmpty(parameters.getRerunOf()) ? null : parameters.getRerunOf());
+		return rq;
+	}
+
+	/**
 	 * @return ReportPortal client instance
 	 */
 	protected ReportPortal getReporter() {
@@ -383,7 +403,7 @@ public class ReportPortalExtension
 			ItemType type = isTemplate ? SUITE : itemType;
 
 			StartTestItemRQ rq = buildStartStepRq(c, arguments, type, description, startTime);
-			Launch launch = getLaunch(context);
+			Launch launch = getLaunch(c);
 			Maybe<String> itemId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
 				Maybe<String> item = launch.startTestItem(parentTest, rq);
 				if (getReporter().getParameters().isCallbackReportingEnabled()) {
@@ -701,26 +721,6 @@ public class ReportPortalExtension
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
-		return rq;
-	}
-
-	/**
-	 * Extension point to customize launch creation event/request
-	 *
-	 * @param parameters Launch Configuration parameters
-	 * @return Request to ReportPortal
-	 */
-	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
-		StartLaunchRQ rq = new StartLaunchRQ();
-		rq.setMode(parameters.getLaunchRunningMode());
-		rq.setDescription(parameters.getDescription());
-		rq.setName(parameters.getLaunchName());
-		Set<ItemAttributesRQ> attributes = parameters.getAttributes();
-		attributes.addAll(collectSystemAttributes(parameters.getSkippedAnIssue()));
-		rq.setAttributes(attributes);
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setRerun(parameters.isRerun());
-		rq.setRerunOf(StringUtils.isEmpty(parameters.getRerunOf()) ? null : parameters.getRerunOf());
 		return rq;
 	}
 

@@ -96,7 +96,27 @@ public class ReportPortalExtension
 	}
 
 	private static Thread getShutdownHook(final String launchId) {
-		return new Thread(()->ofNullable(launchMap.remove(launchId)).ifPresent(ReportPortalExtension::finish));
+		return new Thread(() -> ofNullable(launchMap.remove(launchId)).ifPresent(ReportPortalExtension::finish));
+	}
+
+	/**
+	 * Extension point to customize launch creation event/request
+	 *
+	 * @param parameters Launch Configuration parameters
+	 * @return Request to ReportPortal
+	 */
+	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
+		StartLaunchRQ rq = new StartLaunchRQ();
+		rq.setMode(parameters.getLaunchRunningMode());
+		rq.setDescription(parameters.getDescription());
+		rq.setName(parameters.getLaunchName());
+		Set<ItemAttributesRQ> attributes = new HashSet<>(parameters.getAttributes());
+		attributes.addAll(collectSystemAttributes(parameters.getSkippedAnIssue()));
+		rq.setAttributes(attributes);
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setRerun(parameters.isRerun());
+		rq.setRerunOf(StringUtils.isEmpty(parameters.getRerunOf()) ? null : parameters.getRerunOf());
+		return rq;
 	}
 
 	/**
@@ -688,26 +708,6 @@ public class ReportPortalExtension
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
-		return rq;
-	}
-
-	/**
-	 * Extension point to customize launch creation event/request
-	 *
-	 * @param parameters Launch Configuration parameters
-	 * @return Request to ReportPortal
-	 */
-	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
-		StartLaunchRQ rq = new StartLaunchRQ();
-		rq.setMode(parameters.getLaunchRunningMode());
-		rq.setDescription(parameters.getDescription());
-		rq.setName(parameters.getLaunchName());
-		Set<ItemAttributesRQ> attributes = parameters.getAttributes();
-		attributes.addAll(collectSystemAttributes(parameters.getSkippedAnIssue()));
-		rq.setAttributes(attributes);
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setRerun(parameters.isRerun());
-		rq.setRerunOf(StringUtils.isEmpty(parameters.getRerunOf()) ? null : parameters.getRerunOf());
 		return rq;
 	}
 

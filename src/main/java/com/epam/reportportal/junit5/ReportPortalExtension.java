@@ -26,7 +26,6 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.AttributeParser;
-import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.reportportal.utils.ParameterUtils;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.*;
@@ -74,36 +73,50 @@ public class ReportPortalExtension
 		SKIPPED_NOT_ISSUE.setStatus(SKIPPED.name());
 	}
 
-	private final MemoizingSupplier<Launch> launch = new MemoizingSupplier<>(() -> {
-		ReportPortal rp = getReporter();
-		ListenerParameters params = rp.getParameters();
-		StartLaunchRQ rq = buildStartLaunchRq(params);
-
-		Launch launch = rp.newLaunch(rq);
-		Runtime.getRuntime().addShutdownHook(getShutdownHook(this));
-		Maybe<String> launchIdResponse = launch.start();
-		if (params.isCallbackReportingEnabled()) {
-			TEST_ITEM_TREE.setLaunchId(launchIdResponse);
-		}
-		return launch;
-	});
-
+	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
 
 	/**
-	 * Finishes current launch for the extension instance
+	 * Finishes all launches for the JVM
 	 */
 	public void finish() {
-		FinishExecutionRQ rq = new FinishExecutionRQ();
-		rq.setEndTime(Calendar.getInstance().getTime());
-		launch.get().finish(rq);
-		launch.reset();
+		new ArrayList<>(launchMap.keySet()).forEach(this::finish);
 	}
 
-	private static Thread getShutdownHook(final ReportPortalExtension extension) {
-		return new Thread(extension::finish);
+	private void finish(String id) {
+		ofNullable(launchMap.remove(id)).ifPresent(ReportPortalExtension::finish);
+	}
+
+	private static void finish(Launch launch) {
+		FinishExecutionRQ rq = new FinishExecutionRQ();
+		rq.setEndTime(Calendar.getInstance().getTime());
+		launch.finish(rq);
+	}
+
+	private static Thread getShutdownHook(final String launchId) {
+		return new Thread(()->ofNullable(launchMap.remove(launchId)).ifPresent(ReportPortalExtension::finish));
+	}
+
+	/**
+	 * Extension point to customize launch creation event/request
+	 *
+	 * @param parameters Launch Configuration parameters
+	 * @return Request to ReportPortal
+	 */
+	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
+		StartLaunchRQ rq = new StartLaunchRQ();
+		rq.setMode(parameters.getLaunchRunningMode());
+		rq.setDescription(parameters.getDescription());
+		rq.setName(parameters.getLaunchName());
+		Set<ItemAttributesRQ> attributes = new HashSet<>(parameters.getAttributes());
+		attributes.addAll(collectSystemAttributes(parameters.getSkippedAnIssue()));
+		rq.setAttributes(attributes);
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setRerun(parameters.isRerun());
+		rq.setRerunOf(StringUtils.isEmpty(parameters.getRerunOf()) ? null : parameters.getRerunOf());
+		return rq;
 	}
 
 	/**
@@ -119,7 +132,6 @@ public class ReportPortalExtension
 	 * @param context JUnit's launch context
 	 * @return ID of the launch
 	 */
-	@Deprecated
 	protected String getLaunchId(ExtensionContext context) {
 		return context.getRoot().getUniqueId();
 	}
@@ -127,28 +139,28 @@ public class ReportPortalExtension
 	/**
 	 * Returns a current launch instance, starts new if no such instance
 	 *
-	 * @return represents current launch
-	 */
-	protected Launch getLaunch() {
-		return launch.get();
-	}
-
-	/**
-	 * Returns a current launch instance, starts new if no such instance
-	 *
 	 * @param context JUnit's launch context
 	 * @return represents current launch
-	 * @deprecated use {@link #getLaunch()}
 	 */
-	@Deprecated
-	@SuppressWarnings("unused")
 	protected Launch getLaunch(ExtensionContext context) {
-		return getLaunch();
+		return launchMap.computeIfAbsent(getLaunchId(context), id -> {
+			ReportPortal rp = getReporter();
+			ListenerParameters params = rp.getParameters();
+			StartLaunchRQ rq = buildStartLaunchRq(params);
+
+			Launch launch = rp.newLaunch(rq);
+			Runtime.getRuntime().addShutdownHook(getShutdownHook(id));
+			Maybe<String> launchIdResponse = launch.start();
+			if (params.isCallbackReportingEnabled()) {
+				TEST_ITEM_TREE.setLaunchId(launchIdResponse);
+			}
+			return launch;
+		});
 	}
 
 	@Override
 	public void beforeAll(ExtensionContext context) {
-		getLaunch(); // Trigger launch start
+		getLaunch(context); // Trigger launch start
 		startTestItem(context, SUITE);
 	}
 
@@ -338,7 +350,7 @@ public class ReportPortalExtension
 	}
 
 	private void finishBeforeAfter(ExtensionContext context, Maybe<String> id, ItemStatus status) {
-		Launch launch = getLaunch();
+		Launch launch = getLaunch(context);
 		launch.getStepReporter().finishPreviousStep();
 		launch.finishTestItem(id, buildFinishTestItemRq(context, status));
 	}
@@ -391,7 +403,7 @@ public class ReportPortalExtension
 			ItemType type = isTemplate ? SUITE : itemType;
 
 			StartTestItemRQ rq = buildStartStepRq(c, arguments, type, description, startTime);
-			Launch launch = getLaunch();
+			Launch launch = getLaunch(c);
 			Maybe<String> itemId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
 				Maybe<String> item = launch.startTestItem(parentTest, rq);
 				if (getReporter().getParameters().isCallbackReportingEnabled()) {
@@ -422,7 +434,7 @@ public class ReportPortalExtension
 	 * @return an ID of the method
 	 */
 	protected Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
-		Launch launch = getLaunch();
+		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = buildStartConfigurationRq(method, parentContext, context, itemType);
 		return launch.startTestItem(idMapping.get(parentContext), rq);
 	}
@@ -434,7 +446,7 @@ public class ReportPortalExtension
 	 * @param status  an {@link ItemStatus}
 	 */
 	protected void finishTemplate(final ExtensionContext context, final ItemStatus status) {
-		Launch launch = getLaunch();
+		Launch launch = getLaunch(context);
 		Maybe<String> templateId = testTemplates.remove(context);
 		launch.finishTestItem(templateId, buildFinishTestItemRq(context, status));
 		idMapping.remove(context);
@@ -512,7 +524,7 @@ public class ReportPortalExtension
 	 * @param rq      a test item finish request
 	 */
 	protected void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final FinishTestItemRQ rq) {
-		Launch launch = getLaunch();
+		Launch launch = getLaunch(context);
 		launch.getStepReporter().finishPreviousStep();
 		Maybe<String> id = idMapping.remove(context);
 		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(id, rq);
@@ -709,26 +721,6 @@ public class ReportPortalExtension
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
-		return rq;
-	}
-
-	/**
-	 * Extension point to customize launch creation event/request
-	 *
-	 * @param parameters Launch Configuration parameters
-	 * @return Request to ReportPortal
-	 */
-	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
-		StartLaunchRQ rq = new StartLaunchRQ();
-		rq.setMode(parameters.getLaunchRunningMode());
-		rq.setDescription(parameters.getDescription());
-		rq.setName(parameters.getLaunchName());
-		Set<ItemAttributesRQ> attributes = parameters.getAttributes();
-		attributes.addAll(collectSystemAttributes(parameters.getSkippedAnIssue()));
-		rq.setAttributes(attributes);
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setRerun(parameters.isRerun());
-		rq.setRerunOf(StringUtils.isEmpty(parameters.getRerunOf()) ? null : parameters.getRerunOf());
 		return rq;
 	}
 

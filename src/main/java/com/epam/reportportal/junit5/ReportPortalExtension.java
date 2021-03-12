@@ -403,7 +403,7 @@ public class ReportPortalExtension
 			ItemType type = isTemplate ? SUITE : itemType;
 
 			StartTestItemRQ rq = buildStartStepRq(c, arguments, type, description, startTime);
-			Launch launch = getLaunch(context);
+			Launch launch = getLaunch(c);
 			Maybe<String> itemId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
 				Maybe<String> item = launch.startTestItem(parentTest, rq);
 				if (getReporter().getParameters().isCallbackReportingEnabled()) {

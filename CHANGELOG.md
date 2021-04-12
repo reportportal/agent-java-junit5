@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Failed `@AfterEach` methods now also fail parent items
 
 ## [5.0.5]
 ### Changed

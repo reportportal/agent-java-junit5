@@ -1,12 +1,13 @@
 package com.epam.reportportal.junit5.features.beforeafterall;
 
+import com.epam.reportportal.junit5.BeforeAfterAllTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(com.epam.reportportal.junit5.BeforeAfterAllTest.BeforeAfterAllTestExtension.class)
-public class BeforeAllFailedAfterAllTest {
+@ExtendWith(BeforeAfterAllTest.BeforeAfterAllTestExtension.class)
+public class BeforeAllAfterAllFailedTest {
 	public static final String CLASS_ID = "28b580fa-a7c0-4a7e-b0bc-54f196565d69";
 
 	@BeforeAll

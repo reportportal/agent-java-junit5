@@ -342,6 +342,7 @@ public class ReportPortalExtension
 			invocation.proceed();
 		} catch (Throwable throwable) {
 			status = FAILED;
+			context.getParent().ifPresent(c -> c.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
 			sendStackTraceToRP(throwable);
 			throw throwable;
 		} finally {

@@ -6,13 +6,7 @@
 
 ## [5.0.5]
 ### Changed
-- Revert fix for issue #81 since it doesn't fix it and rises a new issue #83
-
-## [5.0.4]
-### Changed 
 - Client version updated on [5.0.18](https://github.com/reportportal/client-java/releases/tag/5.0.18)
-### Fixed
-- A try to fix issue #81: the agent is not creating launches
 
 ## [5.0.3]
 ### Changed 

@@ -1,6 +1,6 @@
 # agent-java-junit5
+[![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-junit5.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-junit5%22)
 ![CI Build](https://github.com/reportportal/agent-java-junit5/workflows/CI%20Build/badge.svg?branch=develop)
-[ ![Download](https://api.bintray.com/packages/epam/reportportal/agent-java-junit5/images/download.svg) ](https://bintray.com/epam/reportportal/agent-java-junit5/_latestVersion)
 [![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
 [![UserVoice](https://img.shields.io/badge/uservoice-vote%20ideas-orange.svg?style=flat)](https://rpp.uservoice.com/forums/247117-report-portal)
@@ -31,13 +31,6 @@ Extend *ReportPortalExtension*, override *buildStartStepRq()* or other methods (
 ### Maven
 
 ```xml
-<repositories>
-    <repository>
-        <id>bintray</id>
-        <url>http://dl.bintray.com/epam/reportportal</url>
-    </repository>
-</repositories>
-
 <dependency>
    <groupId>com.epam.reportportal</groupId>
    <artifactId>agent-java-junit5</artifactId>
@@ -69,9 +62,8 @@ Extend *ReportPortalExtension*, override *buildStartStepRq()* or other methods (
 
 ```groovy
 repositories {
-    jcenter()
     mavenLocal()
-    maven { url "http://dl.bintray.com/epam/reportportal" }
+    mavenCentral()
 }
 
 testCompile 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
@@ -117,18 +109,7 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
 
 ## Step 2 - Configure pom.xml
 
-#### 2.1 Add following repositories:
-
-```xml
-<repositories>
-    <repository>
-        <id>bintray</id>
-        <url>http://dl.bintray.com/epam/reportportal</url>
-    </repository>
-</repositories>
-```
-
-#### 2.2 Add following dependencies:
+#### 2.1 Add following dependencies:
 
 *Report Portal agent implementation for JUnit 5*
 ```xml
@@ -138,7 +119,7 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
     <version>$LATEST_VERSION</version>
 </dependency>
 ```
-> Latest version of the agent, could be found [here](https://bintray.com/epam/reportportal/agent-java-junit5)
+> Latest version of the agent, could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-junit5%22)
 
 
 The Report Portal agent for JUnit 5 includes the JUnit 5 library dependency, and so we won't need other explicit JUnit 5 dependencies  
@@ -146,7 +127,7 @@ However, if you are adding Report Portal agent to existing project, with JUnit 5
 
 > More about JUnit 5 dependencies structure could be found [here](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata)
 
-#### 2.3 Add Report Portal dedicated logger wrapper
+#### 2.2 Add Report Portal dedicated logger wrapper
 Report Portal provides it's own logger implementation for major logging frameworks like *log4j* and *logback*
 
 If you prefer using **Logback** logging library, add following dependencies:
@@ -159,7 +140,7 @@ If you prefer using **Logback** logging library, add following dependencies:
     <version>5.0.3</version>
 </dependency>
 ```
-> Up to date version could be found [here](https://bintray.com/epam/reportportal/logger-java-logback)
+> Up to date version could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22logger-java-logback%22)
 
 *The logback itself*
 ```xml
@@ -180,7 +161,7 @@ If you prefer using **Log4j** logging library, add following dependencies:
     <version>5.0.3</version>
 </dependency>
 ```
-> Up to date version could be found [here](https://bintray.com/epam/reportportal/logger-java-log4j)
+> Up to date version could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22logger-java-log4j%22)
 
 *The log4j itself*
 ```xml
@@ -382,13 +363,6 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
     <artifactId>MyProject</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <repositories>
-        <repository>
-            <id>bintray</id>
-            <url>http://dl.bintray.com/epam/reportportal</url>
-        </repository>
-    </repositories>
-
     <dependencies>
         <dependency>
             <groupId>com.epam.reportportal</groupId>
@@ -501,8 +475,6 @@ targetCompatibility = 1.8
 repositories {
     mavenLocal()
     mavenCentral()
-    jcenter()
-    maven { url "http://dl.bintray.com/epam/reportportal" }
 }
 
 dependencies {

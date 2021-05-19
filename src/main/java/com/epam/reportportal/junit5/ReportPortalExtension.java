@@ -63,8 +63,18 @@ public class ReportPortalExtension
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortalExtension.class);
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
-	public static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+	public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
+	/**
+	 * @deprecated Without setting 'endTime' field this request will fail. So the field is not in use now and will be deleted.
+	 * Use {@link #buildFinishTestItemRq(ExtensionContext, ItemStatus)}, E.G.:
+	 * <pre>
+	 *     FinishTestItemRQ finishRq = buildFinishTestItemRq(context, SKIPPED);
+	 *     finishRq.setIssue(Launch.NOT_ISSUE);
+	 * </pre>
+	 */
+	@SuppressWarnings("DeprecatedIsStillUsed")
+	@Deprecated
 	public static final FinishTestItemRQ SKIPPED_NOT_ISSUE;
 
 	static {
@@ -342,6 +352,7 @@ public class ReportPortalExtension
 			invocation.proceed();
 		} catch (Throwable throwable) {
 			status = FAILED;
+			context.getParent().ifPresent(c -> c.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
 			sendStackTraceToRP(throwable);
 			throw throwable;
 		} finally {
@@ -790,7 +801,9 @@ public class ReportPortalExtension
 		}
 		startTestItem(context, invocationContext.getArguments(), STEP, createStepDescription(context), skipStartTime);
 		createSkippedSteps(context, throwable);
-		finishTestItem(context, SKIPPED_NOT_ISSUE); // an issue relates to @BeforeEach method in this case
+		FinishTestItemRQ finishRq = buildFinishTestItemRq(context, SKIPPED);
+		finishRq.setIssue(Launch.NOT_ISSUE);
+		finishTestItem(context, finishRq); // an issue relates to @BeforeEach method in this case
 	}
 
 	/**

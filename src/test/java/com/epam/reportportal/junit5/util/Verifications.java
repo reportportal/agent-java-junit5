@@ -154,6 +154,13 @@ public class Verifications {
 		verify_items_positive_finish_statuses(itemType, testUuid, launchCalls);
 	}
 
+	public static void verify_after_each_negative_calls(int callIndex, String suiteUuid, String testUuid,
+			Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls) {
+		String itemType = "AFTER_METHOD";
+		verify_correct_start_item_responses(itemType, callIndex, suiteUuid, launchCalls);
+		verify_items_negative_finish_statuses(itemType, testUuid, launchCalls);
+	}
+
 	public static void verify_test_positive_calls(int callIndex, String suiteUuid, String testUuid,
 			Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls) {
 		String itemType = "STEP";

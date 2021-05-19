@@ -5,6 +5,7 @@ import com.epam.reportportal.junit5.features.skipped.AfterEachFailedTest;
 import com.epam.reportportal.junit5.features.skipped.BeforeEachFailedParametrizedTest;
 import com.epam.reportportal.junit5.features.skipped.BeforeEachFailedTest;
 import com.epam.reportportal.junit5.util.TestUtils;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.util.test.CommonUtils;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -26,8 +28,7 @@ import static com.epam.reportportal.junit5.miscellaneous.FailedBeforeEachReports
 import static com.epam.reportportal.junit5.miscellaneous.FailedBeforeEachReportsSkippedTestTest.SkippedTestExtension.LAUNCH;
 import static com.epam.reportportal.junit5.util.Verifications.verify_call_number_and_capture_arguments;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -83,9 +84,10 @@ public class FailedBeforeEachReportsSkippedTestTest {
 		assertThat("@Test has correct name", testStart.getName(), equalTo("testBeforeEachFailed()"));
 
 		FinishTestItemRQ testFinish = calls.getValue().get(ITEMS.get(2));
-		assertThat("@Test reported as skipped", testFinish.getStatus(), equalTo("SKIPPED"));
-
-		assertThat("@Test issue muted", testFinish.getIssue(), equalTo(ReportPortalExtension.SKIPPED_NOT_ISSUE.getIssue()));
+		assertThat("@Test reported as skipped", testFinish.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+		assertThat("@Test issue muted", testFinish.getIssue(), sameInstance(Launch.NOT_ISSUE));
+		Date currentDate = new Date();
+		assertThat(testFinish.getEndTime(), lessThanOrEqualTo(currentDate));
 	}
 
 	@Test
@@ -103,6 +105,7 @@ public class FailedBeforeEachReportsSkippedTestTest {
 
 		assertThat("@BeforeEach failed", beforeEachFinish.getStatus(), equalTo("FAILED"));
 
+		Date currentDate = new Date();
 		IntStream.rangeClosed(0, 1).boxed().forEach(i -> {
 			StartTestItemRQ testStart = calls.getKey().get(3 + (i * 2)).getValue();
 			assertThat("@Test has correct code reference",
@@ -116,9 +119,9 @@ public class FailedBeforeEachReportsSkippedTestTest {
 			);
 
 			FinishTestItemRQ testFinish = calls.getValue().get(ITEMS.get(3 + (i * 2)));
-			assertThat("@Test reported as skipped", testFinish.getStatus(), equalTo("SKIPPED"));
-
-			assertThat("@Test issue muted", testFinish.getIssue(), equalTo(ReportPortalExtension.SKIPPED_NOT_ISSUE.getIssue()));
+			assertThat("@Test reported as skipped", testFinish.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+			assertThat("@Test issue muted", testFinish.getIssue(), sameInstance(Launch.NOT_ISSUE));
+			assertThat(testFinish.getEndTime(), lessThanOrEqualTo(currentDate));
 		});
 	}
 

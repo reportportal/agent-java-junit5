@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.6]
 ### Fixed
 - Failed `@AfterEach` methods now also fail parent items
 - A test step in case of failed `@BeforeEach` method now reports as 'Skipped'

@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.ArgumentCaptor;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -100,7 +102,16 @@ public class CallbackReportingTest {
 
 			when(REPORT_PORTAL.get().getClient()).thenReturn(REPORT_PORTAL_CLIENT.get());
 
-			ReportPortalExtension.REPORT_PORTAL = REPORT_PORTAL.get();
+			try {
+				Field rpField = ReportPortalExtension.class.getDeclaredField("REPORT_PORTAL");
+				rpField.setAccessible(true);
+				Field modifiersField = Field.class.getDeclaredField("modifiers");
+				modifiersField.setAccessible(true);
+				modifiersField.setInt(rpField, rpField.getModifiers() & ~Modifier.FINAL);
+				rpField.set(null, REPORT_PORTAL.get());
+			} catch (NoSuchFieldException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
 		}
 
 		@Override

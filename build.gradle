@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 EPAM Systems
+ * Copyright 2021 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,65 +15,36 @@
  */
 apply plugin: 'java-library'
 
-project.ext.releaseMode = project.hasProperty('releaseMode')
-def branch = releaseMode ? '5.0.0' : 'develop'
-apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/build-quality.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/release-commons.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/signing.gradle"
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
-if (project.hasProperty('reportDisabledTests')) {
-    systemProperty('reportDisabledTests', reportDisabledTests)
-}
-
 repositories {
-    mavenLocal()
-    maven { url "http://dl.bintray.com/epam/reportportal" }
+    mavenCentral()
     maven { url "https://jitpack.io" }
-    jcenter()
-}
-
-project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
-project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
-
-publishing {
-    repositories {
-        maven {
-            name = "JUnit5 GitHub Packages"
-            url = uri("https://maven.pkg.github.com/reportportal/agent-java-junit5")
-            credentials {
-                username = githubUserName
-                password = githubToken
-            }
-        }
-    }
-}
-
-processResources {
-    filesMatching('agent.properties') {
-        expand(project.properties)
-    }
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.0.18'
+    api 'com.epam.reportportal:client-java:5.0.21'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
-    api "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
+    api "org.junit.jupiter:junit-jupiter-api:${junit_version}"
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
-    testImplementation ('org.junit.platform:junit-platform-runner:1.6.0') {
+    testImplementation ("org.junit.platform:junit-platform-runner:${junit_runner_version}") {
         exclude module: 'junit'
     }
-    testImplementation 'org.junit.platform:junit-platform-launcher:1.6.0'
-    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit_version}"
     testImplementation "org.aspectj:aspectjweaver:1.9.2"
     testImplementation 'org.hamcrest:hamcrest:2.2'
-    testImplementation 'org.mockito:mockito-core:3.2.4'
+    testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
-    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.1') {
+    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.3') {
         exclude module: 'client-java'
     }
 }
@@ -94,6 +65,8 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
-def releaseDependencies = [bintrayUpload, publish]
-releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
-afterReleaseBuild.setDependsOn(releaseDependencies)
+processResources {
+    filesMatching('agent.properties') {
+        expand(project.properties)
+    }
+}

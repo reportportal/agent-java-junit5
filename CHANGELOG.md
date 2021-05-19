@@ -6,6 +6,8 @@
 ### Fixed
 - Failed `@AfterEach` methods now also fail parent items
 - A test step in case of failed `@BeforeEach` method now reports as 'Skipped'
+### Changed
+- Client version updated on [5.0.21](https://github.com/reportportal/client-java/releases/tag/5.0.21)
 
 ## [5.0.5]
 ### Changed

@@ -159,13 +159,13 @@ public class BeforeAfterAllTest {
 	}
 
 	@Test
-	public void test_failed_after() {
+	public void test_after_all_failed() {
 		int suitesNumber = 1; // start a parent suite once
 		int testBeforeAfterNumber = 2; // Start a before all and after all
 		int testMethodNumber = 1; // Start a test
 		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
 
-		TestUtils.runClasses(BeforeAllFailedAfterAllTest.class);
+		TestUtils.runClasses(BeforeAllAfterAllFailedTest.class);
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
 				LAUNCH
 		);
@@ -245,5 +245,25 @@ public class BeforeAfterAllTest {
 		verify_before_class_positive_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
 		verify_test_positive_calls(2, suiteUuid, ITEMS.get(2), launchCalls);
 		verify_after_class_positive_calls(3, suiteUuid, ITEMS.get(3), launchCalls);
+	}
+
+	@Test
+	public void test_after_each_failed() {
+		int suitesNumber = 1; // start a parent suite once
+		int testBeforeAfterNumber = 1; // An after each
+		int testMethodNumber = 1; // Start a test
+		int allItemNumber = suitesNumber + testMethodNumber + testBeforeAfterNumber;
+
+		TestUtils.runClasses(FailedAfterEachTest.class);
+		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls = verify_call_number_and_capture_arguments(allItemNumber,
+				LAUNCH
+		);
+		verifyNoMoreInteractions(LAUNCH);
+
+		String suiteUuid = ITEMS.get(0);
+		verify_suite_calls_negative_finish(suiteUuid, launchCalls);
+
+		verify_test_positive_calls(1, suiteUuid, ITEMS.get(1), launchCalls);
+		verify_after_each_negative_calls(2, suiteUuid, ITEMS.get(2), launchCalls);
 	}
 }

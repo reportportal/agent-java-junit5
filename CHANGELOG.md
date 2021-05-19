@@ -3,24 +3,26 @@
 ## [Unreleased]
 
 ## [5.1.0-BETA-4]
-### Changed
-- Revert fix for issue #81 since it doesn't fix it
-
-## [5.1.0-BETA-2]
 ### Fixed
 - A crash on Launch start due to attribute modification
 ### Changed
+- Revert fix for issue #81 since it doesn't fix it
 - Launch finish hook registration moved into a separate protected method
 - Client version updated on [5.1.0-BETA-1](https://github.com/reportportal/client-java/releases/tag/5.1.0-BETA-1)
 - Deprecated code was removed
 - JUnit 5 version updated on 5.6.3
 - Implicit Guava dependency removed
 
-## [5.0.4]
-### Changed 
-- Client version updated on [5.0.18](https://github.com/reportportal/client-java/releases/tag/5.0.18)
+## [5.0.6]
 ### Fixed
-- A try to fix issue #81: the agent is not creating launches
+- Failed `@AfterEach` methods now also fail parent items
+- A test step in case of failed `@BeforeEach` method now reports as 'Skipped'
+### Changed
+- Client version updated on [5.0.21](https://github.com/reportportal/client-java/releases/tag/5.0.21)
+
+## [5.0.5]
+### Changed
+- Client version updated on [5.0.18](https://github.com/reportportal/client-java/releases/tag/5.0.18)
 
 ## [5.0.3]
 ### Changed 

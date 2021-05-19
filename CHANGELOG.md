@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Main branch fixes integration
 
 ## [5.1.0-BETA-4]
 ### Fixed

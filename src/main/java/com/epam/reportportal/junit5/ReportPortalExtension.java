@@ -63,7 +63,7 @@ public class ReportPortalExtension
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortalExtension.class);
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
-	public static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+	public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
 	/**
 	 * @deprecated Without setting 'endTime' field this request will fail. So the field is not in use now and will be deleted.

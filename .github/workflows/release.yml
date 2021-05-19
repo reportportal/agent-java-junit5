@@ -25,6 +25,7 @@ on:
       - README_TEMPLATE.md
       - gradle.properties
       - CHANGELOG.md
+      - '**/reportportal.properties'
 
 env:
   VERSION_FILE: gradle.properties

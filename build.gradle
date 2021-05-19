@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 EPAM Systems
+ * Copyright 2021 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,43 +15,16 @@
  */
 apply plugin: 'java-library'
 
-project.ext.releaseMode = project.hasProperty('releaseMode')
-def branch = releaseMode ? '5.0.0' : 'develop'
-apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/build-quality.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/release-commons.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/signing.gradle"
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
-if (project.hasProperty('reportDisabledTests')) {
-    systemProperty('reportDisabledTests', reportDisabledTests)
-}
-
 repositories {
-    mavenLocal()
     mavenCentral()
     maven { url "https://jitpack.io" }
-}
-
-project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
-project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
-
-publishing {
-    repositories {
-        maven {
-            name = "JUnit5 GitHub Packages"
-            url = uri("https://maven.pkg.github.com/reportportal/agent-java-junit5")
-            credentials {
-                username = githubUserName
-                password = githubToken
-            }
-        }
-    }
-}
-
-processResources {
-    filesMatching('agent.properties') {
-        expand(project.properties)
-    }
 }
 
 dependencies {
@@ -92,6 +65,8 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
-def releaseDependencies = [bintrayUpload, publish]
-releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
-afterReleaseBuild.setDependsOn(releaseDependencies)
+processResources {
+    filesMatching('agent.properties') {
+        expand(project.properties)
+    }
+}

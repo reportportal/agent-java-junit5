@@ -42,7 +42,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.reportportal.junit5.util.TestUtils.mockNestedSteps;
 import static com.epam.reportportal.junit5.util.TestUtils.runClasses;
 import static com.epam.reportportal.util.test.CommonUtils.namedId;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -108,12 +107,10 @@ public class StepReporterTest {
 
 		ReportPortalClient client = TestExtension.client.get();
 		ArgumentCaptor<FinishTestItemRQ> finishNestedStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).
-				finishTestItem(eq(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
+		verify(client, timeout(10000)).finishTestItem(eq(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
 
 		ArgumentCaptor<FinishTestItemRQ> finishTestStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).
-				finishTestItem(eq(TestExtension.testMethodUuid), finishTestStep.capture());
+		verify(client).finishTestItem(eq(TestExtension.testMethodUuid), finishTestStep.capture());
 
 		assertThat(finishNestedStep.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat(finishTestStep.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
@@ -126,8 +123,7 @@ public class StepReporterTest {
 		runClasses(ManualStepReporterSimpleTest.class);
 
 		ReportPortalClient client = TestExtension.client.get();
-		verify(client, timeout(1000).times(1)).
-				finishTestItem(eq(TestExtension.stepUuidList.get(0)), any());
+		verify(client).finishTestItem(eq(TestExtension.stepUuidList.get(0)), any());
 	}
 
 }

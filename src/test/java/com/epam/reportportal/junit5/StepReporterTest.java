@@ -101,7 +101,7 @@ public class StepReporterTest {
 		verify(client).finishTestItem(eq(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
 
 		ArgumentCaptor<FinishTestItemRQ> finishTestStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client).finishTestItem(eq(TestExtension.testMethodUuid), finishTestStep.capture());
+		verify(client, timeout(1000)).finishTestItem(eq(TestExtension.testMethodUuid), finishTestStep.capture());
 
 		assertThat(finishNestedStep.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat(finishTestStep.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
@@ -115,7 +115,7 @@ public class StepReporterTest {
 		runClasses(ManualStepReporterSimpleTest.class);
 
 		ReportPortalClient client = TestExtension.client.get();
-		verify(client).finishTestItem(eq(TestExtension.stepUuidList.get(0)), any());
+		verify(client, timeout(1000)).finishTestItem(eq(TestExtension.stepUuidList.get(0)), any());
 	}
 
 }

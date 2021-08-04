@@ -92,7 +92,7 @@ processResources {
 
 release {
     git {
-        requireBranch = 'retrofit'
+        requireBranch = 'master'
     }
 }
 

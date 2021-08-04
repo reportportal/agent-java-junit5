@@ -42,7 +42,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.reportportal.junit5.util.TestUtils.mockNestedSteps;
 import static com.epam.reportportal.junit5.util.TestUtils.runClasses;
 import static com.epam.reportportal.util.test.CommonUtils.namedId;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,7 +53,6 @@ import static org.mockito.Mockito.*;
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class StepReporterTest {
 
 	public static class TestExtension extends ReportPortalExtension {
@@ -65,17 +63,16 @@ public class StepReporterTest {
 				.map(u -> Pair.of(testMethodUuid, u))
 				.collect(Collectors.toList());
 
-		static final ThreadLocal<ReportPortalClient> client = ThreadLocal.withInitial(() -> mock(ReportPortalClient.class));
+		static final ThreadLocal<ReportPortalClient> client = new ThreadLocal<>();
 		static final ThreadLocal<Launch> launch = new ThreadLocal<>();
 
 		public static void init() {
+			client.set(mock(ReportPortalClient.class));
 			TestUtils.mockLaunch(client.get(), "launchUuid", testClassUuid, testMethodUuid);
-			ReportPortal reportPortal = ReportPortal.create(client.get(), new ListenerParameters(PropertiesLoader.load()));
+			TestUtils.mockNestedSteps(client.get(), testStepUuidOrder);
+			TestUtils.mockLogging(client.get());
+			ReportPortal reportPortal = ReportPortal.create(client.get(), TestUtils.standardParameters());
 			launch.set(reportPortal.newLaunch(TestUtils.launchRQ(reportPortal.getParameters())));
-		}
-
-		public TestExtension() {
-			init();
 		}
 
 		@Override
@@ -93,34 +90,18 @@ public class StepReporterTest {
 		}
 	}
 
-	@AfterEach
-	public void cleanup() {
-		TestExtension.client.set(mock(ReportPortalClient.class));
-		TestExtension.init();
-	}
-
-	/*
-	 * Failing test from nested steps causes more issues than solve, so strictly prohibited.
-	 * 1. If test is going to be retried, marking a test result as a failure makes TestNG skip dependent tests.
-	 * 2. If we want to retry a test which failed by a nested step, then we should set a 'wasRetried' flag and test result status as 'SKIP'.
-	 *    TestNG actually will not retry such test as it should, and mark all dependent tests as skipped.
-	 *
-	 * DO NOT DELETE OR MODIFY THIS TEST, SERIOUSLY!
-	 */
 	@Test
 	public void verify_failed_nested_step_not_fails_test_run() {
+		TestExtension.init();
 		Listener listener = new Listener();
-		ReportPortalClient client = TestExtension.client.get();
-		mockNestedSteps(client, TestExtension.testStepUuidOrder);
 		runClasses(listener, ManualStepReporterFeatureTest.class);
 
+		ReportPortalClient client = TestExtension.client.get();
 		ArgumentCaptor<FinishTestItemRQ> finishNestedStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).
-				finishTestItem(same(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
+		verify(client).finishTestItem(eq(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
 
 		ArgumentCaptor<FinishTestItemRQ> finishTestStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).
-				finishTestItem(same(TestExtension.testMethodUuid), finishTestStep.capture());
+		verify(client, timeout(1000)).finishTestItem(eq(TestExtension.testMethodUuid), finishTestStep.capture());
 
 		assertThat(finishNestedStep.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat(finishTestStep.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
@@ -130,12 +111,11 @@ public class StepReporterTest {
 
 	@Test
 	public void verify_listener_finishes_unfinished_step() {
-		ReportPortalClient client = TestExtension.client.get();
-		mockNestedSteps(client, TestExtension.testStepUuidOrder.get(0));
+		TestExtension.init();
 		runClasses(ManualStepReporterSimpleTest.class);
 
-		verify(client, timeout(1000).times(1)).
-				finishTestItem(same(TestExtension.stepUuidList.get(0)), any());
+		ReportPortalClient client = TestExtension.client.get();
+		verify(client, timeout(1000)).finishTestItem(eq(TestExtension.stepUuidList.get(0)), any());
 	}
 
 }

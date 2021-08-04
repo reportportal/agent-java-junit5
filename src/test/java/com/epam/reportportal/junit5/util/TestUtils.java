@@ -4,6 +4,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -121,5 +122,10 @@ public class TestUtils {
 				same(p.getValue()),
 				any()
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> CommonUtils.createMaybe(new OperationCompletionRS())));
+	}
+
+	@SuppressWarnings("unchecked")
+	public static void mockLogging(ReportPortalClient client) {
+		when(client.log(any(List.class))).thenReturn(createMaybe(new BatchSaveOperatingRS()));
 	}
 }

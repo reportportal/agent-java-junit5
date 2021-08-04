@@ -28,9 +28,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
-import rp.com.google.common.collect.Lists;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -116,7 +115,7 @@ public class TestCaseIdTest {
 	void testCaseIdFromParametrizedTestWithAnnotationTest() {
 		TestUtils.runClasses(TestCaseIdFromParametrizedAnnotationTest.class);
 
-		ArrayList<String> expected = Lists.newArrayList("one", "two");
+		List<String> expected = Arrays.asList("one", "two");
 
 		Launch launch = TestCaseIdExtension.LAUNCH;
 		verify(launch, times(1)).startTestItem(any()); // Start parent Suite

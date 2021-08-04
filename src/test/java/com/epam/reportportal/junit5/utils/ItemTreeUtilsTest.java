@@ -108,7 +108,7 @@ class ItemTreeUtilsTest {
 
 		TestItemTree.ItemTreeKey treeKey = TestItemTree.ItemTreeKey.of(NAME);
 		Maybe<String> itemId = createIdMaybe("first");
-		TestItemTree.TestItemLeaf itemLeaf = TestItemTree.createTestItemLeaf(itemId, 5);
+		TestItemTree.TestItemLeaf itemLeaf = TestItemTree.createTestItemLeaf(itemId);
 
 		testItemTree.getTestItems().put(treeKey, itemLeaf);
 
@@ -122,7 +122,7 @@ class ItemTreeUtilsTest {
 	void retrieveLeafByTestInfo() {
 		TestItemTree.ItemTreeKey treeKey = TestItemTree.ItemTreeKey.of(NAME);
 		Maybe<String> itemId = createIdMaybe("first");
-		TestItemTree.TestItemLeaf itemLeaf = TestItemTree.createTestItemLeaf(itemId, 5);
+		TestItemTree.TestItemLeaf itemLeaf = TestItemTree.createTestItemLeaf(itemId);
 
 		testItemTree.getTestItems().put(treeKey, itemLeaf);
 

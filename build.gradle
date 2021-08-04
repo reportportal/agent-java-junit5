@@ -18,6 +18,16 @@ apply plugin: 'java-library'
 apply from: "${project.scripts_url}/${project.scripts_branch}/build-quality.gradle"
 apply from: "${project.scripts_url}/${project.scripts_branch}/release-commons.gradle"
 apply from: "${project.scripts_url}/${project.scripts_branch}/signing.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/jacoco.gradle"
+
+project.ext.limits = [
+        'instruction': 70,
+        'branch'     : 53,
+        'line'       : 75,
+        'complexity' : 60,
+        'method'     : 65,
+        'class'      : 87
+]
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -28,10 +38,12 @@ repositories {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.0.21'
+    api 'com.epam.reportportal:client-java:5.1.0-RC-5'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
     api "org.junit.jupiter:junit-jupiter-api:${junit_version}"
+
+    implementation 'org.slf4j:slf4j-api:1.7.25'
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
@@ -47,6 +59,8 @@ dependencies {
     testImplementation ('com.epam.reportportal:logger-java-logback:5.0.3') {
         exclude module: 'client-java'
     }
+
+    testImplementation 'org.slf4j:jul-to-slf4j:1.7.25'
 }
 
 test {
@@ -59,6 +73,11 @@ test {
         def weaver = configurations.testRuntimeClasspath.find { it.name.contains("aspectjweaver") }
         jvmArgs += "-javaagent:$weaver"
     }
+    environment "AGENT_NO_ANALYTICS", "1"
+    testLogging {
+        events "failed"
+        exceptionFormat "full"
+    }
 }
 
 wrapper {
@@ -70,3 +89,11 @@ processResources {
         expand(project.properties)
     }
 }
+
+release {
+    git {
+        requireBranch = 'retrofit'
+    }
+}
+
+build.dependsOn jacocoTestReport

@@ -21,9 +21,9 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import com.google.common.collect.Lists;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SystemAttributesFetcherTest {
 
-	private static final ArrayList<String> expectedKeys = Lists.newArrayList("jvm", "os", "agent", "skippedIssue");
+	private static final List<String> expectedKeys = Arrays.asList("jvm", "os", "agent", "skippedIssue");
 
 	@Test
 	void systemAttributesRetrievingTest() {

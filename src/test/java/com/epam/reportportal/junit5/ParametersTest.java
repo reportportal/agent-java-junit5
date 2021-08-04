@@ -2,6 +2,7 @@ package com.epam.reportportal.junit5;
 
 import com.epam.reportportal.junit5.features.parameters.*;
 import com.epam.reportportal.junit5.util.TestUtils;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.util.test.CommonUtils;
@@ -271,8 +272,8 @@ public class ParametersTest {
 		List<FinishTestItemRQ> finishMethods = captorFinish.getAllValues();
 
 		Stream.concat(finishMethods.subList(0, 1).stream(), finishMethods.subList(2, finishMethods.size()).stream())
-				.forEach(f -> assertThat(f.getStatus(), equalTo(Status.FAILED.name())));
+				.forEach(f -> assertThat(f.getStatus(), equalTo(ItemStatus.FAILED.name())));
 
-		assertThat(finishMethods.get(1).getStatus(), equalTo(Status.PASSED.name()));
+		assertThat(finishMethods.get(1).getStatus(), equalTo(ItemStatus.PASSED.name()));
 	}
 }

@@ -71,7 +71,7 @@ public class StepReporterTest {
 			TestUtils.mockLaunch(client.get(), "launchUuid", testClassUuid, testMethodUuid);
 			TestUtils.mockNestedSteps(client.get(), testStepUuidOrder);
 			TestUtils.mockLogging(client.get());
-			ReportPortal reportPortal = ReportPortal.create(client.get(), new ListenerParameters(PropertiesLoader.load()));
+			ReportPortal reportPortal = ReportPortal.create(client.get(), TestUtils.standardParameters());
 			launch.set(reportPortal.newLaunch(TestUtils.launchRQ(reportPortal.getParameters())));
 		}
 

@@ -53,7 +53,6 @@ import static org.mockito.Mockito.*;
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class StepReporterTest {
 
 	public static class TestExtension extends ReportPortalExtension {
@@ -64,19 +63,16 @@ public class StepReporterTest {
 				.map(u -> Pair.of(testMethodUuid, u))
 				.collect(Collectors.toList());
 
-		static final ThreadLocal<ReportPortalClient> client = ThreadLocal.withInitial(() -> mock(ReportPortalClient.class));
+		static final ThreadLocal<ReportPortalClient> client = new ThreadLocal<>();
 		static final ThreadLocal<Launch> launch = new ThreadLocal<>();
 
 		public static void init() {
+			client.set(mock(ReportPortalClient.class));
 			TestUtils.mockLaunch(client.get(), "launchUuid", testClassUuid, testMethodUuid);
 			TestUtils.mockNestedSteps(client.get(), testStepUuidOrder);
 			TestUtils.mockLogging(client.get());
 			ReportPortal reportPortal = ReportPortal.create(client.get(), new ListenerParameters(PropertiesLoader.load()));
 			launch.set(reportPortal.newLaunch(TestUtils.launchRQ(reportPortal.getParameters())));
-		}
-
-		public TestExtension() {
-			init();
 		}
 
 		@Override
@@ -94,20 +90,15 @@ public class StepReporterTest {
 		}
 	}
 
-	@AfterEach
-	public void cleanup() {
-		TestExtension.client.set(mock(ReportPortalClient.class));
-		TestExtension.init();
-	}
-
 	@Test
 	public void verify_failed_nested_step_not_fails_test_run() {
+		TestExtension.init();
 		Listener listener = new Listener();
 		runClasses(listener, ManualStepReporterFeatureTest.class);
 
 		ReportPortalClient client = TestExtension.client.get();
 		ArgumentCaptor<FinishTestItemRQ> finishNestedStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, timeout(10000)).finishTestItem(eq(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
+		verify(client).finishTestItem(eq(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
 
 		ArgumentCaptor<FinishTestItemRQ> finishTestStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client).finishTestItem(eq(TestExtension.testMethodUuid), finishTestStep.capture());
@@ -120,6 +111,7 @@ public class StepReporterTest {
 
 	@Test
 	public void verify_listener_finishes_unfinished_step() {
+		TestExtension.init();
 		runClasses(ManualStepReporterSimpleTest.class);
 
 		ReportPortalClient client = TestExtension.client.get();

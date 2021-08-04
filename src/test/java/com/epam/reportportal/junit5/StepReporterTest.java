@@ -101,28 +101,19 @@ public class StepReporterTest {
 		TestExtension.init();
 	}
 
-	/*
-	 * Failing test from nested steps causes more issues than solve, so strictly prohibited.
-	 * 1. If test is going to be retried, marking a test result as a failure makes TestNG skip dependent tests.
-	 * 2. If we want to retry a test which failed by a nested step, then we should set a 'wasRetried' flag and test result status as 'SKIP'.
-	 *    TestNG actually will not retry such test as it should, and mark all dependent tests as skipped.
-	 *
-	 * DO NOT DELETE OR MODIFY THIS TEST, SERIOUSLY!
-	 */
 	@Test
 	public void verify_failed_nested_step_not_fails_test_run() {
 		Listener listener = new Listener();
 		runClasses(listener, ManualStepReporterFeatureTest.class);
 
-
 		ReportPortalClient client = TestExtension.client.get();
 		ArgumentCaptor<FinishTestItemRQ> finishNestedStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, timeout(1000).times(1)).
-				finishTestItem(same(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
+				finishTestItem(eq(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
 
 		ArgumentCaptor<FinishTestItemRQ> finishTestStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, timeout(1000).times(1)).
-				finishTestItem(same(TestExtension.testMethodUuid), finishTestStep.capture());
+				finishTestItem(eq(TestExtension.testMethodUuid), finishTestStep.capture());
 
 		assertThat(finishNestedStep.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat(finishTestStep.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
@@ -136,7 +127,7 @@ public class StepReporterTest {
 
 		ReportPortalClient client = TestExtension.client.get();
 		verify(client, timeout(1000).times(1)).
-				finishTestItem(same(TestExtension.stepUuidList.get(0)), any());
+				finishTestItem(eq(TestExtension.stepUuidList.get(0)), any());
 	}
 
 }

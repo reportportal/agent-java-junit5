@@ -70,6 +70,7 @@ public class StepReporterTest {
 
 		public static void init() {
 			TestUtils.mockLaunch(client.get(), "launchUuid", testClassUuid, testMethodUuid);
+			TestUtils.mockLogging(client.get());
 			ReportPortal reportPortal = ReportPortal.create(client.get(), new ListenerParameters(PropertiesLoader.load()));
 			launch.set(reportPortal.newLaunch(TestUtils.launchRQ(reportPortal.getParameters())));
 		}

@@ -70,6 +70,7 @@ public class StepReporterTest {
 
 		public static void init() {
 			TestUtils.mockLaunch(client.get(), "launchUuid", testClassUuid, testMethodUuid);
+			TestUtils.mockNestedSteps(client.get(), testStepUuidOrder);
 			TestUtils.mockLogging(client.get());
 			ReportPortal reportPortal = ReportPortal.create(client.get(), new ListenerParameters(PropertiesLoader.load()));
 			launch.set(reportPortal.newLaunch(TestUtils.launchRQ(reportPortal.getParameters())));
@@ -111,10 +112,10 @@ public class StepReporterTest {
 	@Test
 	public void verify_failed_nested_step_not_fails_test_run() {
 		Listener listener = new Listener();
-		ReportPortalClient client = TestExtension.client.get();
-		mockNestedSteps(client, TestExtension.testStepUuidOrder);
 		runClasses(listener, ManualStepReporterFeatureTest.class);
 
+
+		ReportPortalClient client = TestExtension.client.get();
 		ArgumentCaptor<FinishTestItemRQ> finishNestedStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, timeout(1000).times(1)).
 				finishTestItem(same(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
@@ -131,10 +132,9 @@ public class StepReporterTest {
 
 	@Test
 	public void verify_listener_finishes_unfinished_step() {
-		ReportPortalClient client = TestExtension.client.get();
-		mockNestedSteps(client, TestExtension.testStepUuidOrder.get(0));
 		runClasses(ManualStepReporterSimpleTest.class);
 
+		ReportPortalClient client = TestExtension.client.get();
 		verify(client, timeout(1000).times(1)).
 				finishTestItem(same(TestExtension.stepUuidList.get(0)), any());
 	}

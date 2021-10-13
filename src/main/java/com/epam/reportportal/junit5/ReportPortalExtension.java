@@ -362,7 +362,6 @@ public class ReportPortalExtension
 
 	private void finishBeforeAfter(ExtensionContext context, Maybe<String> id, ItemStatus status) {
 		Launch launch = getLaunch(context);
-		launch.getStepReporter().finishPreviousStep();
 		launch.finishTestItem(id, buildFinishTestItemRq(context, status));
 	}
 
@@ -536,7 +535,6 @@ public class ReportPortalExtension
 	 */
 	protected void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final FinishTestItemRQ rq) {
 		Launch launch = getLaunch(context);
-		launch.getStepReporter().finishPreviousStep();
 		Maybe<String> id = idMapping.remove(context);
 		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(id, rq);
 		if (getReporter().getParameters().isCallbackReportingEnabled()) {

@@ -41,7 +41,6 @@ public class Verifications {
 		verify(launch, times(1)).startTestItem(startItemCaptor.capture());
 		verify(launch, times(itemNum - 1)).startTestItem(parentItemIdCaptor.capture(), startItemCaptor.capture());
 		verify(launch, times(itemNum)).finishTestItem(finishItemId.capture(), finishItemCaptor.capture());
-		verify(launch, times(itemNum - templateNum)).getStepReporter();
 		verifyNoMoreInteractions(launch);
 
 		List<String> startParentItemIds = parentItemIdCaptor.getAllValues()

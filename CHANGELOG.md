@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Deprecated code remove
 
 ## [5.1.0-RC-3]
 ### Changed

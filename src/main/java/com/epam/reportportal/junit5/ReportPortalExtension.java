@@ -65,24 +65,6 @@ public class ReportPortalExtension
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
 	public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
-	/**
-	 * @deprecated Without setting 'endTime' field this request will fail. So the field is not in use now and will be deleted.
-	 * Use {@link #buildFinishTestItemRq(ExtensionContext, ItemStatus)}, E.G.:
-	 * <pre>
-	 *     FinishTestItemRQ finishRq = buildFinishTestItemRq(context, SKIPPED);
-	 *     finishRq.setIssue(Launch.NOT_ISSUE);
-	 * </pre>
-	 */
-	@SuppressWarnings("DeprecatedIsStillUsed")
-	@Deprecated
-	public static final FinishTestItemRQ SKIPPED_NOT_ISSUE;
-
-	static {
-		SKIPPED_NOT_ISSUE = new FinishTestItemRQ();
-		SKIPPED_NOT_ISSUE.setIssue(Launch.NOT_ISSUE);
-		SKIPPED_NOT_ISSUE.setStatus(SKIPPED.name());
-	}
-
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();

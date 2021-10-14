@@ -65,28 +65,15 @@ public class ReportPortalExtension
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
 	public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
-	/**
-	 * @deprecated Without setting 'endTime' field this request will fail. So the field is not in use now and will be deleted.
-	 * Use {@link #buildFinishTestItemRq(ExtensionContext, ItemStatus)}, E.G.:
-	 * <pre>
-	 *     FinishTestItemRQ finishRq = buildFinishTestItemRq(context, SKIPPED);
-	 *     finishRq.setIssue(Launch.NOT_ISSUE);
-	 * </pre>
-	 */
-	@SuppressWarnings("DeprecatedIsStillUsed")
-	@Deprecated
-	public static final FinishTestItemRQ SKIPPED_NOT_ISSUE;
-
-	static {
-		SKIPPED_NOT_ISSUE = new FinishTestItemRQ();
-		SKIPPED_NOT_ISSUE.setIssue(Launch.NOT_ISSUE);
-		SKIPPED_NOT_ISSUE.setStatus(SKIPPED.name());
-	}
-
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
+
+	@Nonnull
+	protected Optional<Maybe<String>> getItemId(@Nonnull ExtensionContext context) {
+		return ofNullable(idMapping.get(context));
+	}
 
 	/**
 	 * Finishes all launches for the JVM
@@ -446,7 +433,7 @@ public class ReportPortalExtension
 	protected Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = buildStartConfigurationRq(method, parentContext, context, itemType);
-		return launch.startTestItem(idMapping.get(parentContext), rq);
+		return getItemId(parentContext).map(pid -> launch.startTestItem(pid, rq)).orElseGet(() -> launch.startTestItem(rq));
 	}
 
 	/**
@@ -636,6 +623,7 @@ public class ReportPortalExtension
 	 * @param startTime   a start time of the test
 	 * @return Request to ReportPortal
 	 */
+	@Nonnull
 	protected StartTestItemRQ buildStartStepRq(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
 			@Nonnull final ItemType itemType, @Nonnull final String description, @Nonnull final Date startTime) {
 		StartTestItemRQ rq = new StartTestItemRQ();
@@ -667,8 +655,9 @@ public class ReportPortalExtension
 	 * @param itemType      a type of the item to build
 	 * @return Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartConfigurationRq(Method method, ExtensionContext parentContext, ExtensionContext context,
-			ItemType itemType) {
+	@Nonnull
+	protected StartTestItemRQ buildStartConfigurationRq(@Nonnull Method method, @Nonnull ExtensionContext parentContext,
+			@Nonnull ExtensionContext context, @Nonnull ItemType itemType) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
 		Optional<Class<?>> testClass = context.getTestClass();
@@ -713,7 +702,8 @@ public class ReportPortalExtension
 	 * @return Request to ReportPortal
 	 */
 	@SuppressWarnings("unused")
-	protected FinishTestItemRQ buildFinishTestItemRq(ExtensionContext context, ItemStatus status) {
+	@Nonnull
+	protected FinishTestItemRQ buildFinishTestItemRq(@Nonnull ExtensionContext context, @Nonnull ItemStatus status) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setStatus(status.name());
 		rq.setEndTime(Calendar.getInstance().getTime());
@@ -738,7 +728,8 @@ public class ReportPortalExtension
 	 * @param method    JUnit's test method reference
 	 * @return Test/Step Name being sent to ReportPortal
 	 */
-	protected String createConfigurationName(Class<?> testClass, Method method) {
+	@Nonnull
+	protected String createConfigurationName(@Nonnull Class<?> testClass, @Nonnull Method method) {
 		DisplayName displayName = method.getDeclaredAnnotation(DisplayName.class);
 		if (displayName != null) {
 			return displayName.value();

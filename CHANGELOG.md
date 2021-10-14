@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- JSR-305 annotations
+- ReportPortalExtension#getItemId method
+### Changed
+- Deprecated code remove
 
 ## [5.1.0-RC-3]
 ### Changed

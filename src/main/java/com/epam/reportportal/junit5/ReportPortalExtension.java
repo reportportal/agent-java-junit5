@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -588,25 +589,15 @@ public class ReportPortalExtension
 	}
 
 	/**
-	 * Extract and returns static attributes of a test method (set with {@link Attributes} annotation)
+	 * Extract and returns static attributes of a test method or class (set with {@link Attributes} annotation)
 	 *
-	 * @param method a test method reference
+	 * @param annotatedElement a test method or class reference
 	 * @return a set of attributes
 	 */
 	protected @Nonnull
-	Set<ItemAttributesRQ> getAttributes(@Nonnull final Method method) {
-		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElse(Collections.emptySet());
-	}
-
-	/**
-	 * Extract and returns static attributes of a test class (set with {@link Attributes} annotation)
-	 *
-	 * @param clazz a test class reference
-	 * @return a set of attributes
-	 */
-	protected @Nonnull
-	Set<ItemAttributesRQ> getAttributes(@Nonnull final Class<?> clazz) {
-		return ofNullable(clazz.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElse(Collections.emptySet());
+	Set<ItemAttributesRQ> getAttributes(@Nonnull final AnnotatedElement annotatedElement) {
+		return ofNullable(annotatedElement.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes)
+				.orElse(Collections.emptySet());
 	}
 
 	/**

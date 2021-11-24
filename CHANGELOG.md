@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.0]
 ### Added
 - Class level `@Attributes` annotation support
 ### Changed

@@ -6,6 +6,7 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
@@ -18,6 +19,7 @@ import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.core.LauncherConfig;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
+import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import java.util.*;
@@ -127,5 +129,13 @@ public class TestUtils {
 	@SuppressWarnings("unchecked")
 	public static void mockLogging(ReportPortalClient client) {
 		when(client.log(any(List.class))).thenReturn(createMaybe(new BatchSaveOperatingRS()));
+	}
+
+	public static StartTestItemRQ extractRequest(ArgumentCaptor<StartTestItemRQ> captor, String methodType) {
+		return captor.getAllValues()
+				.stream()
+				.filter(it -> methodType.equalsIgnoreCase(it.getType()))
+				.findAny()
+				.orElseThrow(() -> new AssertionError(String.format("Method type '%s' should be present among requests", methodType)));
 	}
 }

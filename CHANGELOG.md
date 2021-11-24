@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Class level `@Attributes` annotation support
+### Changed
+- Version promoted to stable release
+- Client version updated on [5.1.0](https://github.com/reportportal/client-java/releases/tag/5.1.0)
 
 ## [5.1.0-RC-4]
 ### Added

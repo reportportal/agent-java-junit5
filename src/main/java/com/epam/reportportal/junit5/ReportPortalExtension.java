@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -396,10 +397,7 @@ public class ReportPortalExtension
 	protected void startTestItem(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
 			@Nonnull final ItemType itemType, @Nonnull final String description, @Nonnull final Date startTime) {
 		idMapping.computeIfAbsent(context, c -> {
-			boolean isTemplate = TEMPLATE == itemType;
-			ItemType type = isTemplate ? SUITE : itemType;
-
-			StartTestItemRQ rq = buildStartStepRq(c, arguments, type, description, startTime);
+			StartTestItemRQ rq = buildStartStepRq(c, arguments, itemType, description, startTime);
 			Launch launch = getLaunch(c);
 			Maybe<String> itemId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
 				Maybe<String> item = launch.startTestItem(parentTest, rq);
@@ -414,7 +412,7 @@ public class ReportPortalExtension
 				}
 				return item;
 			});
-			if (isTemplate) {
+			if (TEMPLATE == itemType) {
 				testTemplates.put(c, itemId);
 			}
 			return itemId;
@@ -591,14 +589,15 @@ public class ReportPortalExtension
 	}
 
 	/**
-	 * Extract and returns static attributes of a test method (set with {@link Attributes} annotation)
+	 * Extract and returns static attributes of a test method or class (set with {@link Attributes} annotation)
 	 *
-	 * @param method a test method reference
+	 * @param annotatedElement a test method or class reference
 	 * @return a set of attributes
 	 */
 	protected @Nonnull
-	Set<ItemAttributesRQ> getAttributes(@Nonnull final Method method) {
-		return ofNullable(method.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElse(Collections.emptySet());
+	Set<ItemAttributesRQ> getAttributes(@Nonnull final AnnotatedElement annotatedElement) {
+		return ofNullable(annotatedElement.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes)
+				.orElse(Collections.emptySet());
 	}
 
 	/**
@@ -631,10 +630,13 @@ public class ReportPortalExtension
 		rq.setName(createStepName(context));
 		rq.setDescription(description);
 		rq.setUniqueId(context.getUniqueId());
-		rq.setType(itemType.name());
+		rq.setType(itemType == TEMPLATE ? SUITE.name() : itemType.name());
 		String codeRef = getCodeRef(context);
 		rq.setCodeRef(codeRef);
 		rq.setAttributes(context.getTags().stream().map(it -> new ItemAttributesRQ(null, it)).collect(Collectors.toSet()));
+		if (SUITE == itemType) {
+			context.getTestClass().ifPresent(c -> rq.getAttributes().addAll(getAttributes(c)));
+		}
 
 		Optional<Method> testMethod = getTestMethod(context);
 		TestCaseIdEntry caseId = testMethod.map(m -> {

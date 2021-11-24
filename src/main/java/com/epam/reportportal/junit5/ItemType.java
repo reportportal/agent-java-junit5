@@ -17,6 +17,9 @@
 
 package com.epam.reportportal.junit5;
 
+/**
+ * JUnit 5's item types set
+ */
 public enum ItemType {
 	BEFORE_CLASS,
 	BEFORE_METHOD,
@@ -24,5 +27,5 @@ public enum ItemType {
 	AFTER_METHOD,
 	TEMPLATE,
 	SUITE,
-	STEP;
+	STEP
 }

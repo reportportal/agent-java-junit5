@@ -396,10 +396,7 @@ public class ReportPortalExtension
 	protected void startTestItem(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
 			@Nonnull final ItemType itemType, @Nonnull final String description, @Nonnull final Date startTime) {
 		idMapping.computeIfAbsent(context, c -> {
-			boolean isTemplate = TEMPLATE == itemType;
-			ItemType type = isTemplate ? SUITE : itemType;
-
-			StartTestItemRQ rq = buildStartStepRq(c, arguments, type, description, startTime);
+			StartTestItemRQ rq = buildStartStepRq(c, arguments, itemType, description, startTime);
 			Launch launch = getLaunch(c);
 			Maybe<String> itemId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
 				Maybe<String> item = launch.startTestItem(parentTest, rq);
@@ -414,7 +411,7 @@ public class ReportPortalExtension
 				}
 				return item;
 			});
-			if (isTemplate) {
+			if (TEMPLATE == itemType) {
 				testTemplates.put(c, itemId);
 			}
 			return itemId;
@@ -602,6 +599,17 @@ public class ReportPortalExtension
 	}
 
 	/**
+	 * Extract and returns static attributes of a test class (set with {@link Attributes} annotation)
+	 *
+	 * @param clazz a test class reference
+	 * @return a set of attributes
+	 */
+	protected @Nonnull
+	Set<ItemAttributesRQ> getAttributes(@Nonnull final Class<?> clazz) {
+		return ofNullable(clazz.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes).orElse(Collections.emptySet());
+	}
+
+	/**
 	 * Extracts and returns a test parameters, respects {@link ParameterKey} annotation
 	 *
 	 * @param method    a test method reference
@@ -631,10 +639,13 @@ public class ReportPortalExtension
 		rq.setName(createStepName(context));
 		rq.setDescription(description);
 		rq.setUniqueId(context.getUniqueId());
-		rq.setType(itemType.name());
+		rq.setType(itemType == TEMPLATE ? SUITE.name() : itemType.name());
 		String codeRef = getCodeRef(context);
 		rq.setCodeRef(codeRef);
 		rq.setAttributes(context.getTags().stream().map(it -> new ItemAttributesRQ(null, it)).collect(Collectors.toSet()));
+		if (SUITE == itemType) {
+			context.getTestClass().ifPresent(c -> rq.getAttributes().addAll(getAttributes(c)));
+		}
 
 		Optional<Method> testMethod = getTestMethod(context);
 		TestCaseIdEntry caseId = testMethod.map(m -> {

@@ -61,8 +61,8 @@ public class AttributesTest {
 
 		assertThat(testRequest.getAttributes(), hasSize(1));
 		ItemAttributesRQ attribute = testRequest.getAttributes().iterator().next();
-		assertThat(attribute.getKey(), equalTo("myKey"));
-		assertThat(attribute.getValue(), equalTo("myValue"));
+		assertThat(attribute.getKey(), equalTo(ClassLevelAttributesTest.KEY));
+		assertThat(attribute.getValue(), equalTo(ClassLevelAttributesTest.VALUE));
 
 		StartTestItemRQ stepRequest = extractRequest(captor, "step");
 		assertThat(stepRequest.getAttributes(), anyOf(nullValue(), emptyIterable()));

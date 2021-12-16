@@ -159,7 +159,7 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-log4j</artifactId>
-    <version>5.1.1</version>
+    <version>5.1.2</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22logger-java-log4j%22)
@@ -169,13 +169,13 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>org.apache.logging.log4j</groupId>
     <artifactId>log4j-api</artifactId>
-    <version>2.15.0</version>
+    <version>2.16.0</version>
 </dependency>
 
 <dependency>
      <groupId>org.apache.logging.log4j</groupId>
      <artifactId>log4j-core</artifactId>
-     <version>2.15.0</version>
+     <version>2.16.0</version>
 </dependency>
 ```
 
@@ -374,19 +374,19 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>logger-java-log4j</artifactId>
-            <version>5.1.1</version>
+            <version>5.1.2</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>2.15.0</version>
+            <version>2.16.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.15.0</version>
+            <version>2.16.0</version>
         </dependency>
 
     </dependencies>
@@ -479,9 +479,9 @@ repositories {
 }
 
 dependencies {
-    compile 'com.epam.reportportal:logger-java-log4j:5.1.1'
-    compile 'org.apache.logging.log4j:log4j-api:2.15.0'
-    compile 'org.apache.logging.log4j:log4j-core:2.15.0'
+    compile 'com.epam.reportportal:logger-java-log4j:5.1.2'
+    compile 'org.apache.logging.log4j:log4j-api:2.16.0'
+    compile 'org.apache.logging.log4j:log4j-core:2.16.0'
     compile 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
 }
 

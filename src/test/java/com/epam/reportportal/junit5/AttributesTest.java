@@ -44,7 +44,7 @@ public class AttributesTest {
 		when(AttributesTestExtension.LAUNCH.finishTestItem(
 				any(),
 				any()
-		)).thenAnswer(invocation -> CommonUtils.createMaybe(new OperationCompletionRS()));
+		)).thenAnswer(invocation -> Maybe.just(new OperationCompletionRS()));
 	}
 
 	@Test

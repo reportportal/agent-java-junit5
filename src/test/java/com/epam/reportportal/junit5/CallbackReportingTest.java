@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.epam.reportportal.junit5.CallbackReportingTest.CallbackReportingExtension.*;
-import static com.epam.reportportal.util.test.CommonUtils.createMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
@@ -74,15 +73,15 @@ public class CallbackReportingTest {
 		public CallbackReportingExtension() {
 			LAUNCH.set(mock(Launch.class));
 			when(LAUNCH.get().getStepReporter()).thenReturn(StepReporter.NOOP_STEP_REPORTER);
-			ROOT_ITEM_ID.set(createMaybe("Root item id"));
+			ROOT_ITEM_ID.set(Maybe.just("Root item id"));
 			when(LAUNCH.get().startTestItem(any())).thenReturn(ROOT_ITEM_ID.get());
 
-			Maybe<String> launchId = createMaybe("Launch " + UUID.randomUUID().toString());
+			Maybe<String> launchId = Maybe.just("Launch " + UUID.randomUUID());
 			LAUNCH_MAYBE_ID.set(launchId);
 			LAUNCH_ID.set(launchId.blockingGet());
 			when(LAUNCH.get().start()).thenReturn(LAUNCH_MAYBE_ID.get());
 
-			TEST_METHOD_ID.set(createMaybe("Test method id"));
+			TEST_METHOD_ID.set(Maybe.just("Test method id"));
 			when(LAUNCH.get().startTestItem(eq(ROOT_ITEM_ID.get()), any())).thenReturn(TEST_METHOD_ID.get());
 
 			REPORT_PORTAL.set(mock(ReportPortal.class));
@@ -94,10 +93,10 @@ public class CallbackReportingTest {
 
 			REPORT_PORTAL_CLIENT.set(mock(ReportPortalClient.class));
 			when(REPORT_PORTAL_CLIENT.get()
-					.finishTestItem(eq(TEST_METHOD_ID.get().blockingGet()), any())).thenReturn(createMaybe(new OperationCompletionRS(
+					.finishTestItem(eq(TEST_METHOD_ID.get().blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS(
 					"Success")));
 
-			when(REPORT_PORTAL_CLIENT.get().log(any(SaveLogRQ.class))).thenReturn(createMaybe(new EntryCreatedAsyncRS(UUID.randomUUID()
+			when(REPORT_PORTAL_CLIENT.get().log(any(SaveLogRQ.class))).thenReturn(Maybe.just(new EntryCreatedAsyncRS(UUID.randomUUID()
 					.toString())));
 
 			when(REPORT_PORTAL.get().getClient()).thenReturn(REPORT_PORTAL_CLIENT.get());

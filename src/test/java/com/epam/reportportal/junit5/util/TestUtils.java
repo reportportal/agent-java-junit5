@@ -26,7 +26,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.reportportal.util.test.CommonUtils.createMaybe;
 import static com.epam.reportportal.util.test.CommonUtils.createMaybeUuid;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
@@ -76,24 +75,26 @@ public class TestUtils {
 	@SuppressWarnings("unchecked")
 	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid,
 			Collection<String> testMethodUuidList) {
-		when(client.startLaunch(any())).thenReturn(createMaybe(new StartLaunchRS(launchUuid, 1L)));
+		when(client.startLaunch(any())).thenReturn(Maybe.just(new StartLaunchRS(launchUuid, 1L)));
 
-		Maybe<ItemCreatedRS> testClassMaybe = createMaybe(new ItemCreatedRS(testClassUuid, testClassUuid));
+		Maybe<ItemCreatedRS> testClassMaybe = Maybe.just(new ItemCreatedRS(testClassUuid, testClassUuid));
 		when(client.startTestItem(any())).thenReturn(testClassMaybe);
 
 		List<Maybe<ItemCreatedRS>> responses = testMethodUuidList.stream()
-				.map(uuid -> createMaybe(new ItemCreatedRS(uuid, uuid)))
+				.map(uuid -> Maybe.just(new ItemCreatedRS(uuid, uuid)))
 				.collect(Collectors.toList());
 		Maybe<ItemCreatedRS> first = responses.get(0);
 		Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(first, other);
-		new HashSet<>(testMethodUuidList).forEach(testMethodUuid -> when(client.finishTestItem(eq(testMethodUuid), any())).thenReturn(
-				createMaybe(new OperationCompletionRS())));
+		new HashSet<>(testMethodUuidList).forEach(testMethodUuid -> when(client.finishTestItem(
+				eq(testMethodUuid),
+				any()
+		)).thenReturn(Maybe.just(new OperationCompletionRS())));
 
-		Maybe<OperationCompletionRS> testClassFinishMaybe = createMaybe(new OperationCompletionRS());
+		Maybe<OperationCompletionRS> testClassFinishMaybe = Maybe.just(new OperationCompletionRS());
 		when(client.finishTestItem(eq(testClassUuid), any())).thenReturn(testClassFinishMaybe);
 
-		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(createMaybe(new OperationCompletionRS()));
+		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
 	}
 
 	public static StartLaunchRQ launchRQ(ListenerParameters parameters) {
@@ -113,22 +114,21 @@ public class TestUtils {
 				.collect(Collectors.groupingBy(Pair::getKey, Collectors.mapping(Pair::getValue, Collectors.toList())));
 		responseOrders.forEach((k, v) -> {
 			List<Maybe<ItemCreatedRS>> responses = v.stream()
-					.map(uuid -> CommonUtils.createMaybe(new ItemCreatedRS(uuid, uuid)))
+					.map(uuid -> Maybe.just(new ItemCreatedRS(uuid, uuid)))
 					.collect(Collectors.toList());
 
 			Maybe<ItemCreatedRS> first = responses.get(0);
 			Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
 			when(client.startTestItem(same(k), any())).thenReturn(first, other);
 		});
-		parentNestedPairs.forEach(p -> when(client.finishTestItem(
-				same(p.getValue()),
+		parentNestedPairs.forEach(p -> when(client.finishTestItem(same(p.getValue()),
 				any()
-		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> CommonUtils.createMaybe(new OperationCompletionRS())));
+		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> Maybe.just(new OperationCompletionRS())));
 	}
 
 	@SuppressWarnings("unchecked")
 	public static void mockLogging(ReportPortalClient client) {
-		when(client.log(any(List.class))).thenReturn(createMaybe(new BatchSaveOperatingRS()));
+		when(client.log(any(List.class))).thenReturn(Maybe.just(new BatchSaveOperatingRS()));
 	}
 
 	public static StartTestItemRQ extractRequest(ArgumentCaptor<StartTestItemRQ> captor, String methodType) {

@@ -7,10 +7,10 @@ import com.epam.reportportal.junit5.features.nested.NestedStepWithBeforeEachTest
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import io.reactivex.Maybe;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -49,13 +49,14 @@ public class NestedStepTest {
 		private final ReportPortal rp;
 		private final String id;
 
+		@SuppressWarnings("unchecked")
 		public TestExtension() {
 			ReportPortalClient myClient = mock(ReportPortalClient.class);
 			id = String.valueOf(myClient.hashCode());
 			CLIENT.set(myClient);
 			TestUtils.mockLaunch(myClient, "launchUuid", TEST_CLASS_ID, TEST_METHOD_ID);
 			TestUtils.mockNestedSteps(myClient, TEST_STEP_ID_ORDER);
-			lenient().when(myClient.log(any(List.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
+			lenient().when(myClient.log(any(List.class))).thenReturn(Maybe.just(new BatchSaveOperatingRS()));
 			rp = ReportPortal.create(myClient, TestUtils.standardParameters());
 		}
 

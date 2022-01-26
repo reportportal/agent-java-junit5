@@ -98,7 +98,7 @@ public class StepReporterTest {
 
 		ReportPortalClient client = TestExtension.client.get();
 		ArgumentCaptor<FinishTestItemRQ> finishNestedStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client).finishTestItem(eq(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
+		verify(client, timeout(1000)).finishTestItem(eq(TestExtension.stepUuidList.get(2)), finishNestedStep.capture());
 
 		ArgumentCaptor<FinishTestItemRQ> finishTestStep = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, timeout(1000)).finishTestItem(eq(TestExtension.testMethodUuid), finishTestStep.capture());

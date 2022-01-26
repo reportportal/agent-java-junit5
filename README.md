@@ -4,7 +4,6 @@
 [![codecov](https://codecov.io/gh/reportportal/agent-java-junit5/branch/develop/graph/badge.svg?token=tq832Jsqef)](https://codecov.io/gh/reportportal/agent-java-junit5)
 [![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
-[![UserVoice](https://img.shields.io/badge/uservoice-vote%20ideas-orange.svg?style=flat)](https://rpp.uservoice.com/forums/247117-report-portal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 ---
 # ReportPortal [JUnit5](https://junit.org/junit5/) Integration
@@ -138,7 +137,7 @@ If you prefer using **Logback** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-logback</artifactId>
-    <version>5.0.3</version>
+    <version>5.1.1</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22logger-java-logback%22)
@@ -148,7 +147,7 @@ If you prefer using **Logback** logging library, add following dependencies:
 <dependency>
     <groupId>ch.qos.logback</groupId>
     <artifactId>logback-classic</artifactId>
-    <version>1.2.3</version>
+    <version>1.2.10</version>
 </dependency>
 ```
 
@@ -159,7 +158,7 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-log4j</artifactId>
-    <version>5.0.3</version>
+    <version>5.1.4</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22logger-java-log4j%22)
@@ -169,13 +168,13 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>org.apache.logging.log4j</groupId>
     <artifactId>log4j-api</artifactId>
-    <version>2.11.2</version>
+    <version>2.17.1</version>
 </dependency>
 
 <dependency>
      <groupId>org.apache.logging.log4j</groupId>
      <artifactId>log4j-core</artifactId>
-     <version>2.11.2</version>
+     <version>2.17.1</version>
 </dependency>
 ```
 
@@ -374,19 +373,19 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>logger-java-log4j</artifactId>
-            <version>5.0.3</version>
+            <version>5.1.4</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>2.11.2</version>
+            <version>2.17.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.11.2</version>
+            <version>2.17.1</version>
         </dependency>
 
     </dependencies>
@@ -479,9 +478,9 @@ repositories {
 }
 
 dependencies {
-    compile 'com.epam.reportportal:logger-java-log4j:5.0.3'
-    compile 'org.apache.logging.log4j:log4j-api:2.11.2'
-    compile 'org.apache.logging.log4j:log4j-core:2.11.2'
+    compile 'com.epam.reportportal:logger-java-log4j:5.1.4'
+    compile 'org.apache.logging.log4j:log4j-api:2.17.1'
+    compile 'org.apache.logging.log4j:log4j-core:2.17.1'
     compile 'com.epam.reportportal:agent-java-junit5:5.1.0'
 }
 

@@ -46,11 +46,11 @@ public class JunitNestedTestTest {
 		TestExtension.LAUNCH = mock(Launch.class);
 		when(TestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> {
 			StartTestItemRQ rq = invocation.getArgument(0);
-			return CommonUtils.createMaybe(CommonUtils.namedId("suite-" + rq.getName() + "-"));
+			return Maybe.just(CommonUtils.namedId("suite-" + rq.getName() + "-"));
 		});
 		when(TestExtension.LAUNCH.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> {
 			StartTestItemRQ rq = invocation.getArgument(1);
-			return CommonUtils.createMaybe(CommonUtils.namedId(rq.getType().toLowerCase() + "-" + rq.getName() + "-"));
+			return Maybe.just(CommonUtils.namedId(rq.getType().toLowerCase() + "-" + rq.getName() + "-"));
 		});
 		when(TestExtension.LAUNCH.getStepReporter()).thenReturn(StepReporter.NOOP_STEP_REPORTER);
 	}

@@ -38,14 +38,14 @@ repositories {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.1.0'
+    api 'com.epam.reportportal:client-java:5.1.4'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
     api "org.junit.jupiter:junit-jupiter-api:${junit_version}"
 
-    implementation 'org.slf4j:slf4j-api:1.7.25'
+    implementation 'org.slf4j:slf4j-api:1.7.32'
 
-    testImplementation('com.github.reportportal:agent-java-test-utils:3d4d206')
+    testImplementation('com.github.reportportal:agent-java-test-utils:236a68c')
 
     testImplementation ("org.junit.platform:junit-platform-runner:${junit_runner_version}") {
         exclude module: 'junit'
@@ -55,12 +55,10 @@ dependencies {
     testImplementation "org.aspectj:aspectjweaver:1.9.2"
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
-    testImplementation 'ch.qos.logback:logback-classic:1.2.3'
-    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.3') {
+    testImplementation 'ch.qos.logback:logback-classic:1.2.10'
+    testImplementation ('com.epam.reportportal:logger-java-logback:5.1.1') {
         exclude module: 'client-java'
     }
-
-    testImplementation 'org.slf4j:jul-to-slf4j:1.7.25'
 }
 
 test {

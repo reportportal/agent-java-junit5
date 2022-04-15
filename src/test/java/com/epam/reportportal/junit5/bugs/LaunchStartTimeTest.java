@@ -1,12 +1,11 @@
 package com.epam.reportportal.junit5.bugs;
 
 import com.epam.reportportal.junit5.ReportPortalExtension;
-import com.epam.reportportal.junit5.features.bug.IncorrectStartTime;
+import com.epam.reportportal.junit5.features.bug.TestIncorrectStartTime;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +46,7 @@ public class LaunchStartTimeTest {
 
 	@Test
 	public void verify_start_time_has_correct_order() {
-		TestUtils.runClasses(IncorrectStartTime.class);
+		TestUtils.runClasses(TestIncorrectStartTime.class);
 
 		ArgumentCaptor<StartLaunchRQ> startLaunchCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
 		verify(client, timeout(1000).times(1)).startLaunch(startLaunchCaptor.capture());

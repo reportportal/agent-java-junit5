@@ -1,11 +1,16 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Test Case ID templating, by @HardNorth
+### Changed
+- Client version updated on [5.1.8](https://github.com/reportportal/client-java/releases/tag/5.1.7), by @HardNorth
+- Slf4j version updated on 1.7.36, by @HardNorth
 
 ## [5.1.1]
 ### Changed
-- Client version updated on [5.1.8](https://github.com/reportportal/client-java/releases/tag/5.1.7)
-- Slf4j version updated on 1.7.36 to support newer versions of Logback with security fixes
+- Client version updated on [5.1.4](https://github.com/reportportal/client-java/releases/tag/5.1.4)
+- Slf4j version updated on 1.7.32 to support newer versions of Logback with security fixes
 
 ## [5.1.0]
 ### Added

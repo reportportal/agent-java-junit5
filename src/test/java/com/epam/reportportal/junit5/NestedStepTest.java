@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -99,8 +100,14 @@ public class NestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(CLIENT.get(), timeout(1000).times(1)).startTestItem(same(TEST_METHOD_ID), nestedStepCaptor.capture());
-		verify(CLIENT.get(), timeout(1000).times(1)).finishTestItem(same(STEP_ID_LIST.get(0)), finishNestedCaptor.capture());
+		verify(CLIENT.get(), timeout(TimeUnit.SECONDS.toMillis(2)).times(1)).startTestItem(
+				same(TEST_METHOD_ID),
+				nestedStepCaptor.capture()
+		);
+		verify(CLIENT.get(), timeout(TimeUnit.SECONDS.toMillis(2)).times(1)).finishTestItem(
+				same(STEP_ID_LIST.get(0)),
+				finishNestedCaptor.capture()
+		);
 
 		StartTestItemRQ startTestItemRQ = nestedStepCaptor.getValue();
 

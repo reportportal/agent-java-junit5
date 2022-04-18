@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -49,13 +50,13 @@ public class LaunchStartTimeTest {
 		TestUtils.runClasses(TestIncorrectStartTime.class);
 
 		ArgumentCaptor<StartLaunchRQ> startLaunchCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
-		verify(client, timeout(1000).times(1)).startLaunch(startLaunchCaptor.capture());
+		verify(client, timeout(TimeUnit.SECONDS.toMillis(2)).times(1)).startLaunch(startLaunchCaptor.capture());
 
 		ArgumentCaptor<StartTestItemRQ> startSuiteCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).startTestItem(startSuiteCaptor.capture());
+		verify(client, timeout(TimeUnit.SECONDS.toMillis(2)).times(1)).startTestItem(startSuiteCaptor.capture());
 
 		ArgumentCaptor<StartTestItemRQ> startTestCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).startTestItem(any(), startTestCaptor.capture());
+		verify(client, timeout(TimeUnit.SECONDS.toMillis(2)).times(1)).startTestItem(any(), startTestCaptor.capture());
 
 		Date launchStart = startLaunchCaptor.getValue().getStartTime();
 		Date suiteStart = startSuiteCaptor.getValue().getStartTime();

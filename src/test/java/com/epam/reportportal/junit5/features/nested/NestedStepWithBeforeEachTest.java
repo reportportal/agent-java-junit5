@@ -2,6 +2,7 @@ package com.epam.reportportal.junit5.features.nested;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.junit5.NestedStepTest;
+import com.epam.reportportal.util.test.CommonUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +17,7 @@ import static com.epam.reportportal.junit5.NestedStepTest.PARAM;
 public class NestedStepWithBeforeEachTest {
 
 	@BeforeEach
-	public void before() {
+	public void before() throws InterruptedException {
 		method(PARAM);
 	}
 
@@ -26,7 +27,7 @@ public class NestedStepWithBeforeEachTest {
 	}
 
 	@Step(NESTED_STEP_NAME_TEMPLATE)
-	public void method(String param) {
-
+	public void method(String param) throws InterruptedException {
+		Thread.sleep(CommonUtils.MINIMAL_TEST_PAUSE);
 	}
 }

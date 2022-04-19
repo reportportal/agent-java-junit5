@@ -47,6 +47,15 @@ import static org.mockito.Mockito.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestCaseIdTest {
 
+	public static class TestCaseIdExtension extends ReportPortalExtension {
+		static Launch LAUNCH;
+
+		@Override
+		protected Launch getLaunch(ExtensionContext context) {
+			return LAUNCH;
+		}
+	}
+
 	@BeforeEach
 	public void setupMock() {
 		TestCaseIdExtension.LAUNCH = mock(Launch.class);
@@ -165,12 +174,21 @@ public class TestCaseIdTest {
 		);
 	}
 
-	public static class TestCaseIdExtension extends ReportPortalExtension {
-		static Launch LAUNCH;
+	@Test
+	void test_verify_test_case_id_supports_templating_with_self_reference() {
+		TestUtils.runClasses(TestCaseIdTemplateTest.class);
 
-		@Override
-		protected Launch getLaunch(ExtensionContext context) {
-			return LAUNCH;
-		}
+		Launch launch = TestCaseIdExtension.LAUNCH;
+
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
+
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(launch, times(1)).startTestItem(notNull(), captor.capture()); // Start a test
+
+		StartTestItemRQ request = captor.getValue();
+		assertThat(
+				request.getTestCaseId(),
+				equalTo(TestCaseIdTemplateTest.TEST_CASE_ID_VALUE.replace("{this.FIELD}", TestCaseIdTemplateTest.FIELD))
+		);
 	}
 }

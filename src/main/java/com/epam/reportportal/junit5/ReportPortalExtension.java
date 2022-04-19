@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -538,8 +539,22 @@ public class ReportPortalExtension
 	 */
 	protected TestCaseIdEntry getTestCaseId(@Nonnull final Method method, @Nonnull final String codeRef,
 			@Nonnull final List<Object> arguments) {
+		return getTestCaseId(method, codeRef, arguments, null);
+	}
+
+	/**
+	 * Calculates a test case ID based on code reference and parameters
+	 *
+	 * @param method    a test method reference
+	 * @param codeRef   a code reference which will be used for the calculation
+	 * @param arguments a list of test arguments
+	 * @param instance  current test instance
+	 * @return a test case ID
+	 */
+	protected TestCaseIdEntry getTestCaseId(@Nonnull final Method method, @Nonnull final String codeRef,
+			@Nonnull final List<Object> arguments, @Nullable Object instance) {
 		TestCaseId caseId = method.getAnnotation(TestCaseId.class);
-		TestCaseIdEntry id = TestCaseIdUtils.getTestCaseId(caseId, method, codeRef, arguments);
+		TestCaseIdEntry id = TestCaseIdUtils.getTestCaseId(caseId, method, codeRef, arguments, instance);
 		if (id == null) {
 			return null;
 		}
@@ -642,7 +657,7 @@ public class ReportPortalExtension
 		TestCaseIdEntry caseId = testMethod.map(m -> {
 			rq.getAttributes().addAll(getAttributes(m));
 			rq.setParameters(getParameters(m, arguments));
-			return getTestCaseId(m, codeRef, arguments);
+			return getTestCaseId(m, codeRef, arguments, context.getTestInstance().orElse(null));
 		}).orElseGet(() -> TestCaseIdUtils.getTestCaseId(codeRef, arguments));
 		rq.setTestCaseId(ofNullable(caseId).map(TestCaseIdEntry::getId).orElse(null));
 		return rq;

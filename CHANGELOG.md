@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Removed
+- Suite item status reporting (server calculates it itself), by @HardNorth
 ### Changed
 - Client version updated on [5.1.10](https://github.com/reportportal/client-java/releases/tag/5.1.10), by @HardNorth
 

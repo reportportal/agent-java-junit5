@@ -102,13 +102,13 @@ public class Verifications {
 	public static void verify_suite_calls_positive_finish(String testUuid,
 			Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls) {
 		verify_correct_suite_start_responses(launchCalls);
-		verify_items_positive_finish_statuses("SUITE", testUuid, launchCalls);
+		verify_items_finish_statuses("SUITE", null, testUuid, launchCalls);
 	}
 
 	public static void verify_suite_calls_negative_finish(String testUuid,
 			Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> launchCalls) {
 		verify_correct_suite_start_responses(launchCalls);
-		verify_items_negative_finish_statuses("SUITE", testUuid, launchCalls);
+		verify_items_finish_statuses("SUITE", null, testUuid, launchCalls);
 	}
 
 	public static void verify_before_class_positive_calls(int callIndex, String suiteUuid, String testUuid,

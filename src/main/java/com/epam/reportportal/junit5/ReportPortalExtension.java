@@ -62,6 +62,8 @@ public class ReportPortalExtension
 		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback, AfterEachCallback,
 				   AfterAllCallback, TestWatcher {
 
+	private static final String TEST_STATUS = "testStatus";
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortalExtension.class);
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
@@ -163,15 +165,33 @@ public class ReportPortalExtension
 		startTestItem(context, SUITE);
 	}
 
+	/**
+	 * Finish all test templates execution (basically a test class) within a specific context
+	 *
+	 * @param parentContext JUnit's test context
+	 */
+	protected void finishTemplates(final ExtensionContext parentContext) {
+		final Collection<ExtensionContext> parents = new HashSet<>();
+		parents.add(parentContext);
+		List<ExtensionContext> templates = new ArrayList<>();
+		Collection<ExtensionContext> children;
+		while (!(children = testTemplates.keySet()
+				.stream()
+				.filter((c) -> c.getParent().map(parents::contains).orElse(false))
+				.collect(Collectors.toSet())).isEmpty()) {
+			templates.addAll(children);
+			parents.clear();
+			parents.addAll(children);
+		}
+		Collections.reverse(templates);
+		templates.forEach(context -> finishTemplate(context, getExecutionStatus(context)));
+	}
+
 	@Override
 	public void afterAll(ExtensionContext context) {
 		finishTemplates(context);
-		if (context.getStore(NAMESPACE).get(FAILED) == null) {
-			finishTestItem(context);
-		} else {
-			finishTestItem(context, FAILED);
-			context.getParent().ifPresent(p -> p.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
-		}
+		ItemStatus status = (ItemStatus) context.getStore(NAMESPACE).get(TEST_STATUS);
+		finishTestItem(context, status);
 	}
 
 	@Override
@@ -262,18 +282,30 @@ public class ReportPortalExtension
 		invocation.proceed();
 	}
 
+	/**
+	 * Returns a status of a test based on whether or not it contains an execution exception
+	 *
+	 * @param context JUnit's test context
+	 * @return an {@link ItemStatus}
+	 */
+	@Nullable
+	protected ItemStatus getExecutionStatus(@Nonnull final ExtensionContext context) {
+		return (ItemStatus) context.getStore(NAMESPACE).get(TEST_STATUS);
+	}
+
 	@Override
 	public void afterTestExecution(ExtensionContext context) {
 		finishTemplates(context);
-		ItemStatus status = getExecutionStatus(context);
-		if (FAILED.equals(status)) {
-			context.getParent().ifPresent(c -> c.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
-		}
+		ItemStatus status = ofNullable(getExecutionStatus(context)).orElseGet(() -> context.getExecutionException().map(e -> {
+			sendStackTraceToRP(e);
+			return FAILED;
+		}).orElse(PASSED));
 		finishTestItem(context, status);
 	}
 
 	@Override
 	public void testDisabled(ExtensionContext context, Optional<String> reason) {
+		context.getStore(NAMESPACE).put(TEST_STATUS, SKIPPED);
 		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
 			String description = reason.orElse(createStepDescription(context));
 			startTestItem(context, Collections.emptyList(), STEP, description, Calendar.getInstance().getTime());
@@ -283,14 +315,18 @@ public class ReportPortalExtension
 
 	@Override
 	public void testSuccessful(ExtensionContext context) {
+		context.getStore(NAMESPACE).put(TEST_STATUS, PASSED);
 	}
 
 	@Override
 	public void testAborted(ExtensionContext context, Throwable throwable) {
+		context.getStore(NAMESPACE).put(TEST_STATUS, SKIPPED);
 	}
 
 	@Override
 	public void testFailed(ExtensionContext context, Throwable throwable) {
+		context.getStore(NAMESPACE).put(TEST_STATUS, FAILED);
+		sendStackTraceToRP(throwable);
 	}
 
 	/**
@@ -341,7 +377,6 @@ public class ReportPortalExtension
 			invocation.proceed();
 		} catch (Throwable throwable) {
 			status = FAILED;
-			context.getParent().ifPresent(c -> c.getStore(NAMESPACE).put(FAILED, Boolean.TRUE));
 			sendStackTraceToRP(throwable);
 			throw throwable;
 		} finally {
@@ -441,57 +476,11 @@ public class ReportPortalExtension
 	 * @param context JUnit's test context
 	 * @param status  an {@link ItemStatus}
 	 */
-	protected void finishTemplate(final ExtensionContext context, final ItemStatus status) {
+	protected void finishTemplate(@Nonnull final ExtensionContext context, @Nullable final ItemStatus status) {
 		Launch launch = getLaunch(context);
 		Maybe<String> templateId = testTemplates.remove(context);
 		launch.finishTestItem(templateId, buildFinishTestItemRq(context, status));
 		idMapping.remove(context);
-	}
-
-	/**
-	 * Finish all test templates execution (basically a test class) within a specific context
-	 *
-	 * @param parentContext JUnit's test context
-	 */
-	protected void finishTemplates(final ExtensionContext parentContext) {
-		final Collection<ExtensionContext> parents = new HashSet<>();
-		parents.add(parentContext);
-		List<ExtensionContext> templates = new ArrayList<>();
-		Collection<ExtensionContext> children;
-		while (!(children = testTemplates.keySet()
-				.stream()
-				.filter((c) -> c.getParent().map(parents::contains).orElse(false))
-				.collect(Collectors.toSet())).isEmpty()) {
-			templates.addAll(children);
-			parents.clear();
-			parents.addAll(children);
-		}
-		Collections.reverse(templates);
-		templates.forEach(context -> {
-			ItemStatus status = context.getStore(NAMESPACE).get(FAILED) != null ?
-					FAILED :
-					context.getStore(NAMESPACE).get(SKIPPED) != null ? SKIPPED : getExecutionStatus(context);
-			if (status == FAILED || status == SKIPPED) {
-				parentContext.getStore(NAMESPACE).put(status, Boolean.TRUE);
-			}
-			finishTemplate(context, status);
-		});
-	}
-
-	/**
-	 * Returns a status of a test based on whether or not it contains an execution exception
-	 *
-	 * @param context JUnit's test context
-	 * @return an {@link ItemStatus}
-	 */
-	protected ItemStatus getExecutionStatus(@Nonnull final ExtensionContext context) {
-		Optional<Throwable> exception = context.getExecutionException();
-		if (!exception.isPresent()) {
-			return ItemStatus.PASSED;
-		} else {
-			sendStackTraceToRP(exception.get());
-			return ItemStatus.FAILED;
-		}
 	}
 
 	/**
@@ -509,7 +498,7 @@ public class ReportPortalExtension
 	 * @param context JUnit's test context
 	 * @param status  a test execution status
 	 */
-	protected void finishTestItem(@Nonnull final ExtensionContext context, @Nonnull final ItemStatus status) {
+	protected void finishTestItem(@Nonnull final ExtensionContext context, @Nullable final ItemStatus status) {
 		finishTestItem(context, buildFinishTestItemRq(context, status));
 	}
 
@@ -527,19 +516,6 @@ public class ReportPortalExtension
 			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
 					finishResponse));
 		}
-	}
-
-	/**
-	 * Calculates a test case ID based on code reference and parameters
-	 *
-	 * @param method    a test method reference
-	 * @param codeRef   a code reference which will be used for the calculation
-	 * @param arguments a list of test arguments
-	 * @return a test case ID
-	 */
-	protected TestCaseIdEntry getTestCaseId(@Nonnull final Method method, @Nonnull final String codeRef,
-			@Nonnull final List<Object> arguments) {
-		return getTestCaseId(method, codeRef, arguments, null);
 	}
 
 	/**
@@ -609,8 +585,7 @@ public class ReportPortalExtension
 	 * @param annotatedElement a test method or class reference
 	 * @return a set of attributes
 	 */
-	protected @Nonnull
-	Set<ItemAttributesRQ> getAttributes(@Nonnull final AnnotatedElement annotatedElement) {
+	protected @Nonnull Set<ItemAttributesRQ> getAttributes(@Nonnull final AnnotatedElement annotatedElement) {
 		return ofNullable(annotatedElement.getAnnotation(Attributes.class)).map(AttributeParser::retrieveAttributes)
 				.orElse(Collections.emptySet());
 	}
@@ -622,8 +597,7 @@ public class ReportPortalExtension
 	 * @param arguments a list of parameter values
 	 * @return a list of parameters
 	 */
-	protected @Nonnull
-	List<ParameterResource> getParameters(@Nonnull final Method method, final List<Object> arguments) {
+	protected @Nonnull List<ParameterResource> getParameters(@Nonnull final Method method, final List<Object> arguments) {
 		return ParameterUtils.getParameters(method, arguments);
 	}
 
@@ -720,9 +694,9 @@ public class ReportPortalExtension
 	 */
 	@SuppressWarnings("unused")
 	@Nonnull
-	protected FinishTestItemRQ buildFinishTestItemRq(@Nonnull ExtensionContext context, @Nonnull ItemStatus status) {
+	protected FinishTestItemRQ buildFinishTestItemRq(@Nonnull ExtensionContext context, @Nullable ItemStatus status) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setStatus(status.name());
+		ofNullable(status).ifPresent(s->rq.setStatus(s.name()));
 		rq.setEndTime(Calendar.getInstance().getTime());
 		return rq;
 	}

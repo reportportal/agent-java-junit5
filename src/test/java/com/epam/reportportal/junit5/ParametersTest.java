@@ -271,9 +271,8 @@ public class ParametersTest {
 
 		List<FinishTestItemRQ> finishMethods = captorFinish.getAllValues();
 
-		Stream.concat(finishMethods.subList(0, 1).stream(), finishMethods.subList(2, finishMethods.size()).stream())
-				.forEach(f -> assertThat(f.getStatus(), equalTo(ItemStatus.FAILED.name())));
-
+		assertThat(finishMethods.get(0).getStatus(), equalTo(ItemStatus.FAILED.name()));
+		finishMethods.subList(2, finishMethods.size()).forEach(f -> assertThat(f.getStatus(), nullValue()));
 		assertThat(finishMethods.get(1).getStatus(), equalTo(ItemStatus.PASSED.name()));
 	}
 }

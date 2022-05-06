@@ -36,6 +36,7 @@ import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.*;
+import org.opentest4j.TestAbortedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +63,6 @@ public class ReportPortalExtension
 		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback, AfterEachCallback,
 				   AfterAllCallback, TestWatcher {
 
-	private static final String TEST_STATUS = "testStatus";
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortalExtension.class);
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
@@ -72,7 +71,6 @@ public class ReportPortalExtension
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
-	private final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(this);
 
 	@Nonnull
 	protected Optional<Maybe<String>> getItemId(@Nonnull ExtensionContext context) {
@@ -184,14 +182,13 @@ public class ReportPortalExtension
 			parents.addAll(children);
 		}
 		Collections.reverse(templates);
-		templates.forEach(context -> finishTemplate(context, getExecutionStatus(context)));
+		templates.forEach(this::finishTemplate);
 	}
 
 	@Override
 	public void afterAll(ExtensionContext context) {
 		finishTemplates(context);
-		ItemStatus status = (ItemStatus) context.getStore(NAMESPACE).get(TEST_STATUS);
-		finishTestItem(context, status);
+		finishTestItem(context, buildFinishTestItemRq(context, null));
 	}
 
 	@Override
@@ -287,25 +284,26 @@ public class ReportPortalExtension
 	 *
 	 * @param context JUnit's test context
 	 * @return an {@link ItemStatus}
+	 * @deprecated the method not in use anymore
 	 */
+	@Deprecated
 	@Nullable
 	protected ItemStatus getExecutionStatus(@Nonnull final ExtensionContext context) {
-		return (ItemStatus) context.getStore(NAMESPACE).get(TEST_STATUS);
+		return null;
 	}
 
 	@Override
 	public void afterTestExecution(ExtensionContext context) {
 		finishTemplates(context);
-		ItemStatus status = ofNullable(getExecutionStatus(context)).orElseGet(() -> context.getExecutionException().map(e -> {
+		ItemStatus status = context.getExecutionException().map(e -> {
 			sendStackTraceToRP(e);
-			return FAILED;
-		}).orElse(PASSED));
+			return e instanceof TestAbortedException ? SKIPPED : FAILED;
+		}).orElse(PASSED);
 		finishTestItem(context, status);
 	}
 
 	@Override
 	public void testDisabled(ExtensionContext context, Optional<String> reason) {
-		context.getStore(NAMESPACE).put(TEST_STATUS, SKIPPED);
 		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
 			String description = reason.orElse(createStepDescription(context));
 			startTestItem(context, Collections.emptyList(), STEP, description, Calendar.getInstance().getTime());
@@ -315,18 +313,14 @@ public class ReportPortalExtension
 
 	@Override
 	public void testSuccessful(ExtensionContext context) {
-		context.getStore(NAMESPACE).put(TEST_STATUS, PASSED);
 	}
 
 	@Override
 	public void testAborted(ExtensionContext context, Throwable throwable) {
-		context.getStore(NAMESPACE).put(TEST_STATUS, SKIPPED);
 	}
 
 	@Override
 	public void testFailed(ExtensionContext context, Throwable throwable) {
-		context.getStore(NAMESPACE).put(TEST_STATUS, FAILED);
-		sendStackTraceToRP(throwable);
 	}
 
 	/**
@@ -475,11 +469,21 @@ public class ReportPortalExtension
 	 *
 	 * @param context JUnit's test context
 	 * @param status  an {@link ItemStatus}
+	 * @deprecated the method not in use anymore, use {@link #finishTemplate(ExtensionContext)}
 	 */
 	protected void finishTemplate(@Nonnull final ExtensionContext context, @Nullable final ItemStatus status) {
+		finishTemplate(context);
+	}
+
+	/**
+	 * Finish a test template execution (basically a test class) with a specific status, builds a finish request based on the status
+	 *
+	 * @param context JUnit's test context
+	 */
+	protected void finishTemplate(@Nonnull final ExtensionContext context) {
 		Launch launch = getLaunch(context);
 		Maybe<String> templateId = testTemplates.remove(context);
-		launch.finishTestItem(templateId, buildFinishTestItemRq(context, status));
+		launch.finishTestItem(templateId, buildFinishTestItemRq(context, null));
 		idMapping.remove(context);
 	}
 
@@ -489,7 +493,7 @@ public class ReportPortalExtension
 	 * @param context JUnit's test context
 	 */
 	protected void finishTestItem(@Nonnull final ExtensionContext context) {
-		finishTestItem(context, getExecutionStatus(context));
+		finishTestItem(context, buildFinishTestItemRq(context, null));
 	}
 
 	/**
@@ -696,7 +700,7 @@ public class ReportPortalExtension
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestItemRq(@Nonnull ExtensionContext context, @Nullable ItemStatus status) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		ofNullable(status).ifPresent(s->rq.setStatus(s.name()));
+		ofNullable(status).ifPresent(s -> rq.setStatus(s.name()));
 		rq.setEndTime(Calendar.getInstance().getTime());
 		return rq;
 	}

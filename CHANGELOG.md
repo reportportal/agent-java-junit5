@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Assumptions handling, issue [#102](https://github.com/reportportal/agent-java-junit5/issues/102)
 ### Removed
 - Suite item status reporting (server calculates it itself), by @HardNorth
 ### Changed

@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.3]
 ### Added
 - Assumptions handling, issue [#102](https://github.com/reportportal/agent-java-junit5/issues/102)
 ### Removed

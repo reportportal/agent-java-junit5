@@ -18,6 +18,7 @@ package com.epam.reportportal.junit5;
 
 import com.epam.reportportal.junit5.features.coderef.SingleTest;
 import com.epam.reportportal.junit5.features.skipped.AssumptionFailedTest;
+import com.epam.reportportal.junit5.features.skipped.BeforeEachAssumptionFailedTest;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
@@ -78,5 +79,22 @@ public class AssumptionsTest {
 		List<FinishTestItemRQ> finishItems = finishCaptor.getAllValues();
 		assertThat(finishItems.get(0).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		assertThat(finishItems.get(1).getStatus(), nullValue());
+	}
+
+	@Test
+	public void verify_before_each_assumption_failure_marks_test_as_skipped() {
+		TestUtils.runClasses(BeforeEachAssumptionFailedTest.class);
+
+		Launch launch = AssumptionsTestExtension.LAUNCH;
+
+		verify(launch).startTestItem(any(StartTestItemRQ.class)); // Start parent Suite
+		verify(launch, times(2)).startTestItem(notNull(), any(StartTestItemRQ.class)); // Start a test
+
+		ArgumentCaptor<FinishTestItemRQ> finishCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch, times(3)).finishTestItem(any(), finishCaptor.capture());
+		List<FinishTestItemRQ> finishItems = finishCaptor.getAllValues();
+		assertThat(finishItems.get(0).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+		assertThat(finishItems.get(1).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+		assertThat(finishItems.get(2).getStatus(), nullValue());
 	}
 }

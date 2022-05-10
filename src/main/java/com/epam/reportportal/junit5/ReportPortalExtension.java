@@ -245,6 +245,21 @@ public class ReportPortalExtension
 		return invocation.proceed();
 	}
 
+	/**
+	 * Returns a status of a test based on execution exception
+	 *
+	 * @param throwable test exception
+	 * @return an {@link ItemStatus}
+	 */
+	@Nonnull
+	protected ItemStatus getExecutionStatus(@Nullable final Throwable throwable) {
+		if(throwable == null) {
+			return PASSED;
+		}
+		sendStackTraceToRP(throwable);
+		return throwable instanceof TestAbortedException ? SKIPPED : FAILED;
+	}
+
 	@Override
 	public void interceptDynamicTest(Invocation<Void> invocation, ExtensionContext extensionContext) throws Throwable {
 		Optional<ExtensionContext> parent = extensionContext.getParent();
@@ -264,10 +279,9 @@ public class ReportPortalExtension
 		startTestItem(extensionContext, STEP);
 		try {
 			invocation.proceed();
-			finishTestItem(extensionContext);
+			finishTestItem(extensionContext, PASSED);
 		} catch (Throwable throwable) {
-			sendStackTraceToRP(throwable);
-			finishTestItem(extensionContext, FAILED);
+			finishTestItem(extensionContext, getExecutionStatus(throwable));
 			throw throwable;
 		}
 	}
@@ -284,22 +298,16 @@ public class ReportPortalExtension
 	 *
 	 * @param context JUnit's test context
 	 * @return an {@link ItemStatus}
-	 * @deprecated the method not in use anymore
 	 */
-	@Deprecated
-	@Nullable
+	@Nonnull
 	protected ItemStatus getExecutionStatus(@Nonnull final ExtensionContext context) {
-		return null;
+		return context.getExecutionException().map(this::getExecutionStatus).orElse(PASSED);
 	}
 
 	@Override
 	public void afterTestExecution(ExtensionContext context) {
 		finishTemplates(context);
-		ItemStatus status = context.getExecutionException().map(e -> {
-			sendStackTraceToRP(e);
-			return e instanceof TestAbortedException ? SKIPPED : FAILED;
-		}).orElse(PASSED);
-		finishTestItem(context, status);
+		finishTestItem(context, getExecutionStatus(context));
 	}
 
 	@Override
@@ -370,8 +378,7 @@ public class ReportPortalExtension
 		try {
 			invocation.proceed();
 		} catch (Throwable throwable) {
-			status = FAILED;
-			sendStackTraceToRP(throwable);
+			status = getExecutionStatus(throwable);
 			throw throwable;
 		} finally {
 			finishBeforeAfter(context, id, status);

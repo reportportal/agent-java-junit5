@@ -1,10 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Assumptions handling in before methods, issue [#102](https://github.com/reportportal/agent-java-junit5/issues/102), by @HardNorth
 
 ## [5.1.3]
 ### Added
-- Assumptions handling, issue [#102](https://github.com/reportportal/agent-java-junit5/issues/102)
+- Assumptions handling, issue [#102](https://github.com/reportportal/agent-java-junit5/issues/102), by @HardNorth
 ### Removed
 - Suite item status reporting (server calculates it itself), by @HardNorth
 ### Changed

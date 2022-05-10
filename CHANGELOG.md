@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.4]
 ### Added
 - Assumptions handling in before methods, issue [#102](https://github.com/reportportal/agent-java-junit5/issues/102), by @HardNorth
 

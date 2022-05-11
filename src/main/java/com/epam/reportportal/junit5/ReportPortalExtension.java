@@ -60,8 +60,8 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
  * ReportPortal Extension sends the results of test execution to ReportPortal in RealTime
  */
 public class ReportPortalExtension
-		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback, AfterEachCallback,
-				   AfterAllCallback, TestWatcher {
+		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback, AfterAllCallback,
+				   TestWatcher {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortalExtension.class);
 
@@ -194,11 +194,6 @@ public class ReportPortalExtension
 	@Override
 	public void beforeEach(ExtensionContext context) {
 		context.getParent().ifPresent(this::startTemplate);
-	}
-
-	@Override
-	public void afterEach(ExtensionContext context) {
-
 	}
 
 	@Override

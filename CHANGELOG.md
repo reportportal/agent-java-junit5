@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Removed
+- `ReportPortalExtension` does not implement `AfterEachCallback` anymore, by @HardNorth
 
 ## [5.1.4]
 ### Added

@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Removed
 - `ReportPortalExtension` does not implement `AfterEachCallback` anymore, by @HardNorth
+- `finally` keyword, see [JEP 421](https://openjdk.java.net/jeps/421), by @HardNorth
 
 ## [5.1.4]
 ### Added

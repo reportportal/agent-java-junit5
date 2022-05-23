@@ -369,15 +369,13 @@ public class ReportPortalExtension
 	}
 
 	private void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, Maybe<String> id) throws Throwable {
-		ItemStatus status = PASSED;
 		try {
 			invocation.proceed();
 		} catch (Throwable throwable) {
-			status = getExecutionStatus(throwable);
+			finishBeforeAfter(context, id, getExecutionStatus(throwable));
 			throw throwable;
-		} finally {
-			finishBeforeAfter(context, id, status);
 		}
+		finishBeforeAfter(context, id, PASSED);
 	}
 
 	private void finishBeforeAfter(ExtensionContext context, Maybe<String> id, ItemStatus status) {

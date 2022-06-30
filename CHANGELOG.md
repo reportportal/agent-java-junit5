@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Client version updated on [5.1.11](https://github.com/reportportal/client-java/releases/tag/5.1.11), by @HardNorth
 ### Removed
 - `ReportPortalExtension` does not implement `AfterEachCallback` anymore, by @HardNorth
 - `finally` keyword, see [JEP 421](https://openjdk.java.net/jeps/421), by @HardNorth

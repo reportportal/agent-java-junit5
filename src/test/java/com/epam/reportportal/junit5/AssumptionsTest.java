@@ -16,9 +16,7 @@
 
 package com.epam.reportportal.junit5;
 
-import com.epam.reportportal.junit5.features.coderef.SingleTest;
-import com.epam.reportportal.junit5.features.skipped.AssumptionFailedTest;
-import com.epam.reportportal.junit5.features.skipped.BeforeEachAssumptionFailedTest;
+import com.epam.reportportal.junit5.features.skipped.*;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
@@ -31,6 +29,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
@@ -42,7 +42,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.times;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class AssumptionsTest {
@@ -62,12 +61,17 @@ public class AssumptionsTest {
 		Launch launch = AssumptionsTestExtension.LAUNCH;
 		when(launch.getStepReporter()).thenReturn(StepReporter.NOOP_STEP_REPORTER);
 		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
-		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
+		when(launch.startTestItem(
+				any(),
+				any()
+		)).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 	}
 
-	@Test
-	public void verify_assumption_failure_marks_test_as_skipped() {
-		TestUtils.runClasses(AssumptionFailedTest.class);
+	@ParameterizedTest
+	@ValueSource(classes = { AssumptionFailedTest.class, Junit4AssumptionFailedTest.class,
+			AssertJAssumptionFailedTest.class, Junit4ExtendedAssumptionFailedTest.class })
+	public void verify_assumption_failure_marks_test_as_skipped(Class<?> testClass) {
+		TestUtils.runClasses(testClass);
 
 		Launch launch = AssumptionsTestExtension.LAUNCH;
 

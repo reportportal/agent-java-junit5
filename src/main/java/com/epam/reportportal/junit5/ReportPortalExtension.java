@@ -71,7 +71,7 @@ public class ReportPortalExtension
 			"org.junit.AssumptionViolatedException"
 	));
 
-	private static final Predicate<Throwable> IS_ASSUMPTION = e -> ofNullable(e).map(Object::getClass).map(c -> {
+	private static final Predicate<Throwable> IS_ASSUMPTION = e -> ofNullable(e).map(Object::getClass).flatMap(c -> {
 		Class<?> clazz = c;
 		do {
 			if (ASSUMPTION_CLASSES.contains(clazz.getCanonicalName())) {

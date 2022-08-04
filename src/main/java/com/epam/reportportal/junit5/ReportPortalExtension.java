@@ -46,6 +46,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.junit5.ItemType.*;
@@ -53,6 +54,7 @@ import static com.epam.reportportal.junit5.SystemAttributesFetcher.collectSystem
 import static com.epam.reportportal.junit5.utils.ItemTreeUtils.createItemTreeKey;
 import static com.epam.reportportal.listeners.ItemStatus.*;
 import static com.epam.reportportal.service.tree.TestItemTree.createTestItemLeaf;
+import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
@@ -60,10 +62,24 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
  * ReportPortal Extension sends the results of test execution to ReportPortal in RealTime
  */
 public class ReportPortalExtension
-		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback, AfterAllCallback,
-				   TestWatcher {
+		implements Extension, BeforeAllCallback, BeforeEachCallback, InvocationInterceptor, AfterTestExecutionCallback,
+				   AfterAllCallback, TestWatcher {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortalExtension.class);
+
+	private static final Set<String> ASSUMPTION_CLASSES = new HashSet<>(Arrays.asList(TestAbortedException.class.getCanonicalName(),
+			"org.junit.AssumptionViolatedException"
+	));
+
+	private static final Predicate<Throwable> IS_ASSUMPTION = e -> ofNullable(e).map(Object::getClass).map(c -> {
+		Class<?> clazz = c;
+		do {
+			if (ASSUMPTION_CLASSES.contains(clazz.getCanonicalName())) {
+				return of(clazz);
+			}
+		} while ((clazz = clazz.getSuperclass()) != null);
+		return Optional.empty();
+	}).isPresent();
 
 	public static final TestItemTree TEST_ITEM_TREE = new TestItemTree();
 	public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
@@ -197,30 +213,40 @@ public class ReportPortalExtension
 	}
 
 	@Override
-	public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
-			ExtensionContext parentContext) throws Throwable {
-		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, parentContext, BEFORE_CLASS);
+	public void interceptBeforeAllMethod(Invocation<Void> invocation,
+			ReflectiveInvocationContext<Method> invocationContext, ExtensionContext parentContext) throws Throwable {
+		Maybe<String> id = startBeforeAfter(
+				invocationContext.getExecutable(),
+				parentContext,
+				parentContext,
+				BEFORE_CLASS
+		);
 		finishBeforeAll(invocation, invocationContext, parentContext, id);
 	}
 
 	@Override
-	public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
-			ExtensionContext context) throws Throwable {
+	public void interceptBeforeEachMethod(Invocation<Void> invocation,
+			ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context) throws Throwable {
 		ExtensionContext parentContext = context.getParent().orElse(context.getRoot());
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, context, BEFORE_METHOD);
 		finishBeforeEach(invocation, invocationContext, context, id);
 	}
 
 	@Override
-	public void interceptAfterAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
-			ExtensionContext parentContext) throws Throwable {
-		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, parentContext, AFTER_CLASS);
+	public void interceptAfterAllMethod(Invocation<Void> invocation,
+			ReflectiveInvocationContext<Method> invocationContext, ExtensionContext parentContext) throws Throwable {
+		Maybe<String> id = startBeforeAfter(
+				invocationContext.getExecutable(),
+				parentContext,
+				parentContext,
+				AFTER_CLASS
+		);
 		finishBeforeAfter(invocation, parentContext, id);
 	}
 
 	@Override
-	public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
-			ExtensionContext context) throws Throwable {
+	public void interceptAfterEachMethod(Invocation<Void> invocation,
+			ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context) throws Throwable {
 		ExtensionContext parentContext = context.getParent().orElse(context.getRoot());
 		Maybe<String> id = startBeforeAfter(invocationContext.getExecutable(), parentContext, context, AFTER_METHOD);
 		finishBeforeAfter(invocation, context, id);
@@ -234,8 +260,8 @@ public class ReportPortalExtension
 	}
 
 	@Override
-	public <T> T interceptTestFactoryMethod(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext,
-			ExtensionContext extensionContext) throws Throwable {
+	public <T> T interceptTestFactoryMethod(Invocation<T> invocation,
+			ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
 		startTestItem(extensionContext, invocationContext.getArguments(), SUITE);
 		return invocation.proceed();
 	}
@@ -248,11 +274,11 @@ public class ReportPortalExtension
 	 */
 	@Nonnull
 	protected ItemStatus getExecutionStatus(@Nullable final Throwable throwable) {
-		if(throwable == null) {
+		if (throwable == null) {
 			return PASSED;
 		}
 		sendStackTraceToRP(throwable);
-		return throwable instanceof TestAbortedException ? SKIPPED : FAILED;
+		return IS_ASSUMPTION.test(throwable) ? SKIPPED : FAILED;
 	}
 
 	@Override
@@ -282,8 +308,8 @@ public class ReportPortalExtension
 	}
 
 	@Override
-	public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
-			ExtensionContext extensionContext) throws Throwable {
+	public void interceptTestTemplateMethod(Invocation<Void> invocation,
+			ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
 		startTestItem(extensionContext, invocationContext.getArguments(), STEP);
 		invocation.proceed();
 	}
@@ -368,7 +394,8 @@ public class ReportPortalExtension
 		}
 	}
 
-	private void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, Maybe<String> id) throws Throwable {
+	private void finishBeforeAfter(Invocation<Void> invocation, ExtensionContext context, Maybe<String> id)
+			throws Throwable {
 		try {
 			invocation.proceed();
 		} catch (Throwable throwable) {
@@ -429,19 +456,24 @@ public class ReportPortalExtension
 		idMapping.computeIfAbsent(context, c -> {
 			StartTestItemRQ rq = buildStartStepRq(c, arguments, itemType, description, startTime);
 			Launch launch = getLaunch(c);
-			Maybe<String> itemId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
-				Maybe<String> item = launch.startTestItem(parentTest, rq);
-				if (getReporter().getParameters().isCallbackReportingEnabled()) {
-					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), createTestItemLeaf(parentTest, item));
-				}
-				return item;
-			}).orElseGet(() -> {
-				Maybe<String> item = launch.startTestItem(rq);
-				if (getReporter().getParameters().isCallbackReportingEnabled()) {
-					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), createTestItemLeaf(item));
-				}
-				return item;
-			});
+			Maybe<String> itemId = c.getParent()
+					.flatMap(parent -> Optional.ofNullable(idMapping.get(parent)))
+					.map(parentTest -> {
+						Maybe<String> item = launch.startTestItem(parentTest, rq);
+						if (getReporter().getParameters().isCallbackReportingEnabled()) {
+							TEST_ITEM_TREE.getTestItems()
+									.put(createItemTreeKey(rq.getName()), createTestItemLeaf(parentTest, item));
+						}
+						return item;
+					})
+					.orElseGet(() -> {
+						Maybe<String> item = launch.startTestItem(rq);
+						if (getReporter().getParameters().isCallbackReportingEnabled()) {
+							TEST_ITEM_TREE.getTestItems()
+									.put(createItemTreeKey(rq.getName()), createTestItemLeaf(item));
+						}
+						return item;
+					});
 			if (TEMPLATE == itemType) {
 				testTemplates.put(c, itemId);
 			}
@@ -458,10 +490,12 @@ public class ReportPortalExtension
 	 * @param itemType      a method's item type (to display on RP)
 	 * @return an ID of the method
 	 */
-	protected Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context, ItemType itemType) {
+	protected Maybe<String> startBeforeAfter(Method method, ExtensionContext parentContext, ExtensionContext context,
+			ItemType itemType) {
 		Launch launch = getLaunch(context);
 		StartTestItemRQ rq = buildStartConfigurationRq(method, parentContext, context, itemType);
-		return getItemId(parentContext).map(pid -> launch.startTestItem(pid, rq)).orElseGet(() -> launch.startTestItem(rq));
+		return getItemId(parentContext).map(pid -> launch.startTestItem(pid, rq))
+				.orElseGet(() -> launch.startTestItem(rq));
 	}
 
 	/**
@@ -517,8 +551,8 @@ public class ReportPortalExtension
 		Maybe<String> id = idMapping.remove(context);
 		Maybe<OperationCompletionRS> finishResponse = launch.finishTestItem(id, rq);
 		if (getReporter().getParameters().isCallbackReportingEnabled()) {
-			ofNullable(TEST_ITEM_TREE.getTestItems().get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(
-					finishResponse));
+			ofNullable(TEST_ITEM_TREE.getTestItems()
+					.get(createItemTreeKey(context))).ifPresent(itemLeaf -> itemLeaf.setFinishResponse(finishResponse));
 		}
 	}
 
@@ -580,7 +614,8 @@ public class ReportPortalExtension
 	 * @return an {@link Optional} of a {@link Method}
 	 */
 	protected Optional<Method> getTestMethod(ExtensionContext context) {
-		return ofNullable(context.getTestMethod().orElseGet(() -> context.getParent().flatMap(this::getTestMethod).orElse(null)));
+		return ofNullable(context.getTestMethod()
+				.orElseGet(() -> context.getParent().flatMap(this::getTestMethod).orElse(null)));
 	}
 
 	/**
@@ -601,7 +636,8 @@ public class ReportPortalExtension
 	 * @param arguments a list of parameter values
 	 * @return a list of parameters
 	 */
-	protected @Nonnull List<ParameterResource> getParameters(@Nonnull final Method method, final List<Object> arguments) {
+	protected @Nonnull List<ParameterResource> getParameters(@Nonnull final Method method,
+			final List<Object> arguments) {
 		return ParameterUtils.getParameters(method, arguments);
 	}
 
@@ -616,8 +652,9 @@ public class ReportPortalExtension
 	 * @return Request to ReportPortal
 	 */
 	@Nonnull
-	protected StartTestItemRQ buildStartStepRq(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
-			@Nonnull final ItemType itemType, @Nonnull final String description, @Nonnull final Date startTime) {
+	protected StartTestItemRQ buildStartStepRq(@Nonnull final ExtensionContext context,
+			@Nonnull final List<Object> arguments, @Nonnull final ItemType itemType, @Nonnull final String description,
+			@Nonnull final Date startTime) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(startTime);
 		rq.setName(createStepName(context));
@@ -626,7 +663,10 @@ public class ReportPortalExtension
 		rq.setType(itemType == TEMPLATE ? SUITE.name() : itemType.name());
 		String codeRef = getCodeRef(context);
 		rq.setCodeRef(codeRef);
-		rq.setAttributes(context.getTags().stream().map(it -> new ItemAttributesRQ(null, it)).collect(Collectors.toSet()));
+		rq.setAttributes(context.getTags()
+				.stream()
+				.map(it -> new ItemAttributesRQ(null, it))
+				.collect(Collectors.toSet()));
 		if (SUITE == itemType) {
 			context.getTestClass().ifPresent(c -> rq.getAttributes().addAll(getAttributes(c)));
 		}
@@ -776,8 +816,8 @@ public class ReportPortalExtension
 	 * @param throwable         An exception which caused the skip
 	 * @param eventTime         <code>@BeforeEach</code> start time
 	 */
-	protected void reportSkippedStep(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context, Throwable throwable,
-			Date eventTime) {
+	protected void reportSkippedStep(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context,
+			Throwable throwable, Date eventTime) {
 		Date skipStartTime = Calendar.getInstance().getTime();
 		if (skipStartTime.after(eventTime)) {
 			// to fix item ordering when @AfterEach starts in the same millisecond as skipped test
@@ -798,8 +838,8 @@ public class ReportPortalExtension
 	 * @param eventTime         <code>@BeforeAll</code> start time
 	 */
 	@SuppressWarnings("unused")
-	protected void reportSkippedClassTests(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context,
-			Date eventTime) {
+	protected void reportSkippedClassTests(ReflectiveInvocationContext<Method> invocationContext,
+			ExtensionContext context, Date eventTime) {
 	}
 
 	/**

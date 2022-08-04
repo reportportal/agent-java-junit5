@@ -47,9 +47,7 @@ dependencies {
 
     testImplementation('com.github.reportportal:agent-java-test-utils:236a68c')
 
-    testImplementation ("org.junit.platform:junit-platform-runner:${junit_runner_version}") {
-        exclude module: 'junit'
-    }
+    testImplementation ("org.junit.platform:junit-platform-runner:${junit_runner_version}")
     testImplementation "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
     testImplementation "org.junit.jupiter:junit-jupiter-params:${junit_version}"
     testImplementation "org.aspectj:aspectjweaver:1.9.2"
@@ -59,6 +57,7 @@ dependencies {
     testImplementation ('com.epam.reportportal:logger-java-logback:5.1.1') {
         exclude module: 'client-java'
     }
+    testImplementation 'org.assertj:assertj-core:3.23.1'
 }
 
 test {

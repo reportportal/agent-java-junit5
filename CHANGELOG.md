@@ -6,6 +6,8 @@
 ### Removed
 - `ReportPortalExtension` does not implement `AfterEachCallback` anymore, by @HardNorth
 - `finally` keyword, see [JEP 421](https://openjdk.java.net/jeps/421), by @HardNorth
+### Fixed
+- Issue [#106](https://github.com/reportportal/agent-java-junit5/issues/106): Legacy Assumptions support, by @HardNorth
 
 ## [5.1.4]
 ### Added

@@ -71,7 +71,7 @@ jobs:
           ./gradlew release -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{ env.RELEASE_VERSION }} \
           -Prelease.newVersion=${{ env.NEXT_VERSION }} -PpublishRepo=${{ env.REPOSITORY_URL }}${{ github.repository }} \
           -PgithubUserName=${{ github.actor }} -PgithubToken=${{ secrets.GITHUB_TOKEN }} \
-          -PgpgPassphrase=${{  secrets.GPG_PASSPHRASE  }} -PgpgPrivateKey="${{secrets.GPG_PRIVATE_KEY}}"
+          -PgpgPassphrase=${{  secrets.GPG_PASSPHRASE  }} -PgpgPrivateKey="${{ secrets.GPG_PRIVATE_KEY }}"
 
       - name: Update README.md
         id: readmeUpdate

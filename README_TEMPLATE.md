@@ -2,7 +2,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-junit5.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-junit5%22)
 [![CI Build](https://github.com/reportportal/agent-java-junit5/actions/workflows/ci.yml/badge.svg)](https://github.com/reportportal/agent-java-junit5/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/reportportal/agent-java-junit5/branch/develop/graph/badge.svg?token=tq832Jsqef)](https://codecov.io/gh/reportportal/agent-java-junit5)
-[![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
+[![Join Slack chat!](https://slack.epmrpp.reportportal.io/badge.svg)](https://slack.epmrpp.reportportal.io/)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 ---
@@ -14,7 +14,7 @@ The repository contains [JUnit5 Extension](https://junit.org/junit5/docs/current
 
 To start using Report Portal with JUnit 5 create a service location file: 
 1. Create folders **_/META-INF/services_** in **_resources_**
-2. Put there a file named **_org.junit.jupiter.api.extension.Extension_**
+2. Put there a file named **_org.junit.jupiter.api.extension.Extension_**ы
 3. Put a default implementation reference as a single row into the file: **_com.epam.reportportal.junit5.ReportPortalExtension_** 
 
 Example:

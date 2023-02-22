@@ -66,7 +66,7 @@ repositories {
     mavenCentral()
 }
 
-testCompile 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
+testImplementation 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
 ```
 
 #### Automatic Extension Registration (optional)
@@ -478,10 +478,10 @@ repositories {
 }
 
 dependencies {
-    compile 'com.epam.reportportal:logger-java-log4j:5.1.4'
-    compile 'org.apache.logging.log4j:log4j-api:2.17.1'
-    compile 'org.apache.logging.log4j:log4j-core:2.17.1'
-    compile 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
+    implementation 'com.epam.reportportal:logger-java-log4j:5.1.4'
+    implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
+    implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
+    implementation 'com.epam.reportportal:agent-java-junit5:$LATEST_VERSION'
 }
 
 test {

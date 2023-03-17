@@ -14,7 +14,7 @@ The repository contains [JUnit5 Extension](https://junit.org/junit5/docs/current
 
 To start using Report Portal with JUnit 5 create a service location file: 
 1. Create folders **_/META-INF/services_** in **_resources_**
-2. Put there a file named **_org.junit.jupiter.api.extension.Extension_**
+2. Put there a file named **_org.junit.jupiter.api.extension.Extension_**ы
 3. Put a default implementation reference as a single row into the file: **_com.epam.reportportal.junit5.ReportPortalExtension_** 
 
 Example:
@@ -34,7 +34,7 @@ Extend *ReportPortalExtension*, override *buildStartStepRq()* or other methods (
 <dependency>
    <groupId>com.epam.reportportal</groupId>
    <artifactId>agent-java-junit5</artifactId>
-   <version>5.1.5</version>
+   <version>5.1.6</version>
 </dependency>
 ```
 
@@ -66,7 +66,7 @@ repositories {
     mavenCentral()
 }
 
-testImplementation 'com.epam.reportportal:agent-java-junit5:5.1.5'
+testImplementation 'com.epam.reportportal:agent-java-junit5:5.1.6'
 ```
 
 #### Automatic Extension Registration (optional)
@@ -116,7 +116,7 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>agent-java-junit5</artifactId>
-    <version>5.1.5</version>
+    <version>5.1.6</version>
 </dependency>
 ```
 > Latest version of the agent, could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-junit5%22)
@@ -367,7 +367,7 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>agent-java-junit5</artifactId>
-            <version>5.1.5</version>
+            <version>5.1.6</version>
         </dependency>
 
         <dependency>
@@ -481,7 +481,7 @@ dependencies {
     implementation 'com.epam.reportportal:logger-java-log4j:5.1.4'
     implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
     implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
-    implementation 'com.epam.reportportal:agent-java-junit5:5.1.5'
+    implementation 'com.epam.reportportal:agent-java-junit5:5.1.6'
 }
 
 test {

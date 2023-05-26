@@ -74,7 +74,7 @@ public class TestUtils {
 
 	@SuppressWarnings("unchecked")
 	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid,
-			Collection<String> testMethodUuidList) {
+	                              Collection<String> testMethodUuidList) {
 		when(client.startLaunch(any())).thenReturn(Maybe.just(new StartLaunchRS(launchUuid, 1L)));
 
 		Maybe<ItemCreatedRS> testClassMaybe = Maybe.just(new ItemCreatedRS(testClassUuid, testClassUuid));

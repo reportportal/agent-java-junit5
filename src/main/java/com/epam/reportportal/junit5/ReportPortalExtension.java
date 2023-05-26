@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,6 +88,7 @@ public class ReportPortalExtension
 	private static final Map<String, Launch> launchMap = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
+	private final Set<ExtensionContext> failedClassInits = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 	@Nonnull
 	protected Optional<Maybe<String>> getItemId(@Nonnull ExtensionContext context) {
@@ -204,7 +206,7 @@ public class ReportPortalExtension
 	@Override
 	public void afterAll(ExtensionContext context) {
 		finishTemplates(context);
-		finishTestItem(context, buildFinishTestItemRq(context, null));
+		finishTestItem(context);
 	}
 
 	@Override
@@ -222,6 +224,18 @@ public class ReportPortalExtension
 				BEFORE_CLASS
 		);
 		finishBeforeAll(invocation, invocationContext, parentContext, id);
+	}
+
+	@Override
+	public <T> T interceptTestClassConstructor(Invocation<T> invocation,
+											   ReflectiveInvocationContext<Constructor<T>> invocationContext,
+											   ExtensionContext parentContext) throws Throwable {
+		try {
+			return invocation.proceed();
+		} catch (Throwable cause) {
+			failedClassInits.add(parentContext);
+			throw cause;
+		}
 	}
 
 	@Override
@@ -282,7 +296,8 @@ public class ReportPortalExtension
 	}
 
 	@Override
-	public void interceptDynamicTest(Invocation<Void> invocation, ExtensionContext extensionContext) throws Throwable {
+	public void interceptDynamicTest(Invocation<Void> invocation, DynamicTestInvocationContext invocationContext,
+									 ExtensionContext extensionContext) throws Throwable {
 		Optional<ExtensionContext> parent = extensionContext.getParent();
 		if (parent.map(p -> !idMapping.containsKey(p)).orElse(false)) {
 			List<ExtensionContext> parents = new ArrayList<>();
@@ -349,7 +364,14 @@ public class ReportPortalExtension
 	}
 
 	@Override
-	public void testFailed(ExtensionContext context, Throwable throwable) {
+	public void testFailed(ExtensionContext context, Throwable cause) {
+		context.getParent().ifPresent(parent -> {
+			if(failedClassInits.contains(parent)) {
+				startTestItem(context, STEP);
+				sendStackTraceToRP(cause);
+				finishTestItem(context, FAILED);
+			}
+		});
 	}
 
 	/**

@@ -11,7 +11,7 @@ public class NullParameterTest {
 
 	@ParameterizedTest
 	@NullSource
-	@ValueSource(strings = { "one" })
+	@ValueSource(strings = {"one"})
 	public void testParameters(String param) {
 		System.out.println("Csv parameter test: " + param);
 	}

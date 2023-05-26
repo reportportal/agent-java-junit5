@@ -68,8 +68,8 @@ public class AssumptionsTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(classes = { AssumptionFailedTest.class, Junit4AssumptionFailedTest.class,
-			AssertJAssumptionFailedTest.class, Junit4ExtendedAssumptionFailedTest.class })
+	@ValueSource(classes = {AssumptionFailedTest.class, Junit4AssumptionFailedTest.class,
+			AssertJAssumptionFailedTest.class, Junit4ExtendedAssumptionFailedTest.class})
 	public void verify_assumption_failure_marks_test_as_skipped(Class<?> testClass) {
 		TestUtils.runClasses(testClass);
 

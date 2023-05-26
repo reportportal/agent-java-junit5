@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 public class TwoParametersTest {
 
 	@ParameterizedTest
-	@CsvSource({ "one, two", "three, four" })
+	@CsvSource({"one, two", "three, four"})
 	public void testTwoParameters(String param1, String param2) {
 		System.out.println("Two parameters test: " + param1 + " - " + param2);
 	}

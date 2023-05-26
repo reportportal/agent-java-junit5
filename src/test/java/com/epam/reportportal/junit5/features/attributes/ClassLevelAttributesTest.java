@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExtendWith(AttributesTest.AttributesTestExtension.class)
-@Attributes(attributes = { @Attribute(key = ClassLevelAttributesTest.KEY, value = ClassLevelAttributesTest.VALUE) })
+@Attributes(attributes = {@Attribute(key = ClassLevelAttributesTest.KEY, value = ClassLevelAttributesTest.VALUE)})
 public class ClassLevelAttributesTest {
 	public static final String KEY = "attribute_test_key";
 	public static final String VALUE = "attribute_test_value";

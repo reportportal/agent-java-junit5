@@ -31,7 +31,7 @@ public class TestCaseIdFromParametrizedAnnotationTest {
 
 	@TestCaseId(parametrized = true)
 	@ParameterizedTest
-	@ValueSource(strings = { "one", "two" })
+	@ValueSource(strings = {"one", "two"})
 	void test(@TestCaseIdKey String parameter) {
 		System.out.println("Parameter: " + parameter);
 	}

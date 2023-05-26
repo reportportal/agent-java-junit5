@@ -13,7 +13,7 @@ public class ParameterNamesTest {
 	public static final String SECOND_PARAMETER_NAME = "second_parameter";
 
 	@ParameterizedTest
-	@CsvSource({ "one, two", "three, four" })
+	@CsvSource({"one, two", "three, four"})
 	public void testTwoParameters(@ParameterKey(FIRST_PARAMETER_NAME) String param1, @ParameterKey(SECOND_PARAMETER_NAME) String param2) {
 		System.out.println("Two parameters test: " + param1 + " - " + param2);
 	}

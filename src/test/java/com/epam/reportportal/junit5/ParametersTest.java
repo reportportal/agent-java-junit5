@@ -19,7 +19,6 @@ import org.mockito.stubbing.Answer;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.epam.reportportal.junit5.ParametersTest.ParameterTestExtension.LAUNCH;
 import static org.hamcrest.MatcherAssert.assertThat;

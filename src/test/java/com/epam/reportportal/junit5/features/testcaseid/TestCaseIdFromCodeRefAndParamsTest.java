@@ -28,7 +28,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 public class TestCaseIdFromCodeRefAndParamsTest {
 
 	@ParameterizedTest
-	@ValueSource(ints = { 101, 0 })
+	@ValueSource(ints = {101, 0})
 	void parametrized(int value) {
 		System.out.println("Parameter: " + value);
 	}

@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.7]
 ### Added
 - Test constructor exception handling, by @HardNorth
 ### Changed

@@ -34,7 +34,7 @@ Extend *ReportPortalExtension*, override *buildStartStepRq()* or other methods (
 <dependency>
    <groupId>com.epam.reportportal</groupId>
    <artifactId>agent-java-junit5</artifactId>
-   <version>5.1.7</version>
+   <version>5.1.8</version>
 </dependency>
 ```
 
@@ -66,7 +66,7 @@ repositories {
     mavenCentral()
 }
 
-testImplementation 'com.epam.reportportal:agent-java-junit5:5.1.7'
+testImplementation 'com.epam.reportportal:agent-java-junit5:5.1.8'
 ```
 
 #### Automatic Extension Registration (optional)
@@ -116,7 +116,7 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>agent-java-junit5</artifactId>
-    <version>5.1.7</version>
+    <version>5.1.8</version>
 </dependency>
 ```
 > Latest version of the agent, could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-junit5%22)
@@ -367,7 +367,7 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>agent-java-junit5</artifactId>
-            <version>5.1.7</version>
+            <version>5.1.8</version>
         </dependency>
 
         <dependency>
@@ -481,7 +481,7 @@ dependencies {
     implementation 'com.epam.reportportal:logger-java-log4j:5.1.4'
     implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
     implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
-    implementation 'com.epam.reportportal:agent-java-junit5:5.1.7'
+    implementation 'com.epam.reportportal:agent-java-junit5:5.1.8'
 }
 
 test {

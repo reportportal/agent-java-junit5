@@ -42,7 +42,7 @@ dependencies {
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api "org.junit.jupiter:junit-jupiter-api:${junit_version}"
 
-    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'org.slf4j:slf4j-api:2.0.4'
 
     testImplementation('com.github.reportportal:agent-java-test-utils:236a68c')
 

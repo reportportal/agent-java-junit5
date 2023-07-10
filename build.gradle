@@ -52,7 +52,7 @@ dependencies {
     testImplementation "org.aspectj:aspectjweaver:1.9.2"
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
-    testImplementation 'ch.qos.logback:logback-classic:1.4.5'
+    testImplementation 'ch.qos.logback:logback-classic:1.2.11'
     testImplementation ('com.epam.reportportal:logger-java-logback:5.1.5') {
         exclude module: 'client-java'
     }

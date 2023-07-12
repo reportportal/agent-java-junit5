@@ -34,26 +34,25 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     mavenCentral()
-    maven { url "https://jitpack.io" }
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.1.21'
+    api 'com.epam.reportportal:client-java:5.1.22'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api "org.junit.jupiter:junit-jupiter-api:${junit_version}"
 
     implementation 'org.slf4j:slf4j-api:2.0.4'
 
-    testImplementation('com.github.reportportal:agent-java-test-utils:236a68c')
+    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.2'
 
     testImplementation ("org.junit.platform:junit-platform-runner:${junit_runner_version}")
     testImplementation "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
     testImplementation "org.junit.jupiter:junit-jupiter-params:${junit_version}"
-    testImplementation "org.aspectj:aspectjweaver:1.9.2"
+    testImplementation 'org.aspectj:aspectjweaver:1.9.19'
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'ch.qos.logback:logback-classic:1.2.11'
-    testImplementation ('com.epam.reportportal:logger-java-logback:5.1.1') {
+    testImplementation ('com.epam.reportportal:logger-java-logback:5.1.5') {
         exclude module: 'client-java'
     }
     testImplementation 'org.assertj:assertj-core:3.23.1'

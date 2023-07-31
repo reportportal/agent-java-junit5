@@ -128,7 +128,7 @@ However, if you are adding Report Portal agent to existing project, with JUnit 5
 > More about JUnit 5 dependencies structure could be found [here](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata)
 
 #### 2.2 Add Report Portal dedicated logger wrapper
-Report Portal provides it's own logger implementation for major logging frameworks like *log4j* and *logback*
+Report Portal provides its own logger implementations for major logging frameworks like *log4j* and *logback*
 
 If you prefer using **Logback** logging library, add following dependencies:
 

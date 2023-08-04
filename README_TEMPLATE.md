@@ -1,10 +1,12 @@
 # agent-java-junit5
-[![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-junit5.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-junit5%22)
+[![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-junit5.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/com.epam.reportportal/agent-java-junit5)
 [![CI Build](https://github.com/reportportal/agent-java-junit5/actions/workflows/ci.yml/badge.svg)](https://github.com/reportportal/agent-java-junit5/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/reportportal/agent-java-junit5/branch/develop/graph/badge.svg?token=tq832Jsqef)](https://codecov.io/gh/reportportal/agent-java-junit5)
 [![Join Slack chat!](https://slack.epmrpp.reportportal.io/badge.svg)](https://slack.epmrpp.reportportal.io/)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
+
+The latest version: $LATEST_VERSION. Please use `Maven Central` link above to get the client.
 ---
 # ReportPortal [JUnit5](https://junit.org/junit5/) Integration
 

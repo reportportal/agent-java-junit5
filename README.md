@@ -1,18 +1,28 @@
-# agent-java-junit5
-[![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-junit5.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-junit5%22)
+# ReportPortal JUnit 5 Extension
+A JUnit 5 reporter that uploads the results to a ReportPortal server.
+
+> **DISCLAIMER**: We use Google Analytics for sending anonymous usage information such as agent's and client's names, and their versions
+> after a successful launch start. This information might help us to improve both ReportPortal backend and client sides. It is used by the
+> ReportPortal team only and is not supposed for sharing with 3rd parties.
+
+[![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-junit5.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/com.epam.reportportal/agent-java-junit5)
 [![CI Build](https://github.com/reportportal/agent-java-junit5/actions/workflows/ci.yml/badge.svg)](https://github.com/reportportal/agent-java-junit5/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/reportportal/agent-java-junit5/branch/develop/graph/badge.svg?token=tq832Jsqef)](https://codecov.io/gh/reportportal/agent-java-junit5)
 [![Join Slack chat!](https://slack.epmrpp.reportportal.io/badge.svg)](https://slack.epmrpp.reportportal.io/)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
+
+The latest version: 5.1.10. Please use `Maven Central` link above to get the client.
+
 ---
+
 # ReportPortal [JUnit5](https://junit.org/junit5/) Integration
 
 The repository contains [JUnit5 Extension](https://junit.org/junit5/docs/current/user-guide/#extensions) for [ReportPortal](http://reportportal.io/) integration.
 
 ## Getting Started
 
-To start using Report Portal with JUnit 5 create a service location file: 
+To start using ReportPortal with JUnit 5 create a service location file: 
 1. Create folders **_/META-INF/services_** in **_resources_**
 2. Put there a file named **_org.junit.jupiter.api.extension.Extension_**ы
 3. Put a default implementation reference as a single row into the file: **_com.epam.reportportal.junit5.ReportPortalExtension_** 
@@ -85,15 +95,15 @@ By default reporting of @Disabled tests is switched off. To switch it on - add n
 
 # Step-by-step integration manual for JUnit5
 
-This manual will walk you through the steps for integration of Report Portal with JUnit5 based project
+This manual will walk you through the steps for integration of ReportPortal with JUnit5 based project
 
-First, make sure you have installed Report Portal, the installation steps could be found [here](http://reportportal.io/docs/Installation-steps)
+First, make sure you have installed ReportPortal, the installation steps could be found [here](http://reportportal.io/docs/Installation-steps)
 
-We’ll assume that Report Portal is installed and running on <http://localhost:8080>
+We’ll assume that ReportPortal is installed and running on <http://localhost:8080>
 
 ## Step 1 - Create new project (Maven)
 
-> If you want to integrate Report Portal with existing project, go to step 2
+> If you want to integrate ReportPortal with existing project, go to step 2
 
 #### 1.1 Start new maven project
 
@@ -111,7 +121,7 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
 
 #### 2.1 Add following dependencies:
 
-*Report Portal agent implementation for JUnit 5*
+*ReportPortal agent implementation for JUnit 5*
 ```xml
 <dependency>
     <groupId>com.epam.reportportal</groupId>
@@ -122,13 +132,13 @@ We’ll assume that Report Portal is installed and running on <http://localhost:
 > Latest version of the agent, could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-junit5%22)
 
 
-The Report Portal agent for JUnit 5 includes the JUnit 5 library dependency, and so we won't need other explicit JUnit 5 dependencies  
-However, if you are adding Report Portal agent to existing project, with JUnit 5 dependency already declared, pay attention to dependency transitivity and the conflicts that might arise
+The ReportPortal agent for JUnit 5 includes the JUnit 5 library dependency, and so we won't need other explicit JUnit 5 dependencies  
+However, if you are adding ReportPortal agent to existing project, with JUnit 5 dependency already declared, pay attention to dependency transitivity and the conflicts that might arise
 
 > More about JUnit 5 dependencies structure could be found [here](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata)
 
-#### 2.2 Add Report Portal dedicated logger wrapper
-Report Portal provides it's own logger implementation for major logging frameworks like *log4j* and *logback*
+#### 2.2 Add ReportPortal dedicated logger wrapper
+ReportPortal provides its own logger implementations for major logging frameworks like *log4j* and *logback*
 
 If you prefer using **Logback** logging library, add following dependencies:
 
@@ -276,7 +286,7 @@ rp.enable = true
 
 > More details on `reportportal.properties` file could be found [here](https://github.com/reportportal/client-java)
 
-#### 5.2 - Register Report Portal agent in JUnit 5
+#### 5.2 - Register ReportPortal agent in JUnit 5
 There are two options how you can enable ReportPortal extension in your tests:
 - By specifying `@ExtendWith` annotation
 - By service location
@@ -319,7 +329,7 @@ with the following content:
 com.epam.reportportal.junit5.ReportPortalExtension
 ```
 
-As a final step you need to tell JUnit to register our Report Portal agent, and there are multiple ways for doing that:
+As a final step you need to tell JUnit to register our ReportPortal agent, and there are multiple ways for doing that:
 
 * method 1 - via Maven Surefire/Failsafe plugin (maven only)
 * method 2 - via JVM system property
@@ -347,7 +357,7 @@ Add a `build` section and Maven Surefire plugin with the following configuration
     </plugins>
 </build>
 ```
-The `junit.jupiter.extensions.autodetection.enabled = true` configuration parameter of the Surefire plugin links Report Portal agent with the tests
+The `junit.jupiter.extensions.autodetection.enabled = true` configuration parameter of the Surefire plugin links ReportPortal agent with the tests
 
 *Full pom.xml file example*
 
@@ -409,15 +419,15 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
 </project>
 ```
 
-Now the Report Portal agent is linked to your tests and when you run the tests with maven, the results should be sent to Report Portal
+Now the ReportPortal agent is linked to your tests and when you run the tests with maven, the results should be sent to ReportPortal
 
-> *Important note*. With this approach, only the tests executed via maven will be sent to Report Portal, while tests ran by IDE will not trigger the Report Portal agent and therefore the test-report won't be generated  
+> *Important note*. With this approach, only the tests executed via maven will be sent to ReportPortal, while tests ran by IDE will not trigger the ReportPortal agent and therefore the test-report won't be generated  
 
-To have test results to be sent to Report Portal when executed from IDE (without maven), follow the steps below
+To have test results to be sent to ReportPortal when executed from IDE (without maven), follow the steps below
 
 ###### Method 2 - using JVM system property  
 
-Another way to link test runs with Report Portal is to add JVM system property to the run arguments for test runs  
+Another way to link test runs with ReportPortal is to add JVM system property to the run arguments for test runs  
 Here is the example of adding run arguments with IntelliJ IDEA  
 
 In Intellij IDEA go to *Run* -> *Edit Configurations* -> click on "+" sign -> select JUnit
@@ -430,11 +440,11 @@ Enter the name of the run, select classes and/or methods to be executed in this 
 -Djunit.jupiter.extensions.autodetection.enabled=true
 ```
 
-When you are done adding local run configuration, simply go to *Run* -> *Run <test_run_name>* and that test run results should be sent to Report Portal
+When you are done adding local run configuration, simply go to *Run* -> *Run <test_run_name>* and that test run results should be sent to ReportPortal
 
 ###### Method 3 - using `junit-platform.properties` file
 
-There is another option of linking Report Portal with your JUnit 5 tests
+There is another option of linking ReportPortal with your JUnit 5 tests
 
 Add `junit-platform.properties` file to your `resources` folder and add the following line there:
 
@@ -446,7 +456,7 @@ junit.jupiter.extensions.autodetection.enabled=true
 
 > More details about JUnit 5 extensions detection configuration could be found [here](https://junit.org/junit5/docs/current/user-guide/#extensions-registration-automatic)
 
-With this approach, the test report will be generated and sent to Report Portal in any type of test run, whether it was via maven, gradle or via IDE
+With this approach, the test report will be generated and sent to ReportPortal in any type of test run, whether it was via maven, gradle or via IDE
 
 ###### Method 4 - using Gradle test task (Gradle only)
 
@@ -493,7 +503,7 @@ test {
 
 ## Step 6 - Observing test run report
 
-After you linked the Report Portal JUnit 5 agent using one of the approaches described above and ran your tests, you should be able to see the results in your ReportPortal UI instance  
+After you linked the ReportPortal JUnit 5 agent using one of the approaches described above and ran your tests, you should be able to see the results in your ReportPortal UI instance  
 To do that, login to ReportPortal, and go to *Left Panel* -> *Launches*
 
 You should see the launch there, with the name equal to the value of `rp.launch` from your `reportportal.properties` file

@@ -247,7 +247,7 @@ By this moment, your project tree should look somewhat like the this:
 
 Go to *http:$IP_ADDRESS_OF_REPORT_PORTAL:8080* (by default it is *http://localhost:8080*)
 
-Login as **Admin** user and create the project (more details [here](http://reportportal.io/docs/Deploy-ReportPortal) and [here](http://reportportal.io/docs/Creation-of-project))
+Login as **Admin** user and create the project (more details [here](https://reportportal.io/docs/category/installation-steps) and [here](https://reportportal.io/docs/reportportal-configuration/CreationOfProjectAndAddingUsers/#create-a-project))
 
 ![RP. Add Project](integration_manual_files/step_add_project.png)
 

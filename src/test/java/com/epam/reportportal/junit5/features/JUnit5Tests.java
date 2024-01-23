@@ -1,8 +1,6 @@
 package com.epam.reportportal.junit5.features;
 
 import com.epam.reportportal.service.ReportPortal;
-import com.google.common.io.Files;
-import com.google.common.io.Resources;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
@@ -34,10 +32,7 @@ class JUnit5Tests {
 	@Tag("tag2")
 	void baseClassTest() throws IOException {
 		// Report launch log
-		File file = File.createTempFile("rp-test", ".css");
-		Resources.asByteSource(Resources.getResource("files/css.css")).copyTo(Files.asByteSink(file));
-		ReportPortal.emitLaunchLog("LAUNCH LOG MESAGE WITH ATTACHMENT", "error", new Date(), file);
-
+		ReportPortal.emitLaunchLog("LAUNCH LOG MESAGE WITH ATTACHMENT", "error", new Date(), new File("files/css.css"));
 		System.out.println("base-class-test");
 	}
 
@@ -58,13 +53,13 @@ class JUnit5Tests {
 	}
 
 	@ParameterizedTest
-	@CsvSource({"first", "second", "third"})
+	@CsvSource({ "first", "second", "third" })
 	void parameterizedTestWithCsvSource(String value) {
 		System.out.println("parameterized-test-with-csv-source, parameter: " + value);
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = DayOfWeek.class, names = {"MONDAY", "WEDNESDAY", "FRIDAY"})
+	@EnumSource(value = DayOfWeek.class, names = { "MONDAY", "WEDNESDAY", "FRIDAY" })
 	void parameterizedTestWithEnumSource(DayOfWeek day) {
 		System.out.println("parameterized-test-with-enum-source, parameter: " + day);
 	}
@@ -77,7 +72,7 @@ class JUnit5Tests {
 
 	@ParameterizedTest
 	@NullSource
-	@ValueSource(strings = {"a", "b", "c"})
+	@ValueSource(strings = { "a", "b", "c" })
 	void parameterizedTestWithNullSourceAndValueSource(String value) {
 		System.out.println("parameterized-test-with-null-source-and-value-source, parameter: " + value);
 	}
@@ -90,7 +85,7 @@ class JUnit5Tests {
 
 	@ParameterizedTest
 	@EmptySource
-	@ValueSource(strings = {"a", "b", "c"})
+	@ValueSource(strings = { "a", "b", "c" })
 	void parameterizedTestWithEmptySourceAndValueSource(String value) {
 		System.out.println("parameterized-test-with-empty-source-and-value-source, parameter: " + value);
 	}
@@ -98,7 +93,7 @@ class JUnit5Tests {
 	@ParameterizedTest
 	@NullSource
 	@EmptySource
-	@ValueSource(strings = {"a", "b", "c"})
+	@ValueSource(strings = { "a", "b", "c" })
 	void parameterizedTestWithNullSourceAndEmptySourceAndValueSource(String value) {
 		System.out.println("parameterized-test-with-null-source-empty-source-and-value-source, parameter: " + value);
 	}
@@ -111,55 +106,55 @@ class JUnit5Tests {
 
 	@ParameterizedTest
 	@NullAndEmptySource
-	@ValueSource(strings = {"a", "b", "c"})
+	@ValueSource(strings = { "a", "b", "c" })
 	void parameterizedTestWithNullAndEmptySourceAndValueSource(String value) {
 		System.out.println("parameterized-test-with-null-and-empty-source-and-value-source, parameter: " + value);
 	}
 
 	@ParameterizedTest
-	@ValueSource(floats = {1.1f, 2.2f, 3.3f})
+	@ValueSource(floats = { 1.1f, 2.2f, 3.3f })
 	void parameterizedTestWithFloatsValueSource(float value) {
 		System.out.println("parameterized-test-with-value-source, parameter: " + value);
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {1, 2, 3})
+	@ValueSource(ints = { 1, 2, 3 })
 	void parameterizedTestWithIntValueSource(int value) {
 		System.out.println("parameterized-test-with-value-source, parameter: " + value);
 	}
 
 	@ParameterizedTest
-	@ValueSource(shorts = {1, 2, 3})
+	@ValueSource(shorts = { 1, 2, 3 })
 	void parameterizedTestWithShortsValueSource(short value) {
 		System.out.println("parameterized-test-with-value-source, parameter: " + value);
 	}
 
 	@ParameterizedTest
-	@ValueSource(bytes = {1, 2, 3})
+	@ValueSource(bytes = { 1, 2, 3 })
 	void parameterizedTestWithBytesValueSource(byte value) {
 		System.out.println("parameterized-test-with-value-source, parameter: " + value);
 	}
 
 	@ParameterizedTest
-	@ValueSource(chars = {'a', 'b', 'c'})
+	@ValueSource(chars = { 'a', 'b', 'c' })
 	void parameterizedTestWithCharsValueSource(char value) {
 		System.out.println("parameterized-test-with-value-source, parameter: " + value);
 	}
 
 	@ParameterizedTest
-	@ValueSource(doubles = {1.1, 2.2, 3.3})
+	@ValueSource(doubles = { 1.1, 2.2, 3.3 })
 	void parameterizedTestWithDoublesValueSource(double value) {
 		System.out.println("parameterized-test-with-value-source, parameter: " + value);
 	}
 
 	@ParameterizedTest
-	@ValueSource(longs = {1147483648L, 2147483648L, 3147483648L})
+	@ValueSource(longs = { 1147483648L, 2147483648L, 3147483648L })
 	void parameterizedTestWithLongsValueSource(long value) {
 		System.out.println("parameterized-test-with-value-source, parameter: " + value);
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"a", "b", "c"})
+	@ValueSource(strings = { "a", "b", "c" })
 	void parameterizedTestWithStringsValueSource(String value) {
 		System.out.println("parameterized-test-with-value-source, parameter: " + value);
 	}

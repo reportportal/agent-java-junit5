@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Client version updated on [5.2.0](https://github.com/reportportal/client-java/releases/tag/5.2.0), by @HardNorth
+- JUnit 5 dependency marked as `implementation` to force users specify their own versions, by @HardNorth
+### Removed
+- Deprecated code, by @HardNorth
 
 ## [5.1.11]
 ### Changed

@@ -98,6 +98,7 @@ public class ReportPortalExtension
 	/**
 	 * Finishes all launches for the JVM
 	 */
+	@SuppressWarnings("unused")
 	public void finish() {
 		new ArrayList<>(launchMap.keySet()).forEach(this::finish);
 	}
@@ -429,6 +430,7 @@ public class ReportPortalExtension
 
 	private void finishBeforeAfter(ExtensionContext context, Maybe<String> id, ItemStatus status) {
 		Launch launch = getLaunch(context);
+		//noinspection ReactiveStreamsUnusedPublisher
 		launch.finishTestItem(id, buildFinishTestItemRq(context, status));
 	}
 
@@ -524,21 +526,11 @@ public class ReportPortalExtension
 	 * Finish a test template execution (basically a test class) with a specific status, builds a finish request based on the status
 	 *
 	 * @param context JUnit's test context
-	 * @param status  an {@link ItemStatus}
-	 * @deprecated the method not in use anymore, use {@link #finishTemplate(ExtensionContext)}
-	 */
-	protected void finishTemplate(@Nonnull final ExtensionContext context, @Nullable final ItemStatus status) {
-		finishTemplate(context);
-	}
-
-	/**
-	 * Finish a test template execution (basically a test class) with a specific status, builds a finish request based on the status
-	 *
-	 * @param context JUnit's test context
 	 */
 	protected void finishTemplate(@Nonnull final ExtensionContext context) {
 		Launch launch = getLaunch(context);
 		Maybe<String> templateId = testTemplates.remove(context);
+		//noinspection ReactiveStreamsUnusedPublisher
 		launch.finishTestItem(templateId, buildFinishTestItemRq(context, null));
 		idMapping.remove(context);
 	}

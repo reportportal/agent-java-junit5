@@ -24,7 +24,7 @@ The repository contains [JUnit5 Extension](https://junit.org/junit5/docs/current
 
 To start using ReportPortal with JUnit 5 create a service location file: 
 1. Create folders **_/META-INF/services_** in **_resources_**
-2. Put there a file named **_org.junit.jupiter.api.extension.Extension_**ы
+2. Put there a file named **_org.junit.jupiter.api.extension.Extension_**
 3. Put a default implementation reference as a single row into the file: **_com.epam.reportportal.junit5.ReportPortalExtension_** 
 
 Example:
@@ -247,7 +247,7 @@ By this moment, your project tree should look somewhat like the this:
 
 Go to *http:$IP_ADDRESS_OF_REPORT_PORTAL:8080* (by default it is *http://localhost:8080*)
 
-Login as **Admin** user and create the project (more details [here](http://reportportal.io/docs/Deploy-ReportPortal) and [here](http://reportportal.io/docs/Creation-of-project))
+Login as **Admin** user and create the project (more details [here](https://reportportal.io/docs/category/installation-steps) and [here](https://reportportal.io/docs/reportportal-configuration/CreationOfProjectAndAddingUsers/#create-a-project))
 
 ![RP. Add Project](integration_manual_files/step_add_project.png)
 

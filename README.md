@@ -8,11 +8,11 @@ A JUnit 5 reporter that uploads the results to a ReportPortal server.
 [![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-junit5.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/com.epam.reportportal/agent-java-junit5)
 [![CI Build](https://github.com/reportportal/agent-java-junit5/actions/workflows/ci.yml/badge.svg)](https://github.com/reportportal/agent-java-junit5/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/reportportal/agent-java-junit5/branch/develop/graph/badge.svg?token=tq832Jsqef)](https://codecov.io/gh/reportportal/agent-java-junit5)
-[![Join Slack chat!](https://img.shields.io/badge/slack-join-brightgreen.svg)](https://slack.epmrpp.reportportal.io/)
+[![Join Slack chat!](https://slack.epmrpp.reportportal.io/badge.svg)](https://slack.epmrpp.reportportal.io/)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 
-The latest version: 5.2.0. Please use `Maven Central` link above to get the client.
+The latest version: 5.2.1. Please use `Maven Central` link above to get the client.
 
 ---
 
@@ -44,7 +44,7 @@ Extend *ReportPortalExtension*, override *buildStartStepRq()* or other methods (
 <dependency>
    <groupId>com.epam.reportportal</groupId>
    <artifactId>agent-java-junit5</artifactId>
-   <version>5.2.0</version>
+   <version>5.2.1</version>
 </dependency>
 ```
 
@@ -76,7 +76,7 @@ repositories {
     mavenCentral()
 }
 
-testImplementation 'com.epam.reportportal:agent-java-junit5:5.2.0'
+testImplementation 'com.epam.reportportal:agent-java-junit5:5.2.1'
 ```
 
 #### Automatic Extension Registration (optional)
@@ -126,7 +126,7 @@ We’ll assume that ReportPortal is installed and running on <http://localhost:8
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>agent-java-junit5</artifactId>
-    <version>5.2.0</version>
+    <version>5.2.1</version>
 </dependency>
 ```
 > Latest version of the agent, could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-junit5%22)
@@ -377,7 +377,7 @@ The `junit.jupiter.extensions.autodetection.enabled = true` configuration parame
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>agent-java-junit5</artifactId>
-            <version>5.2.0</version>
+            <version>5.2.1</version>
         </dependency>
 
         <dependency>
@@ -491,7 +491,7 @@ dependencies {
     implementation 'com.epam.reportportal:logger-java-log4j:5.1.4'
     implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
     implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
-    implementation 'com.epam.reportportal:agent-java-junit5:5.2.0'
+    implementation 'com.epam.reportportal:agent-java-junit5:5.2.1'
 }
 
 test {

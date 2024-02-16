@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- JUnit 5 dependency marked as `compileOnly` to avoid overriding JUnit 5 API version for users, by @HardNorth
+- Client version updated on [5.2.5](https://github.com/reportportal/client-java/releases/tag/5.2.5), by @HardNorth
 
 ## [5.2.1]
 ### Changed

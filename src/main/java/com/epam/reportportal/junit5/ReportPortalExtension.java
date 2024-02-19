@@ -673,7 +673,6 @@ public class ReportPortalExtension
 		rq.setStartTime(startTime);
 		rq.setName(createStepName(context));
 		rq.setDescription(description);
-		rq.setUniqueId(context.getUniqueId());
 		rq.setType(itemType == TEMPLATE ? SUITE.name() : itemType.name());
 		String codeRef = getCodeRef(context);
 		rq.setCodeRef(codeRef);
@@ -705,6 +704,7 @@ public class ReportPortalExtension
 	 * @return Request to ReportPortal
 	 */
 	@Nonnull
+	@SuppressWarnings("unused")
 	protected StartTestItemRQ buildStartConfigurationRq(@Nonnull Method method, @Nonnull ExtensionContext parentContext,
 			@Nonnull ExtensionContext context, @Nonnull ItemType itemType) {
 		StartTestItemRQ rq = new StartTestItemRQ();
@@ -717,8 +717,6 @@ public class ReportPortalExtension
 			rq.setName(createConfigurationName(method.getDeclaringClass(), method));
 			rq.setDescription(createConfigurationDescription(method.getDeclaringClass(), method));
 		}
-		String uniqueId = parentContext.getUniqueId() + "/[method:" + method.getName() + "()]";
-		rq.setUniqueId(uniqueId);
 		ofNullable(context.getTags()).ifPresent(it -> rq.setAttributes(it.stream()
 				.map(tag -> new ItemAttributesRQ(null, tag))
 				.collect(Collectors.toSet())));

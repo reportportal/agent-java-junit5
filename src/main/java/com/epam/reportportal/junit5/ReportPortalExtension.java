@@ -316,9 +316,9 @@ public class ReportPortalExtension
 		startTestItem(extensionContext, STEP);
 		try {
 			invocation.proceed();
-			finishTestItem(extensionContext, PASSED);
+			finishTest(extensionContext, PASSED);
 		} catch (Throwable throwable) {
-			finishTestItem(extensionContext, getExecutionStatus(throwable));
+			finishTest(extensionContext, getExecutionStatus(throwable));
 			throw throwable;
 		}
 	}
@@ -344,7 +344,7 @@ public class ReportPortalExtension
 	@Override
 	public void afterTestExecution(ExtensionContext context) {
 		finishTemplates(context);
-		finishTestItem(context, getExecutionStatus(context));
+		finishTest(context, getExecutionStatus(context));
 	}
 
 	@Override
@@ -352,16 +352,8 @@ public class ReportPortalExtension
 		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
 			String description = reason.orElse(createStepDescription(context));
 			startTestItem(context, Collections.emptyList(), STEP, description, Calendar.getInstance().getTime());
-			finishTestItem(context, SKIPPED);
+			finishTest(context, SKIPPED);
 		}
-	}
-
-	@Override
-	public void testSuccessful(ExtensionContext context) {
-	}
-
-	@Override
-	public void testAborted(ExtensionContext context, Throwable throwable) {
 	}
 
 	@Override
@@ -370,7 +362,7 @@ public class ReportPortalExtension
 			if(failedClassInits.contains(parent)) {
 				startTestItem(context, STEP);
 				sendStackTraceToRP(cause);
-				finishTestItem(context, FAILED);
+				finishTest(context, FAILED);
 			}
 		});
 	}
@@ -552,6 +544,16 @@ public class ReportPortalExtension
 	 */
 	protected void finishTestItem(@Nonnull final ExtensionContext context, @Nullable final ItemStatus status) {
 		finishTestItem(context, buildFinishTestItemRq(context, status));
+	}
+
+	/**
+	 * Finishes a test in RP with a specific status, builds a finish request based on the status
+	 *
+	 * @param context JUnit's test context
+	 * @param status  a test execution status
+	 */
+	protected void finishTest(@Nonnull final ExtensionContext context, @Nullable final ItemStatus status) {
+		finishTestItem(context, buildFinishTestRq(context, status));
 	}
 
 	/**
@@ -739,6 +741,22 @@ public class ReportPortalExtension
 	 */
 	@SuppressWarnings("unused")
 	protected void createSkippedSteps(ExtensionContext context, Throwable cause) {
+	}
+
+	/**
+	 * Extension point to customize a test result on it's finish
+	 *
+	 * @param context JUnit's test context
+	 * @param status  a test item execution result
+	 * @return Request to ReportPortal
+	 */
+	@SuppressWarnings("unused")
+	@Nonnull
+	protected FinishTestItemRQ buildFinishTestRq(@Nonnull ExtensionContext context, @Nullable ItemStatus status) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		ofNullable(status).ifPresent(s -> rq.setStatus(s.name()));
+		rq.setEndTime(Calendar.getInstance().getTime());
+		return rq;
 	}
 
 	/**

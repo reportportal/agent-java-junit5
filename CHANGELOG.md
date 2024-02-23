@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `finishTest` method which controls finishing Tests with statuses, to distinguish them from suites and configuration methods, by @HardNorth
 ### Changed
 - JUnit 5 dependency marked as `compileOnly` to avoid overriding JUnit 5 API version for users, by @HardNorth
 - JSR 305 dependency marked as `implementation` to force users specify their own versions, by @HardNorth

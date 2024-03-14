@@ -44,7 +44,8 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:2.0.7'
 
     testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.3'
-    testImplementation "org.junit.platform:junit-platform-runner:${junit_runner_version}"
+    testImplementation "org.junit.platform:junit-platform-runner:${junit_runner_version}" // We need runner for JUnit 4 compatibility tests
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junit_version}" // Required for tests to run
     testImplementation "org.junit.jupiter:junit-jupiter-params:${junit_version}"
     testImplementation 'org.aspectj:aspectjweaver:1.9.19'
     testImplementation 'org.hamcrest:hamcrest:2.2'

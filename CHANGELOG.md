@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.0]
 ### Added
 - `finishTest` method which controls finishing Tests with statuses, to distinguish them from suites and configuration methods, by @HardNorth
 ### Changed

@@ -16,6 +16,7 @@
 
 package com.epam.reportportal.junit5;
 
+import com.epam.reportportal.annotations.Description;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.attribute.Attributes;
@@ -350,8 +351,9 @@ public class ReportPortalExtension
 	@Override
 	public void testDisabled(ExtensionContext context, Optional<String> reason) {
 		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
-			String description = reason.orElse(createStepDescription(context));
-			startTestItem(context, Collections.emptyList(), STEP, description, Calendar.getInstance().getTime());
+			final ItemType itemType = STEP;
+			String description = reason.orElse(createStepDescription(context, itemType));
+			startTestItem(context, Collections.emptyList(), itemType, description, Calendar.getInstance().getTime());
 			finishTest(context, SKIPPED);
 		}
 	}
@@ -455,7 +457,7 @@ public class ReportPortalExtension
 	 * @param type      a type of the item
 	 */
 	protected void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
-		startTestItem(context, arguments, type, createStepDescription(context), Calendar.getInstance().getTime());
+		startTestItem(context, arguments, type, createStepDescription(context, type), Calendar.getInstance().getTime());
 	}
 
 	/**
@@ -822,8 +824,41 @@ public class ReportPortalExtension
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
 	@SuppressWarnings("unused")
-	protected String createStepDescription(ExtensionContext context) {
-		return "";
+	protected String createStepDescription(ExtensionContext context, final ItemType itemType) {
+		String defaultValue = "";
+		if (itemType != STEP) {
+			return defaultValue;
+		}
+		Optional<Method> optionalMethod = getOptionalTestMethod(context);
+		if (!optionalMethod.isPresent()){
+			return defaultValue;
+		}
+		Method method = optionalMethod.get();
+
+		Description descriptionFromMethod = method.getAnnotation(Description.class);
+		if(descriptionFromMethod != null){
+			return descriptionFromMethod.value();
+		}
+
+		Description descriptionFromClass = method.getDeclaringClass().getAnnotation(Description.class);
+		if(descriptionFromClass != null){
+			return descriptionFromClass.value();
+		}
+
+		return defaultValue;
+	}
+
+	private Optional<Method> getOptionalTestMethod(ExtensionContext context){
+		Optional<Method> optionalMethod = context.getTestMethod();
+		if(!optionalMethod.isPresent()){
+			//if not present means that we are in the dynamic test, in this case we need to move to the parent context
+			Optional<ExtensionContext> parentContext = context.getParent();
+			if(!parentContext.isPresent()){
+				return Optional.empty();
+			}
+			return parentContext.get().getTestMethod();
+		}
+		return optionalMethod;
 	}
 
 	/**
@@ -853,7 +888,8 @@ public class ReportPortalExtension
 			// to fix item ordering when @AfterEach starts in the same millisecond as skipped test
 			skipStartTime = new Date(skipStartTime.getTime() - 1);
 		}
-		startTestItem(context, invocationContext.getArguments(), STEP, createStepDescription(context), skipStartTime);
+		final ItemType itemType = STEP;
+		startTestItem(context, invocationContext.getArguments(), itemType, createStepDescription(context, itemType), skipStartTime);
 		createSkippedSteps(context, throwable);
 		FinishTestItemRQ finishRq = buildFinishTestItemRq(context, SKIPPED);
 		finishRq.setIssue(Launch.NOT_ISSUE);

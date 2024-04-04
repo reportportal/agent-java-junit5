@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Client version updated on [5.2.13](https://github.com/reportportal/client-java/releases/tag/5.2.13), by @HardNorth
+### Removed
+- JSR 305 dependency, by @HardNorth
 
 ## [5.3.0]
 ### Added

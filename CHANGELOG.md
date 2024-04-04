@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.1]
 ### Added
 - `@Description` annotation support, by @oleksandr-fomenko
 ### Changed

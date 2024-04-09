@@ -2,12 +2,14 @@ package com.epam.reportportal.junit5;
 
 import com.epam.reportportal.junit5.features.disabled.OneDisabledOneEnabledTest;
 import com.epam.reportportal.junit5.features.disabled.OneDisabledTest;
-import com.epam.reportportal.junit5.features.disabled.OneDisabledTestWithReason;
+import com.epam.reportportal.junit5.features.disabled.OneDisabledWithReasonTest;
+import com.epam.reportportal.junit5.features.disabled.OneDisabledWithReasonDescriptionTest;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.reportportal.utils.markdown.MarkdownUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
@@ -82,7 +84,7 @@ public class DisabledTestTest {
 
 	@Test
 	public void verify_a_disabled_test_reason_reported() {
-		TestUtils.runClasses(OneDisabledTestWithReason.class);
+		TestUtils.runClasses(OneDisabledWithReasonTest.class);
 
 		Launch launch = DisabledTestExtension.LAUNCH;
 
@@ -92,8 +94,8 @@ public class DisabledTestTest {
 
 		List<StartTestItemRQ> steps = captorStart.getAllValues();
 		assertThat("StartTestItem request has proper Description field",
-				captorStart.getAllValues().get(0).getDescription(),
-				equalTo(OneDisabledTestWithReason.REASON)
+				steps.get(0).getDescription(),
+				equalTo(OneDisabledWithReasonTest.REASON)
 		);
 	}
 
@@ -125,6 +127,23 @@ public class DisabledTestTest {
 
 		finishStep = finishes.get(1);
 		assertThat("Enabled has passed status", finishStep.getStatus(), equalTo(ItemStatus.PASSED.name()));
+	}
+
+	@Test
+	public void verify_a_disabled_test_reason_and_description_reported() {
+		TestUtils.runClasses(OneDisabledWithReasonDescriptionTest.class);
+
+		Launch launch = DisabledTestExtension.LAUNCH;
+
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
+		ArgumentCaptor<StartTestItemRQ> captorStart = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(launch, times(1)).startTestItem(notNull(), captorStart.capture()); // Start a test
+
+		List<StartTestItemRQ> steps = captorStart.getAllValues();
+		assertThat("StartTestItem request has proper Description field",
+				steps.get(0).getDescription(),
+				equalTo(MarkdownUtils.asTwoParts(OneDisabledWithReasonDescriptionTest.REASON, OneDisabledWithReasonDescriptionTest.TEST_DESCRIPTION_METHOD))
+		);
 	}
 
 	@AfterAll

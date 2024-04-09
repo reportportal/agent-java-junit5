@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Client version updated on [5.2.14](https://github.com/reportportal/client-java/releases/tag/5.2.14), by @HardNorth
+- Do not hide test description when test is disabled with reason, by @HardNorth
 
 ## [5.3.1]
 ### Added

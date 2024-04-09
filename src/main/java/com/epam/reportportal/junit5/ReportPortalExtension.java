@@ -29,6 +29,7 @@ import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.ParameterUtils;
 import com.epam.reportportal.utils.TestCaseIdUtils;
+import com.epam.reportportal.utils.markdown.MarkdownUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -352,8 +353,11 @@ public class ReportPortalExtension
 	public void testDisabled(ExtensionContext context, Optional<String> reason) {
 		if (Boolean.parseBoolean(System.getProperty("reportDisabledTests"))) {
 			final ItemType itemType = STEP;
-			String description = reason.orElse(createStepDescription(context, itemType));
-			startTestItem(context, Collections.emptyList(), itemType, description, Calendar.getInstance().getTime());
+			String description = reason.map(r -> {
+				String rawDescription = createStepDescription(context, itemType);
+				return StringUtils.isNotBlank(rawDescription) ? MarkdownUtils.asTwoParts(r, rawDescription) : r;
+			}).orElse(null);
+			startTestItem(context, Collections.emptyList(), itemType, description, null);
 			finishTest(context, SKIPPED);
 		}
 	}
@@ -457,7 +461,7 @@ public class ReportPortalExtension
 	 * @param type      a type of the item
 	 */
 	protected void startTestItem(ExtensionContext context, List<Object> arguments, ItemType type) {
-		startTestItem(context, arguments, type, createStepDescription(context, type), Calendar.getInstance().getTime());
+		startTestItem(context, arguments, type, null, null);
 	}
 
 	/**
@@ -466,11 +470,9 @@ public class ReportPortalExtension
 	 * @param context     JUnit's test context
 	 * @param arguments   a list of test parameters
 	 * @param itemType    a type of the item
-	 * @param description the test description
-	 * @param startTime   the test start time
 	 */
 	protected void startTestItem(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
-			@Nonnull final ItemType itemType, @Nonnull final String description, @Nonnull final Date startTime) {
+			@Nonnull final ItemType itemType, @Nullable final String description, @Nullable final Date startTime) {
 		idMapping.computeIfAbsent(context, c -> {
 			StartTestItemRQ rq = buildStartStepRq(c, arguments, itemType, description, startTime);
 			Launch launch = getLaunch(c);
@@ -665,18 +667,17 @@ public class ReportPortalExtension
 	 * @param context     JUnit's test context
 	 * @param arguments   a test arguments list
 	 * @param itemType    a test method item type
-	 * @param description a test method description
 	 * @param startTime   a start time of the test
 	 * @return Request to ReportPortal
 	 */
 	@Nonnull
 	protected StartTestItemRQ buildStartStepRq(@Nonnull final ExtensionContext context,
-			@Nonnull final List<Object> arguments, @Nonnull final ItemType itemType, @Nonnull final String description,
-			@Nonnull final Date startTime) {
+			@Nonnull final List<Object> arguments, @Nonnull final ItemType itemType, @Nullable final String description,
+			@Nullable final Date startTime) {
 		StartTestItemRQ rq = new StartTestItemRQ();
-		rq.setStartTime(startTime);
+		rq.setStartTime(ofNullable(startTime).orElseGet(Calendar.getInstance()::getTime));
 		rq.setName(createStepName(context));
-		rq.setDescription(description);
+		rq.setDescription(ofNullable(description).orElseGet(() -> createStepDescription(context, itemType)));
 		rq.setType(itemType == TEMPLATE ? SUITE.name() : itemType.name());
 		String codeRef = getCodeRef(context);
 		rq.setCodeRef(codeRef);
@@ -823,7 +824,7 @@ public class ReportPortalExtension
 	 * @param context JUnit's test context
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
-	@SuppressWarnings("unused")
+	@Nonnull
 	protected String createStepDescription(ExtensionContext context, final ItemType itemType) {
 		String defaultValue = "";
 		if (itemType != STEP) {

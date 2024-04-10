@@ -36,6 +36,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.*;
 import org.opentest4j.TestAbortedException;
@@ -91,7 +92,8 @@ public class ReportPortalExtension
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private final Set<ExtensionContext> failedClassInits = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
+	public static final String DESCRIPTION_TEST_ERROR_FORMAT = "%s\nError: \n%s";
+	private Throwable testThrowable;
 	@Nonnull
 	protected Optional<Maybe<String>> getItemId(@Nonnull ExtensionContext context) {
 		return ofNullable(idMapping.get(context));
@@ -294,6 +296,7 @@ public class ReportPortalExtension
 		if (throwable == null) {
 			return PASSED;
 		}
+		testThrowable = throwable;
 		sendStackTraceToRP(throwable);
 		return IS_ASSUMPTION.test(throwable) ? SKIPPED : FAILED;
 	}
@@ -368,6 +371,7 @@ public class ReportPortalExtension
 			if(failedClassInits.contains(parent)) {
 				startTestItem(context, STEP);
 				sendStackTraceToRP(cause);
+				testThrowable = cause;
 				finishTest(context, FAILED);
 			}
 		});
@@ -757,6 +761,13 @@ public class ReportPortalExtension
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestRq(@Nonnull ExtensionContext context, @Nullable ItemStatus status) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
+		if (status != ItemStatus.PASSED && testThrowable != null) {
+			ItemType itemType = STEP;
+			String description = String.format(DESCRIPTION_TEST_ERROR_FORMAT,
+					createStepDescription(context, itemType),
+					ExceptionUtils.getStackTrace(testThrowable));
+			rq.setDescription(description);
+		}
 		ofNullable(status).ifPresent(s -> rq.setStatus(s.name()));
 		rq.setEndTime(Calendar.getInstance().getTime());
 		return rq;

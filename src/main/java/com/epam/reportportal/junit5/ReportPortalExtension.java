@@ -676,7 +676,7 @@ public class ReportPortalExtension
 			@Nullable final Date startTime) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(ofNullable(startTime).orElseGet(Calendar.getInstance()::getTime));
-		rq.setName(createStepName(context));
+		rq.setName(createStepName(context, itemType));
 		rq.setDescription(ofNullable(description).orElseGet(() -> createStepDescription(context, itemType)));
 		rq.setType(itemType == TEMPLATE ? SUITE.name() : itemType.name());
 		String codeRef = getCodeRef(context);
@@ -782,11 +782,38 @@ public class ReportPortalExtension
 	 * Extension point to customize test step name
 	 *
 	 * @param context JUnit's test context
+	 * @param itemType a test method item type
 	 * @return Test/Step Name being sent to ReportPortal
 	 */
-	protected String createStepName(ExtensionContext context) {
+	protected String createStepName(ExtensionContext context, ItemType itemType) {
 		String name = context.getDisplayName();
-		return name.length() > 1024 ? name.substring(0, 1021) + "..." : name;
+		String defaultValue = getMethodName(name);
+
+		if (itemType != STEP) {
+			return defaultValue;
+		}
+
+		Optional<Method> optionalMethod = getOptionalTestMethod(context);
+		if (!optionalMethod.isPresent()) {
+			return defaultValue;
+		}
+		Method method = optionalMethod.get();
+
+		com.epam.reportportal.annotations.DisplayName displayNameFromMethod = method.getAnnotation(com.epam.reportportal.annotations.DisplayName.class);
+		if (displayNameFromMethod != null) {
+			return getMethodName(displayNameFromMethod.value());
+		}
+
+		com.epam.reportportal.annotations.DisplayName displayNameFromClass = method.getDeclaringClass().getAnnotation(com.epam.reportportal.annotations.DisplayName.class);
+		if (displayNameFromClass != null) {
+			return getMethodName(displayNameFromClass.value());
+		}
+
+		return defaultValue;
+	}
+
+	private String getMethodName(String value) {
+		return value.length() > 1024 ? value.substring(0, 1021) + "..." : value;
 	}
 
 	/**

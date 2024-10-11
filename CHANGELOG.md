@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.3]
 ### Added
 - `@DisplayName` annotation support, by @nick130589
 - Last error log reporting into Test Item Description, by @aykhangaffarov

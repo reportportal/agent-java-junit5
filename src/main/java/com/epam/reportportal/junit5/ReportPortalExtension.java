@@ -36,6 +36,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.*;
 import org.opentest4j.TestAbortedException;
@@ -91,7 +92,8 @@ public class ReportPortalExtension
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private final Set<ExtensionContext> failedClassInits = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
+	public static final String DESCRIPTION_TEST_ERROR_FORMAT = "%s\nError: \n%s";
+	private final Map<ExtensionContext, Throwable> testThrowable = new ConcurrentHashMap<>();
 	@Nonnull
 	protected Optional<Maybe<String>> getItemId(@Nonnull ExtensionContext context) {
 		return ofNullable(idMapping.get(context));
@@ -286,14 +288,16 @@ public class ReportPortalExtension
 	/**
 	 * Returns a status of a test based on execution exception
 	 *
+	 * @param context JUnit's test context
 	 * @param throwable test exception
 	 * @return an {@link ItemStatus}
 	 */
 	@Nonnull
-	protected ItemStatus getExecutionStatus(@Nullable final Throwable throwable) {
+	protected ItemStatus getExecutionStatus(@Nonnull final ExtensionContext context, @Nullable final Throwable throwable) {
 		if (throwable == null) {
 			return PASSED;
 		}
+		testThrowable.put(context, throwable);
 		sendStackTraceToRP(throwable);
 		return IS_ASSUMPTION.test(throwable) ? SKIPPED : FAILED;
 	}
@@ -320,7 +324,7 @@ public class ReportPortalExtension
 			invocation.proceed();
 			finishTest(extensionContext, PASSED);
 		} catch (Throwable throwable) {
-			finishTest(extensionContext, getExecutionStatus(throwable));
+			finishTest(extensionContext, getExecutionStatus(extensionContext, throwable));
 			throw throwable;
 		}
 	}
@@ -340,7 +344,7 @@ public class ReportPortalExtension
 	 */
 	@Nonnull
 	protected ItemStatus getExecutionStatus(@Nonnull final ExtensionContext context) {
-		return context.getExecutionException().map(this::getExecutionStatus).orElse(PASSED);
+		return context.getExecutionException().map(t -> getExecutionStatus(context, t)).orElse(PASSED);
 	}
 
 	@Override
@@ -368,6 +372,7 @@ public class ReportPortalExtension
 			if(failedClassInits.contains(parent)) {
 				startTestItem(context, STEP);
 				sendStackTraceToRP(cause);
+				testThrowable.put(context, cause);
 				finishTest(context, FAILED);
 			}
 		});
@@ -420,7 +425,7 @@ public class ReportPortalExtension
 		try {
 			invocation.proceed();
 		} catch (Throwable throwable) {
-			finishBeforeAfter(context, id, getExecutionStatus(throwable));
+			finishBeforeAfter(context, id, getExecutionStatus(context, throwable));
 			throw throwable;
 		}
 		finishBeforeAfter(context, id, PASSED);
@@ -676,7 +681,7 @@ public class ReportPortalExtension
 			@Nullable final Date startTime) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(ofNullable(startTime).orElseGet(Calendar.getInstance()::getTime));
-		rq.setName(createStepName(context));
+		rq.setName(createStepName(context, itemType));
 		rq.setDescription(ofNullable(description).orElseGet(() -> createStepDescription(context, itemType)));
 		rq.setType(itemType == TEMPLATE ? SUITE.name() : itemType.name());
 		String codeRef = getCodeRef(context);
@@ -757,8 +762,16 @@ public class ReportPortalExtension
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestRq(@Nonnull ExtensionContext context, @Nullable ItemStatus status) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
+		if (status != ItemStatus.PASSED && testThrowable.containsKey(context)) {
+			ItemType itemType = STEP;
+			String description = String.format(DESCRIPTION_TEST_ERROR_FORMAT,
+					createStepDescription(context, itemType),
+					ExceptionUtils.getStackTrace(testThrowable.get(context)));
+			rq.setDescription(description);
+		}
 		ofNullable(status).ifPresent(s -> rq.setStatus(s.name()));
 		rq.setEndTime(Calendar.getInstance().getTime());
+		testThrowable.remove(context);
 		return rq;
 	}
 
@@ -782,11 +795,38 @@ public class ReportPortalExtension
 	 * Extension point to customize test step name
 	 *
 	 * @param context JUnit's test context
+	 * @param itemType a test method item type
 	 * @return Test/Step Name being sent to ReportPortal
 	 */
-	protected String createStepName(ExtensionContext context) {
+	protected String createStepName(ExtensionContext context, ItemType itemType) {
 		String name = context.getDisplayName();
-		return name.length() > 1024 ? name.substring(0, 1021) + "..." : name;
+		String defaultValue = getMethodName(name);
+
+		if (itemType != STEP) {
+			return defaultValue;
+		}
+
+		Optional<Method> optionalMethod = getOptionalTestMethod(context);
+		if (!optionalMethod.isPresent()) {
+			return defaultValue;
+		}
+		Method method = optionalMethod.get();
+
+		com.epam.reportportal.annotations.DisplayName displayNameFromMethod = method.getAnnotation(com.epam.reportportal.annotations.DisplayName.class);
+		if (displayNameFromMethod != null) {
+			return getMethodName(displayNameFromMethod.value());
+		}
+
+		com.epam.reportportal.annotations.DisplayName displayNameFromClass = method.getDeclaringClass().getAnnotation(com.epam.reportportal.annotations.DisplayName.class);
+		if (displayNameFromClass != null) {
+			return getMethodName(displayNameFromClass.value());
+		}
+
+		return defaultValue;
+	}
+
+	private String getMethodName(String value) {
+		return value.length() > 1024 ? value.substring(0, 1021) + "..." : value;
 	}
 
 	/**

@@ -93,7 +93,6 @@ public class ReportPortalExtension
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private final Set<ExtensionContext> failedClassInits = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	public static final String DESCRIPTION_TEST_ERROR_FORMAT = "%s\nError: \n%s";
-	private final Map<ExtensionContext, Throwable> testThrowable = new ConcurrentHashMap<>();
 	@Nonnull
 	protected Optional<Maybe<String>> getItemId(@Nonnull ExtensionContext context) {
 		return ofNullable(idMapping.get(context));
@@ -292,12 +291,12 @@ public class ReportPortalExtension
 	 * @param throwable test exception
 	 * @return an {@link ItemStatus}
 	 */
+	@SuppressWarnings("unused")
 	@Nonnull
 	protected ItemStatus getExecutionStatus(@Nonnull final ExtensionContext context, @Nullable final Throwable throwable) {
 		if (throwable == null) {
 			return PASSED;
 		}
-		testThrowable.put(context, throwable);
 		sendStackTraceToRP(throwable);
 		return IS_ASSUMPTION.test(throwable) ? SKIPPED : FAILED;
 	}
@@ -372,7 +371,6 @@ public class ReportPortalExtension
 			if(failedClassInits.contains(parent)) {
 				startTestItem(context, STEP);
 				sendStackTraceToRP(cause);
-				testThrowable.put(context, cause);
 				finishTest(context, FAILED);
 			}
 		});
@@ -762,16 +760,16 @@ public class ReportPortalExtension
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestRq(@Nonnull ExtensionContext context, @Nullable ItemStatus status) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		if (status != ItemStatus.PASSED && testThrowable.containsKey(context)) {
-			ItemType itemType = STEP;
+		ItemStatus myStatus = ofNullable(status).orElseGet(() -> getExecutionStatus(context));
+		Optional<Throwable> myException = context.getExecutionException();
+		if (status != ItemStatus.PASSED && myException.isPresent()) {
 			String description = String.format(DESCRIPTION_TEST_ERROR_FORMAT,
-					createStepDescription(context, itemType),
-					ExceptionUtils.getStackTrace(testThrowable.get(context)));
+					createStepDescription(context, STEP),
+					ExceptionUtils.getStackTrace(myException.get()));
 			rq.setDescription(description);
 		}
 		ofNullable(status).ifPresent(s -> rq.setStatus(s.name()));
 		rq.setEndTime(Calendar.getInstance().getTime());
-		testThrowable.remove(context);
 		return rq;
 	}
 

@@ -36,7 +36,6 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.*;
 import org.opentest4j.TestAbortedException;
@@ -301,6 +300,17 @@ public class ReportPortalExtension
 		return IS_ASSUMPTION.test(throwable) ? SKIPPED : FAILED;
 	}
 
+	/**
+	 * Returns a status of a test based on whether or not it contains an execution exception
+	 *
+	 * @param context JUnit's test context
+	 * @return an {@link ItemStatus}
+	 */
+	@Nonnull
+	protected ItemStatus getExecutionStatus(@Nonnull final ExtensionContext context) {
+		return context.getExecutionException().map(t -> getExecutionStatus(context, t)).orElse(PASSED);
+	}
+
 	@Override
 	public void interceptDynamicTest(Invocation<Void> invocation, DynamicTestInvocationContext invocationContext,
 									 ExtensionContext extensionContext) throws Throwable {
@@ -335,16 +345,7 @@ public class ReportPortalExtension
 		invocation.proceed();
 	}
 
-	/**
-	 * Returns a status of a test based on whether or not it contains an execution exception
-	 *
-	 * @param context JUnit's test context
-	 * @return an {@link ItemStatus}
-	 */
-	@Nonnull
-	protected ItemStatus getExecutionStatus(@Nonnull final ExtensionContext context) {
-		return context.getExecutionException().map(t -> getExecutionStatus(context, t)).orElse(PASSED);
-	}
+
 
 	@Override
 	public void afterTestExecution(ExtensionContext context) {
@@ -765,7 +766,7 @@ public class ReportPortalExtension
 		if (status != ItemStatus.PASSED && myException.isPresent()) {
 			String description = String.format(DESCRIPTION_TEST_ERROR_FORMAT,
 					createStepDescription(context, STEP),
-					ExceptionUtils.getStackTrace(myException.get()));
+					getStackTrace(myException.get()));
 			rq.setDescription(description);
 		}
 		ofNullable(status).ifPresent(s -> rq.setStatus(s.name()));

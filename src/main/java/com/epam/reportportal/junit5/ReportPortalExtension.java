@@ -29,7 +29,7 @@ import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.ParameterUtils;
 import com.epam.reportportal.utils.TestCaseIdUtils;
-import com.epam.reportportal.utils.markdown.MarkdownUtils;
+import com.epam.reportportal.utils.formatting.MarkdownUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -59,7 +59,7 @@ import static com.epam.reportportal.listeners.ItemStatus.*;
 import static com.epam.reportportal.service.tree.TestItemTree.createTestItemLeaf;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
+import static com.epam.reportportal.utils.formatting.ExceptionUtils.getStackTrace;
 
 /*
  * ReportPortal Extension sends the results of test execution to ReportPortal in RealTime
@@ -91,7 +91,7 @@ public class ReportPortalExtension
 	private final Map<ExtensionContext, Maybe<String>> idMapping = new ConcurrentHashMap<>();
 	private final Map<ExtensionContext, Maybe<String>> testTemplates = new ConcurrentHashMap<>();
 	private final Set<ExtensionContext> failedClassInits = Collections.newSetFromMap(new ConcurrentHashMap<>());
-	public static final String DESCRIPTION_TEST_ERROR_FORMAT = "%s\nError: \n%s";
+	public static final String DESCRIPTION_TEST_ERROR_FORMAT = "Error: \n%s";
 	@Nonnull
 	protected Optional<Maybe<String>> getItemId(@Nonnull ExtensionContext context) {
 		return ofNullable(idMapping.get(context));
@@ -764,9 +764,9 @@ public class ReportPortalExtension
 		ItemStatus myStatus = ofNullable(status).orElseGet(() -> getExecutionStatus(context));
 		Optional<Throwable> myException = context.getExecutionException();
 		if (status != ItemStatus.PASSED && myException.isPresent()) {
-			String description = String.format(DESCRIPTION_TEST_ERROR_FORMAT,
-					createStepDescription(context, STEP),
-					getStackTrace(myException.get()));
+			String stepDescription = createStepDescription(context, STEP);
+			String stackTrace = String.format(DESCRIPTION_TEST_ERROR_FORMAT, getStackTrace(myException.get(), new Throwable()));
+			String description = !stepDescription.trim().isEmpty() ? MarkdownUtils.asTwoParts(stepDescription, stackTrace) : stackTrace;
 			rq.setDescription(description);
 		}
 		ofNullable(status).ifPresent(s -> rq.setStatus(s.name()));
@@ -960,7 +960,7 @@ public class ReportPortalExtension
 			rq.setLevel("ERROR");
 			rq.setLogTime(Calendar.getInstance().getTime());
 			if (cause != null) {
-				rq.setMessage(getStackTrace(cause));
+				rq.setMessage(getStackTrace(cause, new Throwable()));
 			} else {
 				rq.setMessage("Test has failed without exception");
 			}

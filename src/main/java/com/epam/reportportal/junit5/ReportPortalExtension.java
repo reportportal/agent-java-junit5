@@ -135,7 +135,7 @@ public class ReportPortalExtension
 		rq.setAttributes(attributes);
 		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setRerun(parameters.isRerun());
-		rq.setRerunOf(StringUtils.isEmpty(parameters.getRerunOf()) ? null : parameters.getRerunOf());
+		rq.setRerunOf(StringUtils.isNotBlank(parameters.getRerunOf()) ? parameters.getRerunOf() : null);
 		return rq;
 	}
 
@@ -604,7 +604,7 @@ public class ReportPortalExtension
 	}
 
 	private static String appendSuffixIfNotEmpty(final String str, @Nonnull final String suffix) {
-		return str + (suffix.isEmpty() ? "" : "$" + suffix);
+		return str + (StringUtils.isNotBlank(suffix) ? "$" + suffix : "");
 	}
 
 	@Nonnull
@@ -765,7 +765,9 @@ public class ReportPortalExtension
 		if (myStatus != ItemStatus.PASSED && myException.isPresent()) {
 			String stepDescription = createStepDescription(context, STEP);
 			String stackTrace = String.format(DESCRIPTION_TEST_ERROR_FORMAT, getStackTrace(myException.get(), new Throwable()));
-			String description = !stepDescription.trim().isEmpty() ? MarkdownUtils.asTwoParts(stepDescription, stackTrace) : stackTrace;
+			String description = StringUtils.isNotBlank(stepDescription) ?
+					MarkdownUtils.asTwoParts(stepDescription, stackTrace) :
+					stackTrace;
 			rq.setDescription(description);
 		}
 		ofNullable(status).ifPresent(s -> rq.setStatus(s.name()));

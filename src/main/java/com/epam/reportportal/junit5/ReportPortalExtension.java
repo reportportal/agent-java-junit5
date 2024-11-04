@@ -757,13 +757,12 @@ public class ReportPortalExtension
 	 * @param status  a test item execution result
 	 * @return Request to ReportPortal
 	 */
-	@SuppressWarnings("unused")
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestRq(@Nonnull ExtensionContext context, @Nullable ItemStatus status) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		ItemStatus myStatus = ofNullable(status).orElseGet(() -> getExecutionStatus(context));
 		Optional<Throwable> myException = context.getExecutionException();
-		if (status != ItemStatus.PASSED && myException.isPresent()) {
+		if (myStatus != ItemStatus.PASSED && myException.isPresent()) {
 			String stepDescription = createStepDescription(context, STEP);
 			String stackTrace = String.format(DESCRIPTION_TEST_ERROR_FORMAT, getStackTrace(myException.get(), new Throwable()));
 			String description = !stepDescription.trim().isEmpty() ? MarkdownUtils.asTwoParts(stepDescription, stackTrace) : stackTrace;

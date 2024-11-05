@@ -16,7 +16,7 @@
 
 package com.epam.reportportal.junit5;
 
-import com.epam.reportportal.junit5.features.basic.TestFailure;
+import com.epam.reportportal.junit5.features.TestFailure;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;

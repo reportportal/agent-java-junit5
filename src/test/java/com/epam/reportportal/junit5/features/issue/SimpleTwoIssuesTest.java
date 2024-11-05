@@ -1,11 +1,11 @@
 /*
- * Copyright 2022 EPAM Systems
+ * Copyright 2024 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.junit5.features.basic;
+package com.epam.reportportal.junit5.features.issue;
 
-import com.epam.reportportal.junit5.BasicTest;
-import org.junit.jupiter.api.Assertions;
+import com.epam.reportportal.annotations.Issue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(BasicTest.BasicTestExtension.class)
-public class TestFailure {
+@ExtendWith(com.epam.reportportal.junit5.ReportPortalExtension.class)
+public class SimpleTwoIssuesTest {
 
-	public static final String FAILURE_MESSAGE = "Test failure";
+	public static final String FAILURE_MESSAGE = "This test is expected to fail";
 
 	@Test
-	public void testFailure() {
-		Assertions.fail(FAILURE_MESSAGE);
+	@Issue(value = "pb001", comment = FAILURE_MESSAGE)
+	@Issue(value = "ab001", comment = FAILURE_MESSAGE)
+	public void failureTest() {
+		throw new IllegalStateException(FAILURE_MESSAGE);
 	}
 }

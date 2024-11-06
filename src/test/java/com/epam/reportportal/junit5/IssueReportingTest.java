@@ -25,6 +25,7 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import io.reactivex.Maybe;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -61,6 +62,11 @@ public class IssueReportingTest {
 	private final String stepThreeId = CommonUtils.namedId("step_");
 	private final Maybe<String> stepThreeMaybe = Maybe.just(stepThreeId);
 	private final Queue<Maybe<String>> stepIds = new LinkedList<>(Arrays.asList(stepOneMaybe, stepTwoMaybe, stepThreeMaybe));
+
+	@BeforeAll
+	public static void setupProperty() {
+		System.setProperty("reportDisabledTests", Boolean.TRUE.toString());
+	}
 
 	@BeforeEach
 	public void setupMock() {
@@ -218,5 +224,21 @@ public class IssueReportingTest {
 		issue = finishTestItemRQ.getIssue();
 		assertThat(issue.getIssueType(), equalTo("pb001"));
 		assertThat(issue.getComment(), equalTo(TwoDynamicTwoIssueTest.FAILURE_MESSAGE));
+	}
+
+	@Test
+	public void verify_simple_test_skip() {
+		TestUtils.runClasses(SimpleSkippedIssueTest.class);
+
+		Launch launch = IssueReportingTest.TestExtension.LAUNCH;
+		ArgumentCaptor<FinishTestItemRQ> testCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepOneMaybe), testCaptor.capture());
+
+		FinishTestItemRQ finishTestItemRQ = testCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+		assertThat(finishTestItemRQ.getIssue(), notNullValue());
+		Issue issue = finishTestItemRQ.getIssue();
+		assertThat(issue.getIssueType(), equalTo("pb001"));
+		assertThat(issue.getComment(), equalTo(SimpleSkippedIssueTest.FAILURE_MESSAGE));
 	}
 }

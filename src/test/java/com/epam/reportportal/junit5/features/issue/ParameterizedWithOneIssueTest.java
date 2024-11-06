@@ -19,19 +19,20 @@ package com.epam.reportportal.junit5.features.issue;
 import com.epam.reportportal.annotations.Issue;
 import com.epam.reportportal.annotations.TestFilter;
 import com.epam.reportportal.annotations.TestParamFilter;
+import com.epam.reportportal.junit5.IssueReportingTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@ExtendWith(com.epam.reportportal.junit5.ReportPortalExtension.class)
+@ExtendWith(IssueReportingTest.TestExtension.class)
 public class ParameterizedWithOneIssueTest {
 
 	public static final String FAILURE_MESSAGE = "This parameterized test is expected to fail: ";
+	public static final String ISSUE_MESSAGE = "This test is expected to fail";
 
 	@ParameterizedTest
 	@ValueSource(booleans = { true, false })
-	@Issue(value = "ab001", comment = "This test is expected to fail", filter = @TestFilter(param = {
-			@TestParamFilter(valueStartsWith = "true") }))
+	@Issue(value = "ab001", comment = ISSUE_MESSAGE, filter = @TestFilter(param = { @TestParamFilter(valueStartsWith = "false") }))
 	public void failureTest(boolean param) {
 		throw new IllegalStateException(FAILURE_MESSAGE + param);
 	}

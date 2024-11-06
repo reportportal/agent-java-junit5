@@ -17,17 +17,18 @@
 package com.epam.reportportal.junit5.features.issue;
 
 import com.epam.reportportal.annotations.Issue;
+import com.epam.reportportal.junit5.IssueReportingTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(com.epam.reportportal.junit5.ReportPortalExtension.class)
+@ExtendWith(IssueReportingTest.TestExtension.class)
 public class SimpleTwoIssuesTest {
 
 	public static final String FAILURE_MESSAGE = "This test is expected to fail";
 
 	@Test
-	@Issue(value = "pb001", comment = FAILURE_MESSAGE)
 	@Issue(value = "ab001", comment = FAILURE_MESSAGE)
+	@Issue(value = "pb001", comment = FAILURE_MESSAGE)
 	public void failureTest() {
 		throw new IllegalStateException(FAILURE_MESSAGE);
 	}

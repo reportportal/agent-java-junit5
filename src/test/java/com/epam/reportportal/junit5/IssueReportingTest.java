@@ -16,7 +16,7 @@
 
 package com.epam.reportportal.junit5;
 
-import com.epam.reportportal.junit5.features.issue.SimpleIssueTest;
+import com.epam.reportportal.junit5.features.issue.*;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
@@ -32,13 +32,16 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Queue;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class IssueReportingTest {
 	public static class TestExtension extends ReportPortalExtension {
 		static Launch LAUNCH;
@@ -49,17 +52,24 @@ public class IssueReportingTest {
 		}
 	}
 
-	private final String SUITE_ID = CommonUtils.namedId("suite_");
-	private final Maybe<String> SUITE_MAYBE = Maybe.just(SUITE_ID);
-	private final String STEP_ID = CommonUtils.namedId("step_");
-	private final Maybe<String> STEP_MAYBE = Maybe.just(STEP_ID);
+	private final String suiteId = CommonUtils.namedId("suite_");
+	private final Maybe<String> suiteMaybe = Maybe.just(suiteId);
+	private final String stepOneId = CommonUtils.namedId("step_");
+	private final Maybe<String> stepOneMaybe = Maybe.just(stepOneId);
+	private final String stepTwoId = CommonUtils.namedId("step_");
+	private final Maybe<String> stepTwoMaybe = Maybe.just(stepTwoId);
+	private final String stepThreeId = CommonUtils.namedId("step_");
+	private final Maybe<String> stepThreeMaybe = Maybe.just(stepThreeId);
+	private final Queue<Maybe<String>> stepIds = new LinkedList<>(Arrays.asList(stepOneMaybe, stepTwoMaybe, stepThreeMaybe));
 
 	@BeforeEach
 	public void setupMock() {
 		Launch launch = mock(Launch.class);
 		IssueReportingTest.TestExtension.LAUNCH = launch;
-		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> SUITE_MAYBE);
-		when(launch.startTestItem(same(SUITE_MAYBE), any())).thenAnswer((Answer<Maybe<String>>) invocation -> STEP_MAYBE);
+		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> suiteMaybe);
+		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
+		when(launch.startTestItem(same(suiteMaybe), any())).thenAnswer((Answer<Maybe<String>>) invocation -> stepIds.poll());
+		when(launch.startTestItem(same(stepOneMaybe), any())).thenAnswer((Answer<Maybe<String>>) invocation -> stepIds.poll());
 		when(launch.finishTestItem(any(),
 				any()
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> Maybe.just(new OperationCompletionRS("OK")));
@@ -71,7 +81,7 @@ public class IssueReportingTest {
 
 		Launch launch = IssueReportingTest.TestExtension.LAUNCH;
 		ArgumentCaptor<FinishTestItemRQ> testCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(launch).finishTestItem(same(STEP_MAYBE), testCaptor.capture());
+		verify(launch).finishTestItem(same(stepOneMaybe), testCaptor.capture());
 
 		FinishTestItemRQ finishTestItemRQ = testCaptor.getValue();
 		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
@@ -79,5 +89,134 @@ public class IssueReportingTest {
 		Issue issue = finishTestItemRQ.getIssue();
 		assertThat(issue.getIssueType(), equalTo("pb001"));
 		assertThat(issue.getComment(), equalTo(SimpleIssueTest.FAILURE_MESSAGE));
+	}
+
+	@Test
+	public void verify_test_failure_with_two_issues() {
+		TestUtils.runClasses(SimpleTwoIssuesTest.class);
+
+		Launch launch = IssueReportingTest.TestExtension.LAUNCH;
+		ArgumentCaptor<FinishTestItemRQ> testCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepOneMaybe), testCaptor.capture());
+
+		FinishTestItemRQ finishTestItemRQ = testCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishTestItemRQ.getIssue(), notNullValue());
+		Issue issue = finishTestItemRQ.getIssue();
+		assertThat(issue.getIssueType(), equalTo("ab001"));
+		assertThat(issue.getComment(), equalTo(SimpleTwoIssuesTest.FAILURE_MESSAGE));
+	}
+
+	@Test
+	public void verify_parameterized_test_failure_with_one_issue() {
+		TestUtils.runClasses(ParameterizedWithOneIssueTest.class);
+
+		Launch launch = IssueReportingTest.TestExtension.LAUNCH;
+		ArgumentCaptor<FinishTestItemRQ> firstTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepTwoMaybe), firstTestCaptor.capture());
+		ArgumentCaptor<FinishTestItemRQ> secondTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepThreeMaybe), secondTestCaptor.capture());
+
+		FinishTestItemRQ finishTestItemRQ = firstTestCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishTestItemRQ.getIssue(), nullValue());
+
+		finishTestItemRQ = secondTestCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishTestItemRQ.getIssue(), notNullValue());
+		Issue issue = finishTestItemRQ.getIssue();
+		assertThat(issue.getIssueType(), equalTo("ab001"));
+		assertThat(issue.getComment(), equalTo(ParameterizedWithOneIssueTest.ISSUE_MESSAGE));
+	}
+
+	@Test
+	public void verify_parameterized_test_failure_with_two_issues() {
+		TestUtils.runClasses(ParameterizedWithTwoIssueTest.class);
+
+		Launch launch = IssueReportingTest.TestExtension.LAUNCH;
+		ArgumentCaptor<FinishTestItemRQ> firstTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepTwoMaybe), firstTestCaptor.capture());
+		ArgumentCaptor<FinishTestItemRQ> secondTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepThreeMaybe), secondTestCaptor.capture());
+
+		FinishTestItemRQ finishTestItemRQ = firstTestCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishTestItemRQ.getIssue(), notNullValue());
+		Issue issue = finishTestItemRQ.getIssue();
+		assertThat(issue.getIssueType(), equalTo("ab001"));
+		assertThat(issue.getComment(), equalTo(ParameterizedWithTwoIssueTest.ISSUE_MESSAGE));
+
+		finishTestItemRQ = secondTestCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishTestItemRQ.getIssue(), notNullValue());
+		issue = finishTestItemRQ.getIssue();
+		assertThat(issue.getIssueType(), equalTo("pb001"));
+		assertThat(issue.getComment(), equalTo(ParameterizedWithTwoIssueTest.ISSUE_MESSAGE));
+	}
+
+	@Test
+	public void verify_dynamic_test_failure() {
+		TestUtils.runClasses(DynamicIssueTest.class);
+
+		Launch launch = IssueReportingTest.TestExtension.LAUNCH;
+		ArgumentCaptor<FinishTestItemRQ> testCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepTwoMaybe), testCaptor.capture());
+
+		FinishTestItemRQ finishTestItemRQ = testCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishTestItemRQ.getIssue(), notNullValue());
+		Issue issue = finishTestItemRQ.getIssue();
+		assertThat(issue.getIssueType(), equalTo("ab001"));
+		assertThat(issue.getComment(), equalTo(DynamicIssueTest.FAILURE_MESSAGE));
+	}
+
+	@Test
+	public void verify_two_dynamic_test_failures() {
+		TestUtils.runClasses(TwoDynamicIssueTest.class);
+
+		Launch launch = IssueReportingTest.TestExtension.LAUNCH;
+		ArgumentCaptor<FinishTestItemRQ> firstTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepTwoMaybe), firstTestCaptor.capture());
+		ArgumentCaptor<FinishTestItemRQ> secondTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepThreeMaybe), secondTestCaptor.capture());
+
+		FinishTestItemRQ finishTestItemRQ = firstTestCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishTestItemRQ.getIssue(), notNullValue());
+		Issue issue = finishTestItemRQ.getIssue();
+		assertThat(issue.getIssueType(), equalTo("ab001"));
+		assertThat(issue.getComment(), equalTo(TwoDynamicIssueTest.FAILURE_MESSAGE));
+
+		finishTestItemRQ = secondTestCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishTestItemRQ.getIssue(), notNullValue());
+		issue = finishTestItemRQ.getIssue();
+		assertThat(issue.getIssueType(), equalTo("ab001"));
+		assertThat(issue.getComment(), equalTo(TwoDynamicIssueTest.FAILURE_MESSAGE));
+	}
+
+	@Test
+	public void verify_two_dynamic_test_failures_two_issues() {
+		TestUtils.runClasses(TwoDynamicTwoIssueTest.class);
+
+		Launch launch = IssueReportingTest.TestExtension.LAUNCH;
+		ArgumentCaptor<FinishTestItemRQ> firstTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepTwoMaybe), firstTestCaptor.capture());
+		ArgumentCaptor<FinishTestItemRQ> secondTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(launch).finishTestItem(same(stepThreeMaybe), secondTestCaptor.capture());
+
+		FinishTestItemRQ finishTestItemRQ = firstTestCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishTestItemRQ.getIssue(), notNullValue());
+		Issue issue = finishTestItemRQ.getIssue();
+		assertThat(issue.getIssueType(), equalTo("ab001"));
+		assertThat(issue.getComment(), equalTo(TwoDynamicTwoIssueTest.FAILURE_MESSAGE));
+
+		finishTestItemRQ = secondTestCaptor.getValue();
+		assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishTestItemRQ.getIssue(), notNullValue());
+		issue = finishTestItemRQ.getIssue();
+		assertThat(issue.getIssueType(), equalTo("pb001"));
+		assertThat(issue.getComment(), equalTo(TwoDynamicTwoIssueTest.FAILURE_MESSAGE));
 	}
 }

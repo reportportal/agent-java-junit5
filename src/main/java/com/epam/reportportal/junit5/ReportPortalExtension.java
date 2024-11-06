@@ -468,19 +468,20 @@ public class ReportPortalExtension
 		idMapping.computeIfAbsent(context, c -> {
 			StartTestItemRQ rq = buildStartStepRq(c, arguments, itemType, description, startTime);
 			Launch launch = getLaunch(c);
-			Maybe<String> itemId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).map(parentTest -> {
-				Maybe<String> item = launch.startTestItem(parentTest, rq);
-				if (getReporter().getParameters().isCallbackReportingEnabled()) {
-					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), createTestItemLeaf(parentTest, item));
-				}
-				return item;
-			}).orElseGet(() -> {
-				Maybe<String> item = launch.startTestItem(rq);
-				if (getReporter().getParameters().isCallbackReportingEnabled()) {
-					TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), createTestItemLeaf(item));
-				}
-				return item;
-			});
+
+			Maybe<String> parentId = c.getParent().flatMap(parent -> Optional.ofNullable(idMapping.get(parent))).orElse(null);
+			Maybe<String> itemId;
+			TestItemTree.TestItemLeaf leaf;
+			if (parentId == null) {
+				itemId = launch.startTestItem(rq);
+				leaf = createTestItemLeaf(itemId);
+			} else {
+				itemId = launch.startTestItem(parentId, rq);
+				leaf = createTestItemLeaf(parentId, itemId);
+			}
+			if (getReporter().getParameters().isCallbackReportingEnabled()) {
+				TEST_ITEM_TREE.getTestItems().put(createItemTreeKey(rq.getName()), leaf);
+			}
 			if (TEMPLATE == itemType) {
 				testTemplates.put(c, itemId);
 			}

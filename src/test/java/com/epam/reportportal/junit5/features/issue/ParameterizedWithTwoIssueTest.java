@@ -19,11 +19,12 @@ package com.epam.reportportal.junit5.features.issue;
 import com.epam.reportportal.annotations.Issue;
 import com.epam.reportportal.annotations.TestFilter;
 import com.epam.reportportal.annotations.TestParamFilter;
+import com.epam.reportportal.junit5.IssueReportingTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@ExtendWith(com.epam.reportportal.junit5.ReportPortalExtension.class)
+@ExtendWith(IssueReportingTest.TestExtension.class)
 public class ParameterizedWithTwoIssueTest {
 
 	public static final String FAILURE_MESSAGE = "This parameterized test is expected to fail: ";

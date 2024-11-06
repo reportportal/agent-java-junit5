@@ -40,19 +40,22 @@ public class ManualStepReporterFeatureTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ManualStepReporterFeatureTest.class);
 
 	@Test
-	public void manualStepTest() {
+	public void manualStepTest() throws InterruptedException {
 
 		StepReporter stepReporter = Launch.currentLaunch().getStepReporter();
 		stepReporter.sendStep(FIRST_NAME);
 		LOGGER.info("First info log of the first step");
 		LOGGER.info("Second info log of the first step");
+		Thread.sleep(100);
 
 		stepReporter.sendStep(SECOND_NAME);
 		LOGGER.error("First error log of the second step");
 
+		Thread.sleep(100);
 		stepReporter.sendStep(ItemStatus.FAILED, THIRD_NAME, new File("pug/unlucky.jpg"));
 		LOGGER.error("Second error log of the second step");
 
+		Thread.sleep(100);
 		stepReporter.finishPreviousStep();
 
 		LOGGER.error("Main test method error log");

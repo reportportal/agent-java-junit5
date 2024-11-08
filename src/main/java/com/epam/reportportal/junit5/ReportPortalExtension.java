@@ -459,9 +459,11 @@ public class ReportPortalExtension
 	/**
 	 * Starts a test item of arbitrary type
 	 *
-	 * @param context   JUnit's test context
-	 * @param arguments a list of test parameters
-	 * @param itemType  a type of the item
+	 * @param context     JUnit's test context
+	 * @param arguments   a list of test parameters
+	 * @param itemType    a type of the item
+	 * @param description a description of the item
+	 * @param startTime   a start time of the item
 	 */
 	protected void startTestItem(@Nonnull final ExtensionContext context, @Nonnull final List<Object> arguments,
 			@Nonnull final ItemType itemType, @Nullable final String description, @Nullable final Date startTime) {
@@ -700,10 +702,11 @@ public class ReportPortalExtension
 	/**
 	 * Extension point to customize test step creation event/request
 	 *
-	 * @param context   JUnit's test context
-	 * @param arguments a test arguments list
-	 * @param itemType  a test method item type
-	 * @param startTime a start time of the test
+	 * @param context     JUnit's test context
+	 * @param arguments   a test arguments list
+	 * @param itemType    a test method item type
+	 * @param description a description of the item
+	 * @param startTime   a start time of the test
 	 * @return Request to ReportPortal
 	 */
 	@Nonnull
@@ -866,7 +869,8 @@ public class ReportPortalExtension
 	/**
 	 * Extension point to customize test step description
 	 *
-	 * @param context JUnit's test context
+	 * @param context  JUnit's test context
+	 * @param itemType a test method item type
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
 	@Nonnull

@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Common Stack Trace frames skip in description and logs, by @HardNorth 
+- `@Issue` and `@Issues` annotations support, by @HardNorth
+### Changed
+- Client version updated on [5.2.20](https://github.com/reportportal/client-java/releases/tag/5.2.20), by @HardNorth
 
 ## [5.3.3]
 ### Added

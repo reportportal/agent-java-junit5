@@ -8,6 +8,7 @@ import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.utils.formatting.MarkdownUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -30,122 +31,132 @@ import static org.mockito.Mockito.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ErrorLastLogTest {
 
-    private final String testErrorMessagePattern = "%s\nError: \n%s";
-    private final String assertErrorMessage = "org.opentest4j.AssertionFailedError: expected: <0> but was: <1>";
-    private final String exceptionStepErrorMessage = "java.util.NoSuchElementException: Error message";
-    private final String testExceptionMessage = "java.lang.RuntimeException: Critical error";
-    private final String assertDescriptionMessage = "0 and 1 is not equal";
-    private final String stepDescriptionMessage = "Login issue";
-    private final String failedStatus = "FAILED";
-    private final String passedStatus = "PASSED";
-    static final String testClassUuid = namedId("class");
-    static final String testMethodUuid = namedId("test");
-    public static class ErrorDescriptionTestExtension extends ReportPortalExtension {
+	private static final String TEST_ERROR_MESSAGE_PATTERN = "Error: \n%s";
+	private static final String ASSERT_ERROR_MESSAGE = "org.opentest4j.AssertionFailedError: expected: <0> but was: <1>";
+	private static final String EXCEPTION_STEP_ERROR_MESSAGE = "java.util.NoSuchElementException: Error message";
+	private static final String TEST_EXCEPTION_MESSAGE = "java.lang.RuntimeException: Critical error";
+	private static final String ASSERT_DESCRIPTION_MESSAGE = "0 and 1 is not equal";
+	private static final String STEP_DESCRIPTION_MESSAGE = "Login issue";
+	private static final String FAILED_STATUS = "FAILED";
+	private static final String PASSED_STATUS = "PASSED";
+	private static final String TEST_CLASS_UUID = namedId("class");
+	private static final String TEST_METHOD_UUID = namedId("test");
 
-        static final ThreadLocal<ReportPortalClient> client = new ThreadLocal<>();
-        static final ThreadLocal<Launch> launch = new ThreadLocal<>();
-        public static void init() {
-            client.set(mock(ReportPortalClient.class));
-            TestUtils.mockLaunch(client.get(), "launchUuid", testClassUuid, testMethodUuid);
-            TestUtils.mockLogging(client.get());
-            ReportPortal reportPortal = ReportPortal.create(client.get(), TestUtils.standardParameters());
-            launch.set(reportPortal.newLaunch(TestUtils.launchRQ(reportPortal.getParameters())));
+	public static class ErrorDescriptionTestExtension extends ReportPortalExtension {
 
-        }
+		static final ThreadLocal<ReportPortalClient> client = new ThreadLocal<>();
+		static final ThreadLocal<Launch> launch = new ThreadLocal<>();
 
-        @Override
-        protected Launch getLaunch(ExtensionContext context) {
-            return launch.get();
-        }
+		public static void init() {
+			client.set(mock(ReportPortalClient.class));
+			TestUtils.mockLaunch(client.get(), "launchUuid", TEST_CLASS_UUID, TEST_METHOD_UUID);
+			TestUtils.mockLogging(client.get());
+			ReportPortal reportPortal = ReportPortal.create(client.get(), TestUtils.standardParameters());
+			launch.set(reportPortal.newLaunch(TestUtils.launchRQ(reportPortal.getParameters())));
 
-    }
+		}
 
-    public static class Listener implements TestExecutionListener {
-        public Deque<TestExecutionResult> results = new ConcurrentLinkedDeque<>();
+		@Override
+		protected Launch getLaunch(ExtensionContext context) {
+			return launch.get();
+		}
 
-        @Override
-        public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
-            if (testIdentifier.isTest()) {
-                results.add(testExecutionResult);
-            }
-        }
-    }
+	}
 
-    @Test
-    public void verify_last_error_log_exception() {
-        ErrorDescriptionTestExtension.init();
-        Listener listener = new Listener();
-        TestUtils.runClasses(listener, ErrorLastLogFeatureWithExceptionTest.class);
+	public static class Listener implements TestExecutionListener {
+		public Deque<TestExecutionResult> results = new ConcurrentLinkedDeque<>();
 
-        ReportPortalClient client = ErrorDescriptionTestExtension.client.get();
+		@Override
+		public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
+			if (testIdentifier.isTest()) {
+				results.add(testExecutionResult);
+			}
+		}
+	}
 
-        ArgumentCaptor<FinishTestItemRQ> finishTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-        verify(client, timeout(1000).atLeastOnce()).finishTestItem(same(testMethodUuid), finishTestCaptor.capture());
+	@Test
+	public void verify_last_error_log_exception() {
+		ErrorDescriptionTestExtension.init();
+		Listener listener = new Listener();
+		TestUtils.runClasses(listener, ErrorLastLogFeatureWithExceptionTest.class);
 
+		ReportPortalClient client = ErrorDescriptionTestExtension.client.get();
 
-        List<FinishTestItemRQ> finishTests = finishTestCaptor.getAllValues();
+		ArgumentCaptor<FinishTestItemRQ> finishTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000).atLeastOnce()).finishTestItem(same(TEST_METHOD_UUID), finishTestCaptor.capture());
 
-        FinishTestItemRQ testCaseWithException = finishTests.get(0);
+		List<FinishTestItemRQ> finishTests = finishTestCaptor.getAllValues();
 
-        assertThat(testCaseWithException.getDescription(), startsWith(String.format(testErrorMessagePattern, "", testExceptionMessage)));
-        assertThat(testCaseWithException.getStatus(), equalTo(failedStatus));
+		FinishTestItemRQ testCaseWithException = finishTests.get(0);
 
-    }
+		assertThat(testCaseWithException.getDescription(), startsWith(String.format(TEST_ERROR_MESSAGE_PATTERN, TEST_EXCEPTION_MESSAGE)));
+		assertThat(testCaseWithException.getStatus(), equalTo(FAILED_STATUS));
 
-    @Test
-    public void verify_last_error_log_step() {
-        ErrorDescriptionTestExtension.init();
-        Listener listener = new Listener();
-        TestUtils.runClasses(listener, ErrorLastLogFeatureWithStepTest.class);
+	}
 
-        ReportPortalClient client = ErrorDescriptionTestExtension.client.get();
+	@Test
+	public void verify_last_error_log_step() {
+		ErrorDescriptionTestExtension.init();
+		Listener listener = new Listener();
+		TestUtils.runClasses(listener, ErrorLastLogFeatureWithStepTest.class);
 
-        ArgumentCaptor<FinishTestItemRQ> finishTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-        verify(client, timeout(1000).atLeastOnce()).finishTestItem(same(testMethodUuid), finishTestCaptor.capture());
+		ReportPortalClient client = ErrorDescriptionTestExtension.client.get();
 
-        List<FinishTestItemRQ> finishTests = finishTestCaptor.getAllValues();
+		ArgumentCaptor<FinishTestItemRQ> finishTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000).atLeastOnce()).finishTestItem(same(TEST_METHOD_UUID), finishTestCaptor.capture());
 
-        FinishTestItemRQ testCaseWithDescriptionAndStepError = finishTests.get(0);
+		List<FinishTestItemRQ> finishTests = finishTestCaptor.getAllValues();
 
-        assertThat(testCaseWithDescriptionAndStepError.getDescription(), startsWith(String.format(testErrorMessagePattern, stepDescriptionMessage, exceptionStepErrorMessage)));
-        assertThat(testCaseWithDescriptionAndStepError.getStatus(), equalTo(failedStatus));
-    }
+		FinishTestItemRQ testCaseWithDescriptionAndStepError = finishTests.get(0);
 
-    @Test
-    public void verify_last_error_log_assertion_error() {
-        ErrorDescriptionTestExtension.init();
-        Listener listener = new Listener();
-        TestUtils.runClasses(listener, ErrorLastLogFeatureWithAssertionErrorTest.class);
+		assertThat(testCaseWithDescriptionAndStepError.getDescription(),
+				startsWith(MarkdownUtils.asTwoParts(STEP_DESCRIPTION_MESSAGE,
+						String.format(TEST_ERROR_MESSAGE_PATTERN, EXCEPTION_STEP_ERROR_MESSAGE)
+				))
+		);
+		assertThat(testCaseWithDescriptionAndStepError.getStatus(), equalTo(FAILED_STATUS));
+	}
 
-        ReportPortalClient client = ErrorDescriptionTestExtension.client.get();
+	@Test
+	public void verify_last_error_log_assertion_error() {
+		ErrorDescriptionTestExtension.init();
+		Listener listener = new Listener();
+		TestUtils.runClasses(listener, ErrorLastLogFeatureWithAssertionErrorTest.class);
 
-        ArgumentCaptor<FinishTestItemRQ> finishTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-        verify(client, timeout(1000).atLeastOnce()).finishTestItem(same(testMethodUuid), finishTestCaptor.capture());
+		ReportPortalClient client = ErrorDescriptionTestExtension.client.get();
 
-        List<FinishTestItemRQ> finishTests = finishTestCaptor.getAllValues();
+		ArgumentCaptor<FinishTestItemRQ> finishTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000).atLeastOnce()).finishTestItem(same(TEST_METHOD_UUID), finishTestCaptor.capture());
 
-        FinishTestItemRQ testCaseAssertException = finishTests.get(0);
+		List<FinishTestItemRQ> finishTests = finishTestCaptor.getAllValues();
 
-        assertThat(testCaseAssertException.getDescription(), startsWith(String.format(testErrorMessagePattern, assertDescriptionMessage, assertErrorMessage)));
-        assertThat(testCaseAssertException.getStatus(), equalTo(failedStatus));
-    }
+		FinishTestItemRQ testCaseAssertException = finishTests.get(0);
 
-    @Test
-    public void verify_last_error_log_assertion_passed() {
-        ErrorDescriptionTestExtension.init();
-        Listener listener = new Listener();
-        TestUtils.runClasses(listener, ErrorLastLogFeatureWithAssertionPassedTest.class);
+		assertThat(testCaseAssertException.getDescription(),
+				startsWith(MarkdownUtils.asTwoParts(
+						ASSERT_DESCRIPTION_MESSAGE,
+						String.format(TEST_ERROR_MESSAGE_PATTERN, ASSERT_ERROR_MESSAGE)
+				))
+		);
+		assertThat(testCaseAssertException.getStatus(), equalTo(FAILED_STATUS));
+	}
 
-        ReportPortalClient client = ErrorDescriptionTestExtension.client.get();
+	@Test
+	public void verify_last_error_log_assertion_passed() {
+		ErrorDescriptionTestExtension.init();
+		Listener listener = new Listener();
+		TestUtils.runClasses(listener, ErrorLastLogFeatureWithAssertionPassedTest.class);
 
-        ArgumentCaptor<FinishTestItemRQ> finishTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-        verify(client, timeout(1000).atLeastOnce()).finishTestItem(same(testMethodUuid), finishTestCaptor.capture());
+		ReportPortalClient client = ErrorDescriptionTestExtension.client.get();
 
-        List<FinishTestItemRQ> finishTests = finishTestCaptor.getAllValues();
+		ArgumentCaptor<FinishTestItemRQ> finishTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000).atLeastOnce()).finishTestItem(same(TEST_METHOD_UUID), finishTestCaptor.capture());
 
-        FinishTestItemRQ testCaseWithDescriptionAndPassed = finishTests.get(0);
+		List<FinishTestItemRQ> finishTests = finishTestCaptor.getAllValues();
 
-        assertThat(testCaseWithDescriptionAndPassed.getStatus(), equalTo(passedStatus));
+		FinishTestItemRQ testCaseWithDescriptionAndPassed = finishTests.get(0);
 
-    }
+		assertThat(testCaseWithDescriptionAndPassed.getStatus(), equalTo(PASSED_STATUS));
+
+	}
 }

@@ -72,7 +72,7 @@ public class IssueReportingTest {
 	public void setupMock() {
 		Launch launch = mock(Launch.class);
 		IssueReportingTest.TestExtension.LAUNCH = launch;
-		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> suiteMaybe);
+		when(launch.startTestItem(any())).thenReturn(suiteMaybe);
 		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 		when(launch.startTestItem(same(suiteMaybe), any())).thenAnswer((Answer<Maybe<String>>) invocation -> stepIds.poll());
 		when(launch.startTestItem(same(stepOneMaybe), any())).thenAnswer((Answer<Maybe<String>>) invocation -> stepIds.poll());

@@ -32,7 +32,6 @@ import com.epam.reportportal.utils.formatting.MarkdownUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
-import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.DisplayName;
@@ -287,7 +286,7 @@ public class ReportPortalExtension
 		if (throwable == null) {
 			return PASSED;
 		}
-		sendStackTraceToRP(throwable);
+		ReportPortal.sendStackTraceToRP(throwable);
 		return IS_ASSUMPTION.test(throwable) ? SKIPPED : FAILED;
 	}
 
@@ -360,7 +359,7 @@ public class ReportPortalExtension
 		context.getParent().ifPresent(parent -> {
 			if (failedClassInits.contains(parent)) {
 				startTestItem(context, STEP);
-				sendStackTraceToRP(cause);
+				ReportPortal.sendStackTraceToRP(cause);
 				finishTest(context, FAILED);
 			}
 		});
@@ -943,26 +942,5 @@ public class ReportPortalExtension
 	@SuppressWarnings("unused")
 	protected void reportSkippedClassTests(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context,
 			Date eventTime) {
-	}
-
-	/**
-	 * Formats and reports a {@link Throwable} to Report Portal
-	 *
-	 * @param cause a {@link Throwable}
-	 */
-	protected void sendStackTraceToRP(final Throwable cause) {
-		ReportPortal.emitLog(itemUuid -> {
-			SaveLogRQ rq = new SaveLogRQ();
-			rq.setItemUuid(itemUuid);
-			rq.setLevel("ERROR");
-			rq.setLogTime(Calendar.getInstance().getTime());
-			if (cause != null) {
-				rq.setMessage(getStackTrace(cause, new Throwable()));
-			} else {
-				rq.setMessage("Test has failed without exception");
-			}
-			rq.setLogTime(Calendar.getInstance().getTime());
-			return rq;
-		});
 	}
 }

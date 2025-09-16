@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Client version updated on [5.3.16](https://github.com/reportportal/client-java/releases/tag/5.3.16)
+
 ## [5.4.0]
 ### Changed
 - Client version updated on [5.3.14](https://github.com/reportportal/client-java/releases/tag/5.3.14), by @HardNorth

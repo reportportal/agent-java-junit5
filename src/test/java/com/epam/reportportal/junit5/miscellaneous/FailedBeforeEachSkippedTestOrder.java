@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 
 import static com.epam.reportportal.junit5.miscellaneous.FailedBeforeEachSkippedTestOrder.SkippedTestExtension.LAUNCH;
@@ -45,9 +45,9 @@ public class FailedBeforeEachSkippedTestOrder {
 		verify(LAUNCH, times(3)).startTestItem(notNull(), captor.capture()); // Start a before, a test, an after
 
 		List<StartTestItemRQ> rqValues = captor.getAllValues();
-		Date firstDate = rqValues.get(0).getStartTime();
+		Instant firstDate = (Instant) rqValues.get(0).getStartTime();
 		for (int i = 1; i < rqValues.size(); i++) {
-			Date itemDate = rqValues.get(i).getStartTime();
+			Instant itemDate = (Instant) rqValues.get(i).getStartTime();
 			assertThat(itemDate, greaterThan(firstDate));
 			firstDate = itemDate;
 		}

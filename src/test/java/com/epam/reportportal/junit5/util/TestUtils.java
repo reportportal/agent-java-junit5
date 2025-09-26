@@ -104,10 +104,6 @@ public class TestUtils {
 		return result;
 	}
 
-	public static void mockNestedSteps(ReportPortalClient client, Pair<String, String> parentNestedPair) {
-		mockNestedSteps(client, Collections.singletonList(parentNestedPair));
-	}
-
 	@SuppressWarnings("unchecked")
 	public static void mockNestedSteps(final ReportPortalClient client, final List<Pair<String, String>> parentNestedPairs) {
 		Map<String, List<String>> responseOrders = parentNestedPairs.stream()

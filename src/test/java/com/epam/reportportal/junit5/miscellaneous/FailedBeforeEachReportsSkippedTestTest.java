@@ -97,7 +97,6 @@ public class FailedBeforeEachReportsSkippedTestTest {
 		TestUtils.runClasses(BeforeEachFailedParametrizedTest.class);
 		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(
 				6,
-				1,
 				LAUNCH
 		);
 		verifyNoMoreInteractions(LAUNCH);

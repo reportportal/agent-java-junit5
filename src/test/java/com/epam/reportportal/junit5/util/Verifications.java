@@ -26,14 +26,9 @@ public class Verifications {
 	private Verifications() {
 	}
 
-	public static Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> verify_call_number_and_capture_arguments(
-			int itemNum, Launch launch) {
-		return verify_call_number_and_capture_arguments(itemNum, 0, launch);
-	}
-
 	@SuppressWarnings("unchecked")
 	public static Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> verify_call_number_and_capture_arguments(
-			int itemNum, int templateNum, Launch launch) {
+			int itemNum, Launch launch) {
 		ArgumentCaptor<Maybe<String>> parentItemIdCaptor = ArgumentCaptor.forClass(Maybe.class);
 		ArgumentCaptor<StartTestItemRQ> startItemCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<Maybe<String>> finishItemId = ArgumentCaptor.forClass(Maybe.class);

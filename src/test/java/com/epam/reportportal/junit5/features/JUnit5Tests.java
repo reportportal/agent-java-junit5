@@ -162,7 +162,8 @@ class JUnit5Tests {
 	@TestFactory
 	Stream<DynamicTest> testForTestFactory() {
 		return testData().stream()
-				.map(testData -> dynamicTest("Check Test Factory " + testData,
+				.map(testData -> dynamicTest(
+						"Check Test Factory " + testData,
 						() -> System.out.println("test-for-test-factory, test " + testData)
 				));
 	}

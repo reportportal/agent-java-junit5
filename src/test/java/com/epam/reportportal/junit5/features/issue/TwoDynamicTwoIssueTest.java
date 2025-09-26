@@ -20,10 +20,16 @@ public class TwoDynamicTwoIssueTest {
 	@Issue(value = "ab001", comment = FAILURE_MESSAGE, filter = { @TestFilter(name = @TestNameFilter(endsWith = "test")) })
 	@Issue(value = "pb001", comment = FAILURE_MESSAGE, filter = { @TestFilter(name = @TestNameFilter(contains = "test 2")) })
 	Stream<DynamicTest> testForTestFactory() {
-		return Stream.of(dynamicTest("My dynamic test", () -> {
-			throw new IllegalStateException(FAILURE_MESSAGE);
-		}), dynamicTest("My dynamic test 2", () -> {
-			throw new IllegalStateException(FAILURE_MESSAGE);
-		}));
+		return Stream.of(
+				dynamicTest(
+						"My dynamic test", () -> {
+							throw new IllegalStateException(FAILURE_MESSAGE);
+						}
+				), dynamicTest(
+						"My dynamic test 2", () -> {
+							throw new IllegalStateException(FAILURE_MESSAGE);
+						}
+				)
+		);
 	}
 }

@@ -12,10 +12,11 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 @ExtendWith(DisplayNameTest.TestExtension.class)
 public class DisplayNameAnnotatedMethodDynamicTest {
-    public static final String TEST_DISPLAY_NAME_DYNAMIC_METHOD = "My test displayName on the dynamic method";
-    @TestFactory
-    @DisplayName(TEST_DISPLAY_NAME_DYNAMIC_METHOD)
-    Stream<DynamicTest> testForTestFactory() {
-        return Stream.of(dynamicTest("My dynamic test", () -> System.out.println("Inside dynamic test")));
-    }
+	public static final String TEST_DISPLAY_NAME_DYNAMIC_METHOD = "My test displayName on the dynamic method";
+
+	@TestFactory
+	@DisplayName(TEST_DISPLAY_NAME_DYNAMIC_METHOD)
+	Stream<DynamicTest> testForTestFactory() {
+		return Stream.of(dynamicTest("My dynamic test", () -> System.out.println("Inside dynamic test")));
+	}
 }

@@ -38,13 +38,11 @@ public class AttributesTest {
 	public void setupMock() {
 		AttributesTestExtension.LAUNCH = mock(Launch.class);
 		when(AttributesTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
-		when(AttributesTestExtension.LAUNCH.startTestItem(any(),
-				any()
-		)).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
-		when(AttributesTestExtension.LAUNCH.finishTestItem(
+		when(AttributesTestExtension.LAUNCH.startTestItem(
 				any(),
 				any()
-		)).thenAnswer(invocation -> Maybe.just(new OperationCompletionRS()));
+		)).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
+		when(AttributesTestExtension.LAUNCH.finishTestItem(any(), any())).thenAnswer(invocation -> Maybe.just(new OperationCompletionRS()));
 	}
 
 	@Test

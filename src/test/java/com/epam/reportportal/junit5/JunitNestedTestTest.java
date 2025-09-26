@@ -63,14 +63,16 @@ public class JunitNestedTestTest {
 		List<FinishTestItemRQ> finishItemRqs = finishItemRqCaptor.getAllValues();
 
 		List<Pair<Pair<Maybe<String>, StartTestItemRQ>, Pair<Maybe<String>, FinishTestItemRQ>>> result = new ArrayList<>();
-		result.add(Pair.of(Pair.of(null, suiteCaptor.getValue()),
+		result.add(Pair.of(
+				Pair.of(null, suiteCaptor.getValue()),
 				Pair.of(finishTestIds.get(finishTestIds.size() - 1), finishItemRqs.get(finishItemRqs.size() - 1))
 		));
 
 		List<Maybe<String>> parentIds = parentItemIdCaptor.getAllValues();
 		List<StartTestItemRQ> itemRqs = itemRqCaptor.getAllValues();
 
-		result.addAll(IntStream.range(0, parentIds.size()).mapToObj(i -> Pair.of(Pair.of(parentIds.get(i), itemRqs.get(i)),
+		result.addAll(IntStream.range(0, parentIds.size()).mapToObj(i -> Pair.of(
+				Pair.of(parentIds.get(i), itemRqs.get(i)),
 				Pair.of(finishTestIds.get(finishTestIds.size() - 2 - i), finishItemRqs.get(finishItemRqs.size() - 2 - i))
 		)).collect(Collectors.toList()));
 		return result;
@@ -160,7 +162,8 @@ public class JunitNestedTestTest {
 		ArgumentCaptor<FinishTestItemRQ> finishItemRqCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(launch, times(5)).finishTestItem(finishTestIdCaptor.capture(), finishItemRqCaptor.capture());
 
-		List<Pair<Pair<Maybe<String>, StartTestItemRQ>, Pair<Maybe<String>, FinishTestItemRQ>>> rqList = toList(suiteCaptor,
+		List<Pair<Pair<Maybe<String>, StartTestItemRQ>, Pair<Maybe<String>, FinishTestItemRQ>>> rqList = toList(
+				suiteCaptor,
 				testIdCaptor,
 				itemRqCaptor,
 				finishTestIdCaptor,

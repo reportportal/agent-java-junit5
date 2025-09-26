@@ -14,10 +14,10 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 @DisplayName(DisplayNameAnnotatedClassDynamicTest.TEST_DISPLAY_NAME_DYNAMIC_CLASS)
 @org.junit.jupiter.api.DisplayName("Junit class")
 public class DisplayNameBothJunitAndRPAnnotatedMethodAndClassDynamicTest {
-    @TestFactory
-    @DisplayName(DisplayNameAnnotatedMethodDynamicTest.TEST_DISPLAY_NAME_DYNAMIC_METHOD)
-    @org.junit.jupiter.api.DisplayName("Junit method")
-    Stream<DynamicTest> testForTestFactory() {
-        return Stream.of(dynamicTest("My dynamic test", () -> System.out.println("Inside dynamic test")));
-    }
+	@TestFactory
+	@DisplayName(DisplayNameAnnotatedMethodDynamicTest.TEST_DISPLAY_NAME_DYNAMIC_METHOD)
+	@org.junit.jupiter.api.DisplayName("Junit method")
+	Stream<DynamicTest> testForTestFactory() {
+		return Stream.of(dynamicTest("My dynamic test", () -> System.out.println("Inside dynamic test")));
+	}
 }

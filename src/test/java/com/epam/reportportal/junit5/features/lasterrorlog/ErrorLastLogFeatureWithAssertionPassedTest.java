@@ -10,15 +10,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(ErrorLastLogTest.ErrorDescriptionTestExtension.class)
 public class ErrorLastLogFeatureWithAssertionPassedTest {
 
-    @Test
-    @Description("successful test")
-    public void testWithDescriptionAndPassed() {
-        login();
-        Assertions.assertTrue(true);
-    }
+	@Test
+	@Description("successful test")
+	public void testWithDescriptionAndPassed() {
+		login();
+		Assertions.assertTrue(true);
+	}
 
-    @Step
-    public void login() {
-        System.out.println("Login successful");
-    }
+	@Step
+	public void login() {
+		System.out.println("Login successful");
+	}
 }

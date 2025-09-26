@@ -37,7 +37,8 @@ public class CodeReferenceTest {
 	public void setupMock() {
 		CodeReferenceTestExtension.LAUNCH = mock(Launch.class);
 		when(CodeReferenceTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
-		when(CodeReferenceTestExtension.LAUNCH.startTestItem(any(),
+		when(CodeReferenceTestExtension.LAUNCH.startTestItem(
+				any(),
 				any()
 		)).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 	}

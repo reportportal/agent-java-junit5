@@ -72,7 +72,8 @@ public class BeforeEachFailedDuplication {
 	@Test
 	public void verify_test_item_order_in_parallel_run_with_two_tests_before_methods_and_parameters() {
 		TestUtils.runClasses(BeforeEachFailedDuplicate.class);
-		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(17,
+		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(
+				17,
 				2,
 				LAUNCH
 		);
@@ -161,7 +162,8 @@ public class BeforeEachFailedDuplication {
 		IntStream.range(0, calls.getKey().size())
 				.boxed()
 				.filter(i -> suiteOneBeforeEachList.contains(calls.getKey().get(i)))
-				.forEach(i -> verify_before_each_positive_calls(i,
+				.forEach(i -> verify_before_each_positive_calls(
+						i,
 						childSuiteUuids.get(0),
 						ITEMS.get(calls.getKey().get(i).getValue()),
 						calls
@@ -170,7 +172,8 @@ public class BeforeEachFailedDuplication {
 		IntStream.range(0, calls.getKey().size())
 				.boxed()
 				.filter(i -> suiteTwoBeforeEachList.contains(calls.getKey().get(i)))
-				.forEach(i -> verify_before_each_positive_calls(i,
+				.forEach(i -> verify_before_each_positive_calls(
+						i,
 						childSuiteUuids.get(1),
 						ITEMS.get(calls.getKey().get(i).getValue()),
 						calls
@@ -179,7 +182,8 @@ public class BeforeEachFailedDuplication {
 		IntStream.range(0, calls.getKey().size())
 				.boxed()
 				.filter(i -> suiteOneAfterEachList.contains(calls.getKey().get(i)))
-				.forEach(i -> verify_after_each_positive_calls(i,
+				.forEach(i -> verify_after_each_positive_calls(
+						i,
 						childSuiteUuids.get(0),
 						ITEMS.get(calls.getKey().get(i).getValue()),
 						calls
@@ -188,7 +192,8 @@ public class BeforeEachFailedDuplication {
 		IntStream.range(0, calls.getKey().size())
 				.boxed()
 				.filter(i -> suiteTwoAfterEachList.contains(calls.getKey().get(i)))
-				.forEach(i -> verify_after_each_positive_calls(i,
+				.forEach(i -> verify_after_each_positive_calls(
+						i,
 						childSuiteUuids.get(1),
 						ITEMS.get(calls.getKey().get(i).getValue()),
 						calls

@@ -17,8 +17,10 @@ public class DynamicIssueTest {
 	@TestFactory
 	@Issue(value = "ab001", comment = FAILURE_MESSAGE)
 	Stream<DynamicTest> testForTestFactory() {
-		return Stream.of(dynamicTest("My dynamic test", () -> {
-			throw new IllegalStateException(FAILURE_MESSAGE);
-		}));
+		return Stream.of(dynamicTest(
+				"My dynamic test", () -> {
+					throw new IllegalStateException(FAILURE_MESSAGE);
+				}
+		));
 	}
 }

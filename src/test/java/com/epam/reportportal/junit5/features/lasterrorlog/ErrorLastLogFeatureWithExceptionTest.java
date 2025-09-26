@@ -7,11 +7,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(ErrorLastLogTest.ErrorDescriptionTestExtension.class)
 public class ErrorLastLogFeatureWithExceptionTest {
 
-
-    @Test
-    public void testWithException() {
-        throw new RuntimeException("Critical error");
-    }
-
+	@Test
+	public void testWithException() {
+		throw new RuntimeException("Critical error");
+	}
 
 }

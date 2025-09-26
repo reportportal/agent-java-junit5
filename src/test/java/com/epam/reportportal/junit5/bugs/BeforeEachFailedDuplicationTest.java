@@ -2,7 +2,7 @@ package com.epam.reportportal.junit5.bugs;
 
 import com.epam.reportportal.junit5.ItemType;
 import com.epam.reportportal.junit5.ReportPortalExtension;
-import com.epam.reportportal.junit5.features.bug.BeforeEachFailedDuplicate;
+import com.epam.reportportal.junit5.features.bug.BeforeEachFailedDuplicateTest;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.step.StepReporter;
@@ -21,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.epam.reportportal.junit5.bugs.BeforeEachFailedDuplication.BeforeEachFailedDuplicationExtension.ITEMS;
-import static com.epam.reportportal.junit5.bugs.BeforeEachFailedDuplication.BeforeEachFailedDuplicationExtension.LAUNCH;
+import static com.epam.reportportal.junit5.bugs.BeforeEachFailedDuplicationTest.BeforeEachFailedDuplicationExtension.ITEMS;
+import static com.epam.reportportal.junit5.bugs.BeforeEachFailedDuplicationTest.BeforeEachFailedDuplicationExtension.LAUNCH;
 import static com.epam.reportportal.junit5.util.Verifications.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -30,7 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class BeforeEachFailedDuplication {
+public class BeforeEachFailedDuplicationTest {
 	public static class BeforeEachFailedDuplicationExtension extends ReportPortalExtension {
 
 		final static Map<StartTestItemRQ, String> ITEMS = new ConcurrentHashMap<>();
@@ -71,9 +71,9 @@ public class BeforeEachFailedDuplication {
 
 	@Test
 	public void verify_test_item_order_in_parallel_run_with_two_tests_before_methods_and_parameters() {
-		TestUtils.runClasses(BeforeEachFailedDuplicate.class);
-		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(17,
-				2,
+		TestUtils.runClasses(BeforeEachFailedDuplicateTest.class);
+		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(
+				17,
 				LAUNCH
 		);
 		verifyNoMoreInteractions(LAUNCH);
@@ -161,7 +161,8 @@ public class BeforeEachFailedDuplication {
 		IntStream.range(0, calls.getKey().size())
 				.boxed()
 				.filter(i -> suiteOneBeforeEachList.contains(calls.getKey().get(i)))
-				.forEach(i -> verify_before_each_positive_calls(i,
+				.forEach(i -> verify_before_each_positive_calls(
+						i,
 						childSuiteUuids.get(0),
 						ITEMS.get(calls.getKey().get(i).getValue()),
 						calls
@@ -170,7 +171,8 @@ public class BeforeEachFailedDuplication {
 		IntStream.range(0, calls.getKey().size())
 				.boxed()
 				.filter(i -> suiteTwoBeforeEachList.contains(calls.getKey().get(i)))
-				.forEach(i -> verify_before_each_positive_calls(i,
+				.forEach(i -> verify_before_each_positive_calls(
+						i,
 						childSuiteUuids.get(1),
 						ITEMS.get(calls.getKey().get(i).getValue()),
 						calls
@@ -179,7 +181,8 @@ public class BeforeEachFailedDuplication {
 		IntStream.range(0, calls.getKey().size())
 				.boxed()
 				.filter(i -> suiteOneAfterEachList.contains(calls.getKey().get(i)))
-				.forEach(i -> verify_after_each_positive_calls(i,
+				.forEach(i -> verify_after_each_positive_calls(
+						i,
 						childSuiteUuids.get(0),
 						ITEMS.get(calls.getKey().get(i).getValue()),
 						calls
@@ -188,7 +191,8 @@ public class BeforeEachFailedDuplication {
 		IntStream.range(0, calls.getKey().size())
 				.boxed()
 				.filter(i -> suiteTwoAfterEachList.contains(calls.getKey().get(i)))
-				.forEach(i -> verify_after_each_positive_calls(i,
+				.forEach(i -> verify_after_each_positive_calls(
+						i,
 						childSuiteUuids.get(1),
 						ITEMS.get(calls.getKey().get(i).getValue()),
 						calls

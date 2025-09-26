@@ -7,9 +7,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(DisplayNameTest.TestExtension.class)
 public class DisplayNameAnnotatedMethodWithEmptyValueTest {
-    public static final String TEST_DISPLAY_NAME_METHOD = "";
-    @Test
-    @DisplayName(TEST_DISPLAY_NAME_METHOD)
-    public void testDisplayNameTest() {
-    }
+	public static final String TEST_DISPLAY_NAME_METHOD = "";
+
+	@Test
+	@DisplayName(TEST_DISPLAY_NAME_METHOD)
+	public void testDisplayNameTest() {
+	}
 }

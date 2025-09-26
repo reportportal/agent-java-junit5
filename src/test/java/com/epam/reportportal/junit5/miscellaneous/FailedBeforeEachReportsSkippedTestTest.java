@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.stubbing.Answer;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -64,7 +64,8 @@ public class FailedBeforeEachReportsSkippedTestTest {
 	@Test
 	public void agent_should_report_skipped_test_in_case_of_failed_before_each() {
 		TestUtils.runClasses(BeforeEachFailedTest.class);
-		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(3,
+		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(
+				3,
 				LAUNCH
 		);
 		verifyNoMoreInteractions(LAUNCH);
@@ -76,7 +77,8 @@ public class FailedBeforeEachReportsSkippedTestTest {
 		assertThat("@BeforeEach failed", beforeEachFinish.getStatus(), equalTo("FAILED"));
 
 		StartTestItemRQ testStart = calls.getKey().get(2).getValue();
-		assertThat("@Test has correct code reference",
+		assertThat(
+				"@Test has correct code reference",
 				testStart.getCodeRef(),
 				equalTo(BeforeEachFailedTest.class.getCanonicalName() + ".testBeforeEachFailed")
 		);
@@ -86,15 +88,15 @@ public class FailedBeforeEachReportsSkippedTestTest {
 		FinishTestItemRQ testFinish = calls.getValue().get(ITEMS.get(2));
 		assertThat("@Test reported as skipped", testFinish.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		assertThat("@Test issue muted", testFinish.getIssue(), sameInstance(Launch.NOT_ISSUE));
-		Date currentDate = new Date();
-		assertThat(testFinish.getEndTime(), lessThanOrEqualTo(currentDate));
+		Instant currentDate = Instant.now();
+		assertThat((Instant) testFinish.getEndTime(), lessThanOrEqualTo(currentDate));
 	}
 
 	@Test
 	public void agent_should_report_skipped_parametrized_tests_in_case_of_failed_before_each() {
 		TestUtils.runClasses(BeforeEachFailedParametrizedTest.class);
-		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(6,
-				1,
+		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(
+				6,
 				LAUNCH
 		);
 		verifyNoMoreInteractions(LAUNCH);
@@ -105,15 +107,17 @@ public class FailedBeforeEachReportsSkippedTestTest {
 
 		assertThat("@BeforeEach failed", beforeEachFinish.getStatus(), equalTo("FAILED"));
 
-		Date currentDate = new Date();
+		Instant currentDate = Instant.now();
 		IntStream.rangeClosed(0, 1).boxed().forEach(i -> {
 			StartTestItemRQ testStart = calls.getKey().get(3 + (i * 2)).getValue();
-			assertThat("@Test has correct code reference",
+			assertThat(
+					"@Test has correct code reference",
 					testStart.getCodeRef(),
 					equalTo(BeforeEachFailedParametrizedTest.class.getCanonicalName() + ".testBeforeEachFailed")
 			);
 
-			assertThat("@Test has correct name",
+			assertThat(
+					"@Test has correct name",
 					testStart.getName(),
 					equalTo("[" + (i + 1) + "] " + BeforeEachFailedParametrizedTest.TestParams.values()[i])
 			);
@@ -121,14 +125,15 @@ public class FailedBeforeEachReportsSkippedTestTest {
 			FinishTestItemRQ testFinish = calls.getValue().get(ITEMS.get(3 + (i * 2)));
 			assertThat("@Test reported as skipped", testFinish.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 			assertThat("@Test issue muted", testFinish.getIssue(), sameInstance(Launch.NOT_ISSUE));
-			assertThat(testFinish.getEndTime(), lessThanOrEqualTo(currentDate));
+			assertThat((Instant) testFinish.getEndTime(), lessThanOrEqualTo(currentDate));
 		});
 	}
 
 	@Test
 	public void agent_should_not_report_skipped_test_in_case_of_failed_after_each() {
 		TestUtils.runClasses(AfterEachFailedTest.class);
-		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(4,
+		Pair<List<Pair<String, StartTestItemRQ>>, Map<String, FinishTestItemRQ>> calls = verify_call_number_and_capture_arguments(
+				4,
 				LAUNCH
 		);
 		verifyNoMoreInteractions(LAUNCH);

@@ -8,8 +8,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(DisplayNameTest.TestExtension.class)
 @DisplayName(DisplayNameAnnotatedClassTest.TEST_DISPLAY_NAME_CLASS)
 public class DisplayNameAnnotatedMethodAndClassTest {
-    @Test
-    @DisplayName(DisplayNameAnnotatedMethodTest.TEST_DISPLAY_NAME_METHOD)
-    public void testDisplayNameTest() {
-    }
+	@Test
+	@DisplayName(DisplayNameAnnotatedMethodTest.TEST_DISPLAY_NAME_METHOD)
+	public void testDisplayNameTest() {
+	}
 }

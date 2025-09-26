@@ -50,7 +50,8 @@ public class CallbackLogFeatureTest {
 	}
 
 	private static void attachLog(TestItemTree.TestItemLeaf testItemLeaf) {
-		ItemTreeReporter.sendLog(REPORT_PORTAL.getClient(),
+		ItemTreeReporter.sendLog(
+				REPORT_PORTAL.getClient(),
 				ERROR_LOG_LEVEL,
 				LOG_MESSAGE,
 				LOG_TIME,

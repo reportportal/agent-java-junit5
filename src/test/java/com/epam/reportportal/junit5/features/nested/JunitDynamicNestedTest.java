@@ -20,17 +20,22 @@ public class JunitDynamicNestedTest {
 
 	@TestFactory
 	Stream<DynamicNode> dynamicTestsWithContainers() {
-		return Stream.of("A", "B")
-				.map(input -> DynamicContainer.dynamicContainer(input,
-						Stream.of(DynamicContainer.dynamicContainer(input + " inner container",
-								Stream.of(DynamicTest.dynamicTest(input + " Test 1", () -> {
-									LOGGER.info("Checking length == 1");
-									assertThat(input, hasLength(1));
-								}), DynamicTest.dynamicTest(input + " Test 2", () -> {
-									LOGGER.info("Checking not empty");
-									assertThat(input, not(emptyOrNullString()));
-								}))
-						))
-				));
+		return Stream.of("A", "B").map(input -> DynamicContainer.dynamicContainer(
+				input, Stream.of(DynamicContainer.dynamicContainer(
+						input + " inner container", Stream.of(
+								DynamicTest.dynamicTest(
+										input + " Test 1", () -> {
+											LOGGER.info("Checking length == 1");
+											assertThat(input, hasLength(1));
+										}
+								), DynamicTest.dynamicTest(
+										input + " Test 2", () -> {
+											LOGGER.info("Checking not empty");
+											assertThat(input, not(emptyOrNullString()));
+										}
+								)
+						)
+				))
+		));
 	}
 }

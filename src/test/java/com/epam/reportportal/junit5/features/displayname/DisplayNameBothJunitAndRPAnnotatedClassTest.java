@@ -9,8 +9,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(DisplayNameTest.TestExtension.class)
 @DisplayName("Junit")
 public class DisplayNameBothJunitAndRPAnnotatedClassTest {
-    public static final String TEST_DISPLAY_NAME_CLASS = "My display name";
-    @Test
-    public void testDisplayNameTest() {
-    }
+	public static final String TEST_DISPLAY_NAME_CLASS = "My display name";
+
+	@Test
+	public void testDisplayNameTest() {
+	}
 }

@@ -61,15 +61,12 @@ public class AssumptionsTest {
 		Launch launch = AssumptionsTestExtension.LAUNCH;
 		when(launch.getStepReporter()).thenReturn(StepReporter.NOOP_STEP_REPORTER);
 		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
-		when(launch.startTestItem(
-				any(),
-				any()
-		)).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
+		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 	}
 
 	@ParameterizedTest
-	@ValueSource(classes = {AssumptionFailedTest.class, Junit4AssumptionFailedTest.class,
-			AssertJAssumptionFailedTest.class, Junit4ExtendedAssumptionFailedTest.class})
+	@ValueSource(classes = { AssumptionFailedTest.class, Junit4AssumptionFailedTest.class, AssertJAssumptionFailedTest.class,
+			Junit4ExtendedAssumptionFailedTest.class })
 	public void verify_assumption_failure_marks_test_as_skipped(Class<?> testClass) {
 		TestUtils.runClasses(testClass);
 

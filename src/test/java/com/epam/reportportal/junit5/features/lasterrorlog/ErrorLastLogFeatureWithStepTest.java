@@ -12,22 +12,23 @@ import java.util.NoSuchElementException;
 @ExtendWith(ErrorLastLogTest.ErrorDescriptionTestExtension.class)
 public class ErrorLastLogFeatureWithStepTest {
 
-    @Test
-    @Description("Login issue")
-    public void testWithStepError() {
-        enterCredentials();
-        System.out.println("Username is not correct");
-        loginWithException();
-        Assertions.assertTrue(Boolean.TRUE);
-    }
+	@Test
+	@Description("Login issue")
+	public void testWithStepError() {
+		enterCredentials();
+		System.out.println("Username is not correct");
+		loginWithException();
+		Assertions.assertTrue(Boolean.TRUE);
+	}
 
-    @Step
-    @Description("Credentials entered")
-    public void enterCredentials() {
-        Assertions.assertTrue(Boolean.TRUE);
-    }
-    @Step
-    public void loginWithException() {
-        throw new NoSuchElementException("Error message");
-    }
+	@Step
+	@Description("Credentials entered")
+	public void enterCredentials() {
+		Assertions.assertTrue(Boolean.TRUE);
+	}
+
+	@Step
+	public void loginWithException() {
+		throw new NoSuchElementException("Error message");
+	}
 }

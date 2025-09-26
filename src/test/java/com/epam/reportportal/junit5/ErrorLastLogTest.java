@@ -109,8 +109,10 @@ public class ErrorLastLogTest {
 
 		FinishTestItemRQ testCaseWithDescriptionAndStepError = finishTests.get(0);
 
-		assertThat(testCaseWithDescriptionAndStepError.getDescription(),
-				startsWith(MarkdownUtils.asTwoParts(STEP_DESCRIPTION_MESSAGE,
+		assertThat(
+				testCaseWithDescriptionAndStepError.getDescription(),
+				startsWith(MarkdownUtils.asTwoParts(
+						STEP_DESCRIPTION_MESSAGE,
 						String.format(TEST_ERROR_MESSAGE_PATTERN, EXCEPTION_STEP_ERROR_MESSAGE)
 				))
 		);
@@ -132,7 +134,8 @@ public class ErrorLastLogTest {
 
 		FinishTestItemRQ testCaseAssertException = finishTests.get(0);
 
-		assertThat(testCaseAssertException.getDescription(),
+		assertThat(
+				testCaseAssertException.getDescription(),
 				startsWith(MarkdownUtils.asTwoParts(
 						ASSERT_DESCRIPTION_MESSAGE,
 						String.format(TEST_ERROR_MESSAGE_PATTERN, ASSERT_ERROR_MESSAGE)

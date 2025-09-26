@@ -17,10 +17,16 @@ public class TwoDynamicIssueTest {
 	@TestFactory
 	@Issue(value = "ab001", comment = FAILURE_MESSAGE)
 	Stream<DynamicTest> testForTestFactory() {
-		return Stream.of(dynamicTest("My dynamic test", () -> {
-			throw new IllegalStateException(FAILURE_MESSAGE);
-		}), dynamicTest("My dynamic test 2", () -> {
-			throw new IllegalStateException(FAILURE_MESSAGE);
-		}));
+		return Stream.of(
+				dynamicTest(
+						"My dynamic test", () -> {
+							throw new IllegalStateException(FAILURE_MESSAGE);
+						}
+				), dynamicTest(
+						"My dynamic test 2", () -> {
+							throw new IllegalStateException(FAILURE_MESSAGE);
+						}
+				)
+		);
 	}
 }

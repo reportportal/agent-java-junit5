@@ -2,8 +2,8 @@ package com.epam.reportportal.junit5;
 
 import com.epam.reportportal.junit5.features.disabled.OneDisabledOneEnabledTest;
 import com.epam.reportportal.junit5.features.disabled.OneDisabledTest;
-import com.epam.reportportal.junit5.features.disabled.OneDisabledWithReasonTest;
 import com.epam.reportportal.junit5.features.disabled.OneDisabledWithReasonDescriptionTest;
+import com.epam.reportportal.junit5.features.disabled.OneDisabledWithReasonTest;
 import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
@@ -48,7 +48,8 @@ public class DisabledTestTest {
 		DisabledTestExtension.LAUNCH = mock(Launch.class);
 		when(DisabledTestExtension.LAUNCH.getStepReporter()).thenReturn(StepReporter.NOOP_STEP_REPORTER);
 		when(DisabledTestExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
-		when(DisabledTestExtension.LAUNCH.startTestItem(any(),
+		when(DisabledTestExtension.LAUNCH.startTestItem(
+				any(),
 				any()
 		)).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 
@@ -70,7 +71,8 @@ public class DisabledTestTest {
 		List<StartTestItemRQ> steps = captorStart.getAllValues();
 
 		assertThat("There is only one StartTestItem request", steps, hasSize(1));
-		assertThat("StartTestItem request has proper Description field",
+		assertThat(
+				"StartTestItem request has proper Description field",
 				steps.get(0).getDescription(),
 				equalTo("void " + OneDisabledTest.class.getCanonicalName() + ".disabledTest() is @Disabled")
 		);
@@ -93,7 +95,8 @@ public class DisabledTestTest {
 		verify(launch, times(1)).startTestItem(notNull(), captorStart.capture()); // Start a test
 
 		List<StartTestItemRQ> steps = captorStart.getAllValues();
-		assertThat("StartTestItem request has proper Description field",
+		assertThat(
+				"StartTestItem request has proper Description field",
 				steps.get(0).getDescription(),
 				equalTo(OneDisabledWithReasonTest.REASON)
 		);
@@ -114,7 +117,8 @@ public class DisabledTestTest {
 
 		List<StartTestItemRQ> steps = captorStart.getAllValues();
 		assertThat("There two StartTestItem request", steps, hasSize(2));
-		assertThat("StartTestItem request for enabled test has proper Name field",
+		assertThat(
+				"StartTestItem request for enabled test has proper Name field",
 				steps.get(1).getName(),
 				equalTo(OneDisabledOneEnabledTest.DISPLAY_NAME)
 		);
@@ -140,9 +144,13 @@ public class DisabledTestTest {
 		verify(launch, times(1)).startTestItem(notNull(), captorStart.capture()); // Start a test
 
 		List<StartTestItemRQ> steps = captorStart.getAllValues();
-		assertThat("StartTestItem request has proper Description field",
+		assertThat(
+				"StartTestItem request has proper Description field",
 				steps.get(0).getDescription(),
-				equalTo(MarkdownUtils.asTwoParts(OneDisabledWithReasonDescriptionTest.REASON, OneDisabledWithReasonDescriptionTest.TEST_DESCRIPTION_METHOD))
+				equalTo(MarkdownUtils.asTwoParts(
+						OneDisabledWithReasonDescriptionTest.REASON,
+						OneDisabledWithReasonDescriptionTest.TEST_DESCRIPTION_METHOD
+				))
 		);
 	}
 

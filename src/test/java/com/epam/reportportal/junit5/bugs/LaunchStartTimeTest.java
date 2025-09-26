@@ -6,13 +6,15 @@ import com.epam.reportportal.junit5.util.TestUtils;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.ta.reportportal.ws.model.ApiInfo;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,6 +44,11 @@ public class LaunchStartTimeTest {
 		client = mock(ReportPortalClient.class);
 		TestUtils.mockLaunch(client, launchUuid, suitedUuid, testMethodUuid);
 		TestUtils.mockLogging(client);
+		ApiInfo info = new ApiInfo();
+		ApiInfo.Build build = new ApiInfo.Build();
+		info.setBuild(build);
+		build.setVersion("5.13.2");
+		when(client.getApiInfo()).thenReturn(Maybe.just(info));
 		TestExtension.REPORT_PORTAL = ReportPortal.create(client, TestUtils.standardParameters());
 	}
 
@@ -58,9 +65,9 @@ public class LaunchStartTimeTest {
 		ArgumentCaptor<StartTestItemRQ> startTestCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, timeout(TimeUnit.SECONDS.toMillis(2)).times(1)).startTestItem(any(), startTestCaptor.capture());
 
-		Date launchStart = startLaunchCaptor.getValue().getStartTime();
-		Date suiteStart = startSuiteCaptor.getValue().getStartTime();
-		Date itemStart = startTestCaptor.getValue().getStartTime();
+		Instant launchStart = (Instant) startLaunchCaptor.getValue().getStartTime();
+		Instant suiteStart = (Instant) startSuiteCaptor.getValue().getStartTime();
+		Instant itemStart = (Instant) startTestCaptor.getValue().getStartTime();
 
 		assertThat(launchStart, lessThanOrEqualTo(suiteStart));
 		assertThat(suiteStart, lessThanOrEqualTo(itemStart));

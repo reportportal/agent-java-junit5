@@ -1,6 +1,6 @@
 package com.epam.reportportal.junit5.features.bug;
 
-import com.epam.reportportal.junit5.bugs.BeforeEachFailedDuplication;
+import com.epam.reportportal.junit5.bugs.BeforeEachFailedDuplicationTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -9,8 +9,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-@ExtendWith(BeforeEachFailedDuplication.BeforeEachFailedDuplicationExtension.class)
-public class BeforeEachFailedDuplicate {
+@ExtendWith(BeforeEachFailedDuplicationTest.BeforeEachFailedDuplicationExtension.class)
+public class BeforeEachFailedDuplicateTest {
 
 	public enum TestParams {
 		ONE,

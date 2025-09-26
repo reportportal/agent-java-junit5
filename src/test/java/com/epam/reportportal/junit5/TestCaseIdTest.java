@@ -60,7 +60,8 @@ public class TestCaseIdTest {
 	public void setupMock() {
 		TestCaseIdExtension.LAUNCH = mock(Launch.class);
 		when(TestCaseIdExtension.LAUNCH.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
-		when(TestCaseIdExtension.LAUNCH.startTestItem(any(),
+		when(TestCaseIdExtension.LAUNCH.startTestItem(
+				any(),
 				any()
 		)).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 	}
@@ -169,7 +170,8 @@ public class TestCaseIdTest {
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(2)).startTestItem(notNull(), captor.capture()); // Start a test
 
-		assertThat(captor.getAllValues().stream().map(StartTestItemRQ::getTestCaseId).collect(Collectors.toList()),
+		assertThat(
+				captor.getAllValues().stream().map(StartTestItemRQ::getTestCaseId).collect(Collectors.toList()),
 				hasItem(SingleDynamicAnnotatedTest.TEST_CASE_ID_VALUE)
 		);
 	}

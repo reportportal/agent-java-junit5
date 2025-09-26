@@ -74,7 +74,7 @@ public class TestUtils {
 
 	@SuppressWarnings("unchecked")
 	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid,
-	                              Collection<String> testMethodUuidList) {
+			Collection<String> testMethodUuidList) {
 		when(client.startLaunch(any())).thenReturn(Maybe.just(new StartLaunchRS(launchUuid, 1L)));
 
 		Maybe<ItemCreatedRS> testClassMaybe = Maybe.just(new ItemCreatedRS(testClassUuid, testClassUuid));
@@ -104,10 +104,6 @@ public class TestUtils {
 		return result;
 	}
 
-	public static void mockNestedSteps(ReportPortalClient client, Pair<String, String> parentNestedPair) {
-		mockNestedSteps(client, Collections.singletonList(parentNestedPair));
-	}
-
 	@SuppressWarnings("unchecked")
 	public static void mockNestedSteps(final ReportPortalClient client, final List<Pair<String, String>> parentNestedPairs) {
 		Map<String, List<String>> responseOrders = parentNestedPairs.stream()
@@ -121,7 +117,8 @@ public class TestUtils {
 			Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
 			when(client.startTestItem(same(k), any())).thenReturn(first, other);
 		});
-		parentNestedPairs.forEach(p -> when(client.finishTestItem(same(p.getValue()),
+		parentNestedPairs.forEach(p -> when(client.finishTestItem(
+				same(p.getValue()),
 				any()
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> Maybe.just(new OperationCompletionRS())));
 	}

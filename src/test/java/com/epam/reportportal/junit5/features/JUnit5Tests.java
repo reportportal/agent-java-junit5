@@ -6,7 +6,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.time.DayOfWeek;
 import java.util.Arrays;
 import java.util.Date;
@@ -30,7 +29,7 @@ class JUnit5Tests {
 	@Test
 	@Tag("tag1")
 	@Tag("tag2")
-	void baseClassTest() throws IOException {
+	void baseClassTest() {
 		// Report launch log
 		ReportPortal.emitLaunchLog("LAUNCH LOG MESAGE WITH ATTACHMENT", "error", new Date(), new File("files/css.css"));
 		System.out.println("base-class-test");
@@ -162,7 +161,8 @@ class JUnit5Tests {
 	@TestFactory
 	Stream<DynamicTest> testForTestFactory() {
 		return testData().stream()
-				.map(testData -> dynamicTest("Check Test Factory " + testData,
+				.map(testData -> dynamicTest(
+						"Check Test Factory " + testData,
 						() -> System.out.println("test-for-test-factory, test " + testData)
 				));
 	}

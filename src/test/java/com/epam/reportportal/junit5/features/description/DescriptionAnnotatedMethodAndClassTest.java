@@ -8,8 +8,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(DescriptionTest.TestExtension.class)
 @Description(DescriptionAnnotatedClassTest.TEST_DESCRIPTION_CLASS)
 public class DescriptionAnnotatedMethodAndClassTest {
-    @Test
-    @Description(DescriptionAnnotatedMethodTest.TEST_DESCRIPTION_METHOD)
-    public void testDescriptionTest() {
-    }
+	@Test
+	@Description(DescriptionAnnotatedMethodTest.TEST_DESCRIPTION_METHOD)
+	public void testDescriptionTest() {
+	}
 }

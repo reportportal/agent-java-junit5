@@ -13,9 +13,10 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 @ExtendWith(DisplayNameTest.TestExtension.class)
 @DisplayName(DisplayNameAnnotatedClassDynamicTest.TEST_DISPLAY_NAME_DYNAMIC_CLASS)
 public class DisplayNameAnnotatedClassDynamicTest {
-    public static final String TEST_DISPLAY_NAME_DYNAMIC_CLASS = "My test displayName on the dynamic class";
-    @TestFactory
-    Stream<DynamicTest> testForTestFactory() {
-        return Stream.of(dynamicTest("My dynamic test", () -> System.out.println("Inside dynamic test")));
-    }
+	public static final String TEST_DISPLAY_NAME_DYNAMIC_CLASS = "My test displayName on the dynamic class";
+
+	@TestFactory
+	Stream<DynamicTest> testForTestFactory() {
+		return Stream.of(dynamicTest("My dynamic test", () -> System.out.println("Inside dynamic test")));
+	}
 }

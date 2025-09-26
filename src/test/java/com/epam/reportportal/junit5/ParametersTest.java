@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 
 import static com.epam.reportportal.junit5.ParametersTest.ParameterTestExtension.LAUNCH;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.contains;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.*;
@@ -69,22 +69,26 @@ public class ParametersTest {
 		assertThat("There are only one parameter for the first @Test methods", testSteps.get(0).getParameters(), hasSize(1));
 		assertThat("There are only one parameter for the second @Test methods", testSteps.get(1).getParameters(), hasSize(1));
 
-		assertThat("First test parameter has correct type",
+		assertThat(
+				"First test parameter has correct type",
 				testSteps.get(0).getParameters().get(0).getKey(),
 				equalTo(EnumParametersTest.TestParams.class.getName())
 		);
 
-		assertThat("Second test parameter has correct type",
+		assertThat(
+				"Second test parameter has correct type",
 				testSteps.get(1).getParameters().get(0).getKey(),
 				equalTo(EnumParametersTest.TestParams.class.getName())
 		);
 
-		assertThat("First test parameter has correct value",
+		assertThat(
+				"First test parameter has correct value",
 				testSteps.get(0).getParameters().get(0).getValue(),
 				equalTo(EnumParametersTest.TestParams.values()[0].name())
 		);
 
-		assertThat("Second test parameter has correct value",
+		assertThat(
+				"Second test parameter has correct value",
 				testSteps.get(1).getParameters().get(0).getValue(),
 				equalTo(EnumParametersTest.TestParams.values()[1].name())
 		);
@@ -111,12 +115,14 @@ public class ParametersTest {
 		assertThat("There are only one parameter for the first @Test methods", testSteps.get(0).getParameters(), hasSize(1));
 		assertThat("There are only one parameter for the second @Test methods", testSteps.get(1).getParameters(), hasSize(1));
 
-		assertThat("First test parameter has correct type",
+		assertThat(
+				"First test parameter has correct type",
 				testSteps.get(0).getParameters().get(0).getKey(),
 				equalTo(String.class.getName())
 		);
 
-		assertThat("Second test parameter has correct type",
+		assertThat(
+				"Second test parameter has correct type",
 				testSteps.get(1).getParameters().get(0).getKey(),
 				equalTo(String.class.getName())
 		);
@@ -147,22 +153,26 @@ public class ParametersTest {
 		assertThat("There are two parameters for the first @Test methods", testSteps.get(0).getParameters(), hasSize(2));
 		assertThat("There are two parameters for the second @Test methods", testSteps.get(1).getParameters(), hasSize(2));
 
-		assertThat("First test parameters has correct type",
+		assertThat(
+				"First test parameters has correct type",
 				testSteps.get(0).getParameters().stream().map(ParameterResource::getKey).collect(Collectors.toList()),
 				everyItem(equalTo(String.class.getName()))
 		);
 
-		assertThat("Second test parameter has correct type",
+		assertThat(
+				"Second test parameter has correct type",
 				testSteps.get(1).getParameters().stream().map(ParameterResource::getKey).collect(Collectors.toList()),
 				everyItem(equalTo(String.class.getName()))
 		);
 
-		assertThat("First test parameter has correct value",
+		assertThat(
+				"First test parameter has correct value",
 				testSteps.get(0).getParameters().stream().map(ParameterResource::getValue).collect(Collectors.toList()),
 				contains("one", "two")
 		);
 
-		assertThat("Second test parameter has correct value",
+		assertThat(
+				"Second test parameter has correct value",
 				testSteps.get(1).getParameters().stream().map(ParameterResource::getValue).collect(Collectors.toList()),
 				contains("three", "four")
 		);
@@ -189,12 +199,14 @@ public class ParametersTest {
 		assertThat("There are only one parameter for the first @Test methods", testSteps.get(0).getParameters(), hasSize(1));
 		assertThat("There are only one parameter for the second @Test methods", testSteps.get(1).getParameters(), hasSize(1));
 
-		assertThat("First test parameters has correct type",
+		assertThat(
+				"First test parameters has correct type",
 				testSteps.get(0).getParameters().stream().map(ParameterResource::getKey).collect(Collectors.toList()),
 				everyItem(equalTo(String.class.getName()))
 		);
 
-		assertThat("Second test parameter has correct type",
+		assertThat(
+				"Second test parameter has correct type",
 				testSteps.get(1).getParameters().stream().map(ParameterResource::getKey).collect(Collectors.toList()),
 				everyItem(equalTo(String.class.getName()))
 		);
@@ -220,12 +232,14 @@ public class ParametersTest {
 		assertThat("There are two parameters for the second @Test methods", testSteps.get(1).getParameters(), hasSize(2));
 
 		testSteps.forEach(step -> {
-			assertThat("Test first parameter has correct name",
+			assertThat(
+					"Test first parameter has correct name",
 					step.getParameters().get(0).getKey(),
 					equalTo(ParameterNamesTest.FIRST_PARAMETER_NAME)
 			);
 
-			assertThat("Test second parameter has correct name",
+			assertThat(
+					"Test second parameter has correct name",
 					step.getParameters().get(1).getKey(),
 					equalTo(ParameterNamesTest.SECOND_PARAMETER_NAME)
 			);
@@ -250,7 +264,8 @@ public class ParametersTest {
 		testSteps.forEach(step -> {
 			assertThat("Test first parameter has correct name", step.getParameters().get(0).getKey(), equalTo("int"));
 
-			assertThat("Test second parameter has correct name",
+			assertThat(
+					"Test second parameter has correct name",
 					step.getParameters().get(1).getKey(),
 					equalTo(ParameterNamesTest.SECOND_PARAMETER_NAME)
 			);

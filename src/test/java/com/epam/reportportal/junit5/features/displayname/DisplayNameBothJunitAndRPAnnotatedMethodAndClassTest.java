@@ -9,9 +9,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName(DisplayNameAnnotatedClassTest.TEST_DISPLAY_NAME_CLASS)
 @org.junit.jupiter.api.DisplayName("Junit class")
 public class DisplayNameBothJunitAndRPAnnotatedMethodAndClassTest {
-    @Test
-    @DisplayName(DisplayNameAnnotatedMethodTest.TEST_DISPLAY_NAME_METHOD)
-    @org.junit.jupiter.api.DisplayName("Junit method")
-    public void testDisplayNameTest() {
-    }
+	@Test
+	@DisplayName(DisplayNameAnnotatedMethodTest.TEST_DISPLAY_NAME_METHOD)
+	@org.junit.jupiter.api.DisplayName("Junit method")
+	public void testDisplayNameTest() {
+	}
 }

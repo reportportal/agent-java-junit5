@@ -45,7 +45,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.times;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestInitTest {
@@ -60,7 +59,6 @@ public class TestInitTest {
 
 	private Map<StartTestItemRQ, Maybe<String>> itemStartMap;
 	private Map<Maybe<String>, FinishTestItemRQ> itemFinishMap;
-
 
 	@BeforeEach
 	public void setupMock() {

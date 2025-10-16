@@ -147,7 +147,7 @@ If you prefer using **Logback** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-logback</artifactId>
-    <version>5.2.2</version>
+    <version>5.4.0</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22logger-java-logback%22)
@@ -157,7 +157,7 @@ If you prefer using **Logback** logging library, add following dependencies:
 <dependency>
     <groupId>ch.qos.logback</groupId>
     <artifactId>logback-classic</artifactId>
-    <version>1.2.10</version>
+    <version>1.5.19</version>
 </dependency>
 ```
 
@@ -168,7 +168,7 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>logger-java-log4j</artifactId>
-    <version>5.2.2</version>
+    <version>5.4.0</version>
 </dependency>
 ```
 > Up to date version could be found [here](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22logger-java-log4j%22)
@@ -178,13 +178,13 @@ If you prefer using **Log4j** logging library, add following dependencies:
 <dependency>
     <groupId>org.apache.logging.log4j</groupId>
     <artifactId>log4j-api</artifactId>
-    <version>2.17.1</version>
+    <version>2.25.2</version>
 </dependency>
 
 <dependency>
      <groupId>org.apache.logging.log4j</groupId>
      <artifactId>log4j-core</artifactId>
-     <version>2.17.1</version>
+     <version>2.25.2</version>
 </dependency>
 ```
 

@@ -37,7 +37,7 @@ repositories {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.4.3'
+    api 'com.epam.reportportal:client-java:5.4.4'
 
     compileOnly "org.junit.jupiter:junit-jupiter-api:${junit_version}"
     implementation 'org.slf4j:slf4j-api:2.0.7'
@@ -50,7 +50,7 @@ dependencies {
     testImplementation 'org.aspectj:aspectjweaver:1.9.19'
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
-    testImplementation 'ch.qos.logback:logback-classic:1.5.18'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.19'
     testImplementation 'com.epam.reportportal:logger-java-logback:5.4.0'
     testImplementation 'org.assertj:assertj-core:3.23.1'
     testImplementation 'com.squareup.okhttp3:okhttp:4.12.0'

@@ -403,7 +403,7 @@ public class ReportPortalExtension
 	 */
 	protected void finishBeforeEach(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
 			ExtensionContext context, Maybe<String> id) throws Throwable {
-		Instant startTime = Instant.now();
+		Instant startTime = Instant.now().truncatedTo(ChronoUnit.MICROS);
 		try {
 			finishBeforeAfter(invocation, context, id);
 		} catch (Throwable throwable) {
@@ -927,10 +927,10 @@ public class ReportPortalExtension
 	 */
 	protected void reportSkippedStep(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext context, Throwable throwable,
 			Instant eventTime) {
-		Instant skipStartTime = Instant.now();
+		Instant skipStartTime = Instant.now().truncatedTo(ChronoUnit.MICROS);
 		if (skipStartTime.compareTo(eventTime) > 0) {
 			// to fix item ordering when @AfterEach starts in the same millisecond as skipped test
-			skipStartTime = skipStartTime.minus(1, ChronoUnit.MILLIS);
+			skipStartTime = skipStartTime.minus(1, ChronoUnit.MICROS);
 		}
 		final ItemType itemType = STEP;
 		startTestItem(context, invocationContext.getArguments(), itemType, createStepDescription(context, itemType), skipStartTime);

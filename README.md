@@ -1,4 +1,4 @@
-# ReportPortal JUnit 5 Extension
+# ReportPortal JUnit 5 and 6 Extension
 A JUnit 5 reporter that uploads the results to a ReportPortal server.
 
 > **DISCLAIMER**: We use Google Analytics for sending anonymous usage information such as agent's and client's names, and their versions
